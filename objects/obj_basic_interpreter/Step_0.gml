@@ -1,80 +1,62 @@
 // obj_basic_interpreter Step Event
-	//show_debug_message(global.interpreter_running);
-	//interpreter_running = true;
+
+
 // Handle live user input for INPUT command
 if (global.interpreter_running) {
-
-if (global.awaiting_input) {
-    for (var k = 32; k <= 126; k++) {
-        if (keyboard_check_pressed(k)) {
-            show_debug_message("KEY PRESSED: " + string(k));
-            handle_interpreter_character_input(k);
-        }
-    }
-
-    if (keyboard_check_pressed(vk_enter)) {
-        show_debug_message("ENTER PRESSED");
-        handle_interpreter_character_input(vk_enter);
-    }
-
-    if (keyboard_check_pressed(vk_backspace)) {
-        show_debug_message("BACKSPACE PRESSED");
-        handle_interpreter_character_input(vk_backspace);
-    }
-
-    exit;
-}
-}
-
-    if (interpreter_next_line >= 0) {
-        interpreter_current_line_index = interpreter_next_line;
-        interpreter_next_line = -1;
-    }
-
-    if (interpreter_current_line_index < ds_list_size(interpreter_current_program)) {
-        var line = ds_list_find_value(interpreter_current_program, interpreter_current_line_index);
-        execute_basic_line(line);
-        interpreter_current_line_index++;
-    } else {
-        //global.interpreter_running = false;
-    }
-
-
-if (line_index < ds_list_size(line_list)) {
-    var ln1     = ds_list_find_value(line_list, line_index);
-    var code    = ds_map_find_value(program_map, ln1);
-    var trimmed = string_trim(code);
-    var sp      = string_pos(" ", trimmed);
-    var cmd     = (sp > 0) ? string_upper(string_copy(trimmed, 1, sp - 1)) : string_upper(trimmed);
-    var arg     = (sp > 0) ? string_trim(string_copy(trimmed, sp + 1, string_length(trimmed))) : "";
-
-    handle_basic_command(cmd, arg); // dispatch command
-
-    // Only advance if GOTO didn't happen
-    if (global.justreturned == 0) {
-        line_index++;
-    } else {
-        // GOTO was triggered — find new line index based on program_counter
-        if (ds_map_exists(global.basic_program, global.program_counter)) {
-            for (var i = 0; i < ds_list_size(line_list); i++) {
-                if (ds_list_find_value(line_list, i) == global.program_counter) {
-                    line_index = i;
-                    break;
-                }
+    if (global.awaiting_input) {
+        for (var k = 32; k <= 126; k++) {
+            if (keyboard_check_pressed(k)) {
+                show_debug_message("KEY PRESSED: " + string(k));
+                handle_interpreter_character_input(k);
             }
-        } else {
-            line_index = ds_list_size(line_list); // exit if target line not found
         }
-        global.justreturned = 0;
+        if (keyboard_check_pressed(vk_enter)) {
+            show_debug_message("ENTER PRESSED");
+            handle_interpreter_character_input(vk_enter);
+        }
+        if (keyboard_check_pressed(vk_backspace)) {
+            show_debug_message("BACKSPACE PRESSED");
+            handle_interpreter_character_input(vk_backspace);
+        }
+        exit;
+    }
+}
+
+// Handle GOTO jumps from IF/GOTO commands
+if (interpreter_next_line >= 0) {
+    line_index = interpreter_next_line;
+    interpreter_next_line = -1;
+}
+
+if (line_index >= ds_list_size(global.line_list)) {
+    interpreter_next_line = -1;
+    global.interpreter_running = false;
+}
+
+
+// Execute current line using your existing system
+
+if (line_index < ds_list_size(global.line_list)) {
+    var ln1 = ds_list_find_value(global.line_list, line_index);
+    var code = ds_map_find_value(global.program_map, ln1);
+    var trimmed = string_trim(code);
+    var sp = string_pos(" ", trimmed);
+    var cmd = (sp > 0) ? string_upper(string_copy(trimmed, 1, sp - 1)) : string_upper(trimmed);
+    var arg = (sp > 0) ? string_trim(string_copy(trimmed, sp + 1, string_length(trimmed))) : "";
+    
+    handle_basic_command(cmd, arg); // dispatch command
+    
+    // Only advance if GOTO didn't happen via the new system
+    if (interpreter_next_line < 0) {
+        line_index++;
     }
 } else {
-    // Finished execution; return to editor
-    //room_goto(global.editor_return_room);
+    // Finished execution
+    global.interpreter_running = false;
 }
 
 // Escape returns to editor immediately
 if (keyboard_check_pressed(vk_escape)) {
-    global.justreturned = 1;
     room_goto(global.editor_return_room);
 }
 

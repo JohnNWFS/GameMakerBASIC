@@ -58,6 +58,9 @@ var original_command = string_trim(command);
 		editor_handle_paste_command();
 		break;
 
+		case "QUIT":
+		quit_program()
+		break;
 			
         default:
             show_error_message("SYNTAX ERROR");

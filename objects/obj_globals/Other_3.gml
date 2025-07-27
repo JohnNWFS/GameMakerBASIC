@@ -25,22 +25,32 @@ if (ds_exists(global.output_colors, ds_type_list)) {
 if (ds_exists(global.input_history, ds_type_list)) {
     ds_list_destroy(global.input_history);
 }
-if (ds_exists(global.basic_line_numbers, ds_type_list)) {
-    ds_list_destroy(global.basic_line_numbers);
-}
+
+ if (ds_exists(global.basic_line_numbers, ds_type_list)) {
+        ds_list_destroy(global.basic_line_numbers);
+    }
+
 
 // Clear buffer variables
 if (variable_global_exists("print_line_buffer")) {
     global.print_line_buffer = "";
 }
 
-// Optional: reset color states (not strictly necessary)
-if (variable_global_exists("basic_text_color")) {
-    global.basic_text_color = c_white;
+if (variable_global_exists("program_map")) {
+	ds_map_destroy(global.program_map);
 }
-if (variable_global_exists("current_draw_color")) {
-    global.current_draw_color = c_white;
-}
+
+if (variable_global_exists("line_list")) {
+	ds_list_destroy(global.line_list);
+	}
+
+if (variable_global_exists("output_lines")) {
+	ds_list_destroy(global.output_lines);
+	}
+
+if (variable_global_exists("interpreter_current_program")) {
+	ds_list_destroy(global.interpreter_current_program);
+	}
 
 // Optional: flag editor cleanup
 global.editor_spawned = false;

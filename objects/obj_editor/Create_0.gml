@@ -27,7 +27,7 @@
  last_keyboard_string = "";       // Track keyboard_string changes
  key_repeat_timer = 0;            // For handling key repeat timing
  // Undo system
- undo_stack = ds_list_create();   // Stack of program states
+
  max_undo_levels = 20;            // Limit undo history
  // Message system
  message_text = "";

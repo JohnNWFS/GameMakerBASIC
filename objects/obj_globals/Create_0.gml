@@ -8,8 +8,9 @@
 
 	global.program_lines = ds_map_create();
 	global.basic_program = ds_map_create();
-	
+	global.program_map  = ds_map_create();
 
+	global.line_list    = ds_list_create();
 	global.line_numbers = ds_list_create();
 	global.undo_stack = ds_list_create();
 	global.output_lines = ds_list_create();
@@ -41,6 +42,5 @@
 	global.interpreter_cursor_pos = 0;
 	global.interpreter_running = false;
 	global.last_interpreter_string = "";
-
 
 

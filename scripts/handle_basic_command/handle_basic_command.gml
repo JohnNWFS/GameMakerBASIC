@@ -26,6 +26,10 @@ function handle_basic_command(cmd, arg) {
 			basic_cmd_cls();
 			break;
 
+		case "IF":
+		    basic_cmd_if(arg);
+		    break;
+	
         default:
             basic_show_message("UNKNOWN COMMAND: " + cmd);
     }

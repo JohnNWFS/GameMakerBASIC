@@ -35,7 +35,7 @@ function basic_cmd_print(arg) {
 
     // If newline is not suppressed, add line and current color to output lists
     if (!suppress_newline) {
-        ds_list_add(output_lines, global.print_line_buffer);
+        ds_list_add(global.output_lines, global.print_line_buffer);
         ds_list_add(global.output_colors, global.current_draw_color);
         global.print_line_buffer = "";
     }

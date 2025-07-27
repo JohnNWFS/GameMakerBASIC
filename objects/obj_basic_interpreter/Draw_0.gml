@@ -6,13 +6,13 @@ var font_height = string_height("A");
 var y1 = 32;
 
 // Draw output lines
-for (var i = 0; i < ds_list_size(output_lines); i++) {
+for (var i = 0; i < ds_list_size(global.output_lines); i++) {
     if (i < ds_list_size(global.output_colors)) {
         draw_set_color(global.output_colors[| i]);
     } else {
         draw_set_color(global.basic_text_color);
     }
-    draw_text(16, y1, ds_list_find_value(output_lines, i));
+    draw_text(16, y1, ds_list_find_value(global.output_lines, i));
     y1 += font_height;
 }
 
