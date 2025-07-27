@@ -40,7 +40,7 @@ if (line_index < ds_list_size(global.line_list)) {
     var ln1 = ds_list_find_value(global.line_list, line_index);
     var code = ds_map_find_value(global.program_map, ln1);
     var trimmed = string_trim(code);
-    var sp = string_pos(" ", trimmed);
+    var sp = string_pos(" ", trimmed); 
     var cmd = (sp > 0) ? string_upper(string_copy(trimmed, 1, sp - 1)) : string_upper(trimmed);
     var arg = (sp > 0) ? string_trim(string_copy(trimmed, sp + 1, string_length(trimmed))) : "";
     
