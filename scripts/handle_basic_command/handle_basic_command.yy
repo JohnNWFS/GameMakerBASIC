@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"handle_basic_command",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"handle_basic_command",
+  "parent":{
+    "name":"BASIC_COMMANDS",
+    "path":"folders/Scripts/BASIC_COMMANDS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

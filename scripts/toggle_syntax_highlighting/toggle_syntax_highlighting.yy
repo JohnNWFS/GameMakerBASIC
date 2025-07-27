@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"toggle_syntax_highlighting",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"toggle_syntax_highlighting",
+  "parent":{
+    "name":"EDITOR_SCRIPTS",
+    "path":"folders/Scripts/EDITOR_SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

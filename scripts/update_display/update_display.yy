@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"update_display",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"update_display",
+  "parent":{
+    "name":"EDITOR_SCRIPTS",
+    "path":"folders/Scripts/EDITOR_SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

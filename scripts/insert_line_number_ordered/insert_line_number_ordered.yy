@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"insert_line_number_ordered",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"insert_line_number_ordered",
+  "parent":{
+    "name":"EDITOR_SCRIPTS",
+    "path":"folders/Scripts/EDITOR_SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

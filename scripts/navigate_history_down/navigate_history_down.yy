@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"navigate_history_down",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"navigate_history_down",
+  "parent":{
+    "name":"EDITOR_SCRIPTS",
+    "path":"folders/Scripts/EDITOR_SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

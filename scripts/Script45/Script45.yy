@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"Script45",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"Script45",
+  "parent":{
+    "name":"BASIC_COMMANDS",
+    "path":"folders/Scripts/BASIC_COMMANDS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

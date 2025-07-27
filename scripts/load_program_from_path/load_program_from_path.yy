@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"load_program_from_path",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"load_program_from_path",
+  "parent":{
+    "name":"EDITOR_SCRIPTS",
+    "path":"folders/Scripts/EDITOR_SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"delete_program_line",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"delete_program_line",
+  "parent":{
+    "name":"EDITOR_SCRIPTS",
+    "path":"folders/Scripts/EDITOR_SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

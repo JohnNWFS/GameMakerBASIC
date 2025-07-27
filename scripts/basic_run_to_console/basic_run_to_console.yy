@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"basic_run_to_console",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"basic_run_to_console",
+  "parent":{
+    "name":"BASIC_COMMANDS",
+    "path":"folders/Scripts/BASIC_COMMANDS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"set_color_scheme",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"set_color_scheme",
+  "parent":{
+    "name":"EDITOR_SCRIPTS",
+    "path":"folders/Scripts/EDITOR_SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

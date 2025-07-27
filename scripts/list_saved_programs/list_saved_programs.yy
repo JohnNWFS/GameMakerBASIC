@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"list_saved_programs",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"list_saved_programs",
+  "parent":{
+    "name":"EDITOR_SCRIPTS",
+    "path":"folders/Scripts/EDITOR_SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

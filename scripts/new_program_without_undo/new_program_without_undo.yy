@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"new_program_without_undo",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"new_program_without_undo",
+  "parent":{
+    "name":"EDITOR_SCRIPTS",
+    "path":"folders/Scripts/EDITOR_SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

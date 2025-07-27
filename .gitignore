@@ -1,0 +1,7 @@
+*.yy~
+*.yyp~
+.*.backup
+.gml.cache/
+.gitattributes
+config/
+output/
