@@ -48,13 +48,12 @@ All editor commands are typed on a line that **does not begin with a number**:
 
 | Command        | Action |
 |----------------|--------|
-| `:RUN`         | Run the current BASIC program in the interpreter |
-| `:CLEAR`       | Wipe all program lines from memory |
-| `:LIST`        | Display all currently stored BASIC lines |
-| `:DUMP`        | Output the full program as a raw BASIC listing |
-| `:PASTE`       | Prompt the user to paste a multi-line BASIC program (via `Ctrl+V`) |
-| `:HELP`        | List supported editor commands |
-| `:EXIT`        | Quit the application or return to menu (optional)
+| `RUN`         | Run the current BASIC program in the interpreter |
+| `CLEAR`       | Wipe all program lines from memory |
+| `LIST`        | Display all currently stored BASIC lines |
+| F5            | Output the full program as a raw BASIC listing to console |
+| `:PASTE`       | Pastes a multi-line BASIC program from clipboard (as if typing `Ctrl+V` in Windows) |
+
 
 ### 🔁 Navigation Shortcuts
 
