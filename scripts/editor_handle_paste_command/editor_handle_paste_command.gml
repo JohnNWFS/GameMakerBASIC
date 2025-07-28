@@ -34,5 +34,5 @@ function editor_handle_paste_command() {
         }
     }
 
-    show_message("Program pasted successfully.");
+    basic_show_message("Program pasted successfully.");
 }

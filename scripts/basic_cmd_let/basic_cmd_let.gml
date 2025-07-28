@@ -24,17 +24,9 @@ function basic_cmd_let(arg) {
     if (array_length(tokens) == 1) {
         // Single value: variable, number, or string variable
         var val = tokens[0];
-        if (ds_map_exists(global.basic_variables, string_upper(val))) {
-            result = global.basic_variables[? string_upper(val)];
-        } else {
-            // Try number, else treat as raw string
-            var parsed = real(val);
-            if (string_is_number(val)) {
-                result = parsed;
-            } else {
-                result = val; // fallback as string
-            }
-        }
+		result = basic_evaluate_expression(val);
+
+
     } else if (array_length(tokens) == 3) {
         // Simple expression like A + B
         var left = string_upper(tokens[0]);

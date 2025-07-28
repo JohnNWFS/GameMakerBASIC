@@ -30,8 +30,8 @@ function run_program() {
     global.input_target_var = "";
     global.interpreter_running = true;
 
-    global.current_draw_color = c_green;// global.basic_text_color;
-    show_debug_message("RUN_PROGRAM AFTER RESET - color is: " + string(global.current_draw_color));
+    global.current_draw_color = make_color_rgb(255, 191, 64); // Amber //c_green;// global.basic_text_color;
+   // show_debug_message("RUN_PROGRAM AFTER RESET - color is: " + string(global.current_draw_color));
     
     interpreter_current_line_index = 0;
     interpreter_next_line = -1;

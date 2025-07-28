@@ -5,6 +5,13 @@ draw_set_font(fnt_basic);
 var font_height = string_height("A");
 var y1 = 32;
 
+if (global.program_has_ended) {
+    draw_set_color(c_lime);
+    draw_text(16, room_height - 48, "Program has ended - ESC or ENTER to return");
+	
+}
+
+
 // Draw output lines
 for (var i = 0; i < ds_list_size(global.output_lines); i++) {
     if (i < ds_list_size(global.output_colors)) {
@@ -28,3 +35,5 @@ if (global.awaiting_input) {
 
     draw_text(16, y1, input_str);
 }
+
+

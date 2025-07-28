@@ -1,9 +1,9 @@
 {
   "$GMScript":"v1",
-  "%Name":"Script45",
+  "%Name":"basic_cmd_for",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"Script45",
+  "name":"basic_cmd_for",
   "parent":{
     "name":"BASIC_COMMANDS",
     "path":"folders/Scripts/BASIC_COMMANDS.yy",

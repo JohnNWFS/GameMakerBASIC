@@ -2,7 +2,7 @@
 // You can write your code in this editor
  // In Draw Event
  draw_set_font(fnt_basic); // Create a monospace font
- draw_set_color(c_green);  // Classic green text
+ draw_set_color(make_color_rgb(255, 191, 64));  // Classic green text
  draw_rectangle_color(0, 0, room_width, room_height, c_black, c_black, c_black, c_black, false);
  // Draw program lines
  var y_pos = 32;

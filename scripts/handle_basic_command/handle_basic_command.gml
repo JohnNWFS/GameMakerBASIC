@@ -31,4 +31,39 @@ function handle_basic_command(cmd, arg) {
             break;
 
         case "END":
-  
+            basic_cmd_end();
+            break;
+
+        case "REM":
+            // REM is a no-op, no function call needed
+            break;
+
+        case "GOSUB":
+            basic_cmd_gosub(arg);
+            break;
+
+        case "RETURN":
+            basic_cmd_return();
+            break;
+
+        case "FOR":
+			basic_cmd_for(arg);
+            break;
+
+        case "NEXT":
+            basic_cmd_next(arg);
+            break;
+
+		case "WHILE":
+		    basic_cmd_while(arg);
+		    break;
+
+		case "WEND":
+		    basic_cmd_wend();
+		    break;
+
+
+        default:
+            basic_show_message("UNKNOWN COMMAND: " + cmd);
+    }
+}

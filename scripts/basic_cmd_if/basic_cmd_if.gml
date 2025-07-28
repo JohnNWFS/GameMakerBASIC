@@ -45,8 +45,11 @@ function basic_cmd_if(arg) {
     var left = string_trim(parts[0]);
     var right = string_trim(parts[1]);
 
-    var a = ds_map_exists(global.basic_variables, string_upper(left)) ? global.basic_variables[? string_upper(left)] : real(left);
-    var b = ds_map_exists(global.basic_variables, string_upper(right)) ? global.basic_variables[? string_upper(right)] : real(right);
+	var left_eval = basic_evaluate_expression(left);
+	var right_eval = basic_evaluate_expression(right);
+
+	var a = real(left_eval);
+	var b = real(right_eval);
 
     show_debug_message("Evaluating: " + string(a) + " " + op + " " + string(b));
 

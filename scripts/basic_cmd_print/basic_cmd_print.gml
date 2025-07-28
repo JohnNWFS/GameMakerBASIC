@@ -10,30 +10,24 @@ function basic_cmd_print(arg) {
     var output = "";
     var token_list = string_split(arg, "+");
 
-    for (var i = 0; i < array_length(token_list); i++) {
-        var part = string_trim(token_list[i]);
+for (var i = 0; i < array_length(token_list); i++) {
+    var part = string_trim(token_list[i]);
 
-        // Quoted string
-        if (string_length(part) >= 2 &&
-            string_char_at(part, 1) == "\"" &&
-            string_char_at(part, string_length(part)) == "\"") {
-            part = string_copy(part, 2, string_length(part) - 2);
-            output += part;
-        }
-        // Variable resolution from global.basic_variables
-        else if (ds_map_exists(global.basic_variables, string_upper(part))) {
-            output += string(global.basic_variables[? string_upper(part)]);
-        }
-        // Fallback literal (for debugging/malformed input)
-        else {
-            output += part;
-        }
+    if (is_quoted_string(part)) {
+        // Remove quotes and treat as literal
+        var literal = string_copy(part, 2, string_length(part) - 2);
+        output += literal;
+    } else {
+        // Safe to evaluate
+        var result = basic_evaluate_expression(part);
+        output += string(result);
     }
+}
+
 
     // Append to print line buffer
     global.print_line_buffer += output;
 
-    // If newline is not suppressed, add line and current color to output lists
     if (!suppress_newline) {
         ds_list_add(global.output_lines, global.print_line_buffer);
         ds_list_add(global.output_colors, global.current_draw_color);

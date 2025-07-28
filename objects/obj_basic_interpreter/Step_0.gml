@@ -1,5 +1,15 @@
 // obj_basic_interpreter Step Event
 
+if (global.program_has_ended) {
+    if (keyboard_check_pressed(vk_enter) || keyboard_check_pressed(vk_escape)) {
+        global.program_has_ended = false;
+        room_goto(global.editor_return_room);
+    }
+	//show_debug_message("In the ended block");
+	return;
+}
+
+
 
 // Handle live user input for INPUT command
 if (global.interpreter_running) {
@@ -43,7 +53,12 @@ if (line_index < ds_list_size(global.line_list)) {
     var sp = string_pos(" ", trimmed); 
     var cmd = (sp > 0) ? string_upper(string_copy(trimmed, 1, sp - 1)) : string_upper(trimmed);
     var arg = (sp > 0) ? string_trim(string_copy(trimmed, sp + 1, string_length(trimmed))) : "";
-    
+    // Support for apostrophe shorthand (') as REM
+	//if (string_copy(trimmed, 1, 1) == "'") {
+	//    cmd = "REM";
+	 //   arg = string_delete(trimmed, 1, 1); // Remove the apostrophe
+	//}
+
     handle_basic_command(cmd, arg); // dispatch command
     
     // Only advance if GOTO didn't happen via the new system
@@ -64,3 +79,4 @@ if (keyboard_check_pressed(vk_escape)) {
 if (keyboard_check_released(vk_f5)) {
     basic_run_to_console();
 }
+
