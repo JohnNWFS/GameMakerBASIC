@@ -18,19 +18,17 @@ function handle_basic_command(cmd, arg) {
             basic_cmd_input(arg);
             break;
 
-		case "COLOR":
-			basic_cmd_color(arg);
-			break;
+        case "COLOR":
+            basic_cmd_color(arg);
+            break;
 
-		case "CLS":
-			basic_cmd_cls();
-			break;
+        case "CLS":
+            basic_cmd_cls();
+            break;
 
-		case "IF":
-		    basic_cmd_if(arg);
-		    break;
-	
-        default:
-            basic_show_message("UNKNOWN COMMAND: " + cmd);
-    }
-}
+        case "IF":
+            basic_cmd_if(arg);
+            break;
+
+        case "END":
+  
