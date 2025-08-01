@@ -1,60 +1,39 @@
 function basic_cmd_let(arg) {
-    var eq_pos = string_pos("=", arg);
+    show_debug_message("LET: Raw input: '" + arg + "'");
 
+    var eq_pos = string_pos("=", arg);
     if (eq_pos <= 0) {
-        show_debug_message("?LET ERROR: No '=' in expression: " + arg);
+        show_debug_message("LET ERROR: No '=' found in input: " + arg);
         return;
     }
 
     var varname = string_upper(string_trim(string_copy(arg, 1, eq_pos - 1)));
     var expr = string_trim(string_copy(arg, eq_pos + 1, string_length(arg)));
 
-    // Handle string literal assignment directly
+    show_debug_message("LET: Parsed variable name: '" + varname + "'");
+    show_debug_message("LET: Parsed expression: '" + expr + "'");
+
+    // Check for empty variable name or expression
+    if (string_length(varname) == 0) {
+        show_debug_message("LET ERROR: Variable name is empty.");
+        return;
+    }
+    if (string_length(expr) == 0) {
+        show_debug_message("LET ERROR: Expression is empty.");
+        return;
+    }
+
+    // Handle string literal assignment
     if (string_length(expr) >= 2 && string_char_at(expr, 1) == "\"" && string_char_at(expr, string_length(expr)) == "\"") {
-        // Strip quotes and store the string
         var str_val = string_copy(expr, 2, string_length(expr) - 2);
         global.basic_variables[? varname] = str_val;
+        show_debug_message("LET: Assigned string value: '" + str_val + "' to '" + varname + "'");
         return;
     }
 
-    // Try evaluating as expression
-    var tokens = string_split(expr, " ");
-    var result = 0;
-
-    if (array_length(tokens) == 1) {
-        // Single value: variable, number, or string variable
-        var val = tokens[0];
-		result = basic_evaluate_expression(val);
-
-
-    } else if (array_length(tokens) == 3) {
-        // Simple expression like A + B
-        var left = string_upper(tokens[0]);
-        var op   = tokens[1];
-        var right = string_upper(tokens[2]);
-
-        var a = ds_map_exists(global.basic_variables, left) ? global.basic_variables[? left] : real(left);
-        var b = ds_map_exists(global.basic_variables, right) ? global.basic_variables[? right] : real(right);
-
-        if (!is_real(a) || !is_real(b)) {
-            show_debug_message("?LET ERROR: Cannot perform math on non-numeric values.");
-            return;
-        }
-
-        switch (op) {
-            case "+": result = a + b; break;
-            case "-": result = a - b; break;
-            case "*": result = a * b; break;
-            case "/": result = (b != 0) ? a / b : 0; break;
-            case "%": result = a mod b; break;
-            default:
-                show_debug_message("?LET ERROR: Unknown operator '" + op + "'");
-                return;
-        }
-    } else {
-        show_debug_message("?LET ERROR: Unsupported expression format: " + expr);
-        return;
-    }
-
+    // Evaluate numeric or expression assignment
+    var result = basic_evaluate_expression_v2(expr);
     global.basic_variables[? varname] = result;
+
+    show_debug_message("LET: Assigned numeric value: " + string(result) + " to '" + varname + "'");
 }

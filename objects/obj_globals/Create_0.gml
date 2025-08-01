@@ -52,3 +52,20 @@
 
 	global.program_has_ended = false;
 
+	global.colors = ds_map_create();
+	global.colors[? "RED"] = c_red;
+	global.colors[? "GREEN"] = c_green;
+	global.colors[? "BLUE"] = c_blue;
+	global.colors[? "CYAN"] = c_teal;
+	global.colors[? "MAGENTA"] = c_fuchsia;
+	global.colors[? "YELLOW"] = c_yellow;
+	global.colors[? "WHITE"] = c_white;
+	global.colors[? "BLACK"] = c_black;
+	global.background_draw_color = c_black;
+	global.background_draw_enabled = false;
+
+	global.scroll_offset = 0; //for intepreter scrolling
+	global.scroll_lock = false; // True when user scrolls manually
+	global.pause_in_effect = false;
+	global.input_expected = false; // true = INPUT, false = PAUSE
+	global.pause_mode = false;

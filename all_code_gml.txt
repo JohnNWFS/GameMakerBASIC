@@ -1,0 +1,2682 @@
+﻿/// obj_basic_interpreter â†’ Create Event
+
+// Set the current draw color
+global.current_draw_color = global.basic_text_color;
+
+// Use the shared global data structures
+global.program_map  = global.basic_program; // optional if you're not modifying
+global.line_list    = global.basic_line_numbers;
+
+// Interpreter control variables
+line_index = 0;                         // current line being executed
+font_height = 16;
+
+current_input = "";
+cursor_pos = 0;
+last_keyboard_string = "";
+
+interpreter_current_line_index = 0;
+interpreter_next_line = -1;
+
+// Local list to hold current run if needed
+interpreter_current_program = ds_list_create(); // OK to keep local
+
+// Set black background for terminal look
+// Create Event for obj_basic_interpreter
+show_debug_message("Test 1 (3 + 4 * 2): " + string(basic_evaluate_expression_v2("3 + 4 * 2")));
+show_debug_message("Test 2 (RND(10) + 1): " + string(basic_evaluate_expression_v2("RND(10) + 1")));
+show_debug_message("Test 3 (2 + 3 * (4 + RND(5))): " + string(basic_evaluate_expression_v2("2 + 3 * (4 + RND(5))")));
+show_debug_message("Testing is_operator function:");
+show_debug_message("Is + an operator? " + string(is_operator("+")));
+show_debug_message("Is MOD an operator? " + string(is_operator("MOD")));
+show_debug_message("Is mod an operator? " + string(is_operator("mod")));
+/// @description Insert description here
+// You can write your code in this editor
+ds_list_destroy(interpreter_current_program);
+/// @description Draw interpreter output and current input
+draw_set_font(fnt_basic);
+//global.current_draw_color = global.basic_text_color;
+
+if (global.background_draw_enabled) {
+    draw_set_color(global.background_draw_color);
+    draw_rectangle(0, 0, room_width, room_height, false);
+}
+
+
+var font_height = string_height("A");
+var y1 = 32;
+
+if (global.program_has_ended) {
+    draw_set_color(c_lime);
+    draw_text(16, room_height - 48, "Program has ended - ESC or ENTER to return");
+	
+}
+
+
+// Draw output lines
+for (var i = 0; i < ds_list_size(global.output_lines); i++) {
+    if (i < ds_list_size(global.output_colors)) {
+        draw_set_color(global.output_colors[| i]);
+    } else {
+        draw_set_color(global.basic_text_color);
+    }
+    draw_text(16, y1, ds_list_find_value(global.output_lines, i));
+    y1 += font_height;
+}
+
+// Draw input prompt if waiting
+if (global.awaiting_input) {
+    draw_set_color(global.basic_text_color);
+    var input_str = "? " + global.interpreter_input;
+
+    // Blinking cursor
+    if (current_time mod 1000 < 500) {
+        input_str += "|";
+    }
+
+    draw_text(16, y1, input_str);
+}
+
+
+// obj_basic_interpreter Step Event
+
+if (global.program_has_ended) {
+    if (keyboard_check_pressed(vk_enter) || keyboard_check_pressed(vk_escape)) {
+        global.program_has_ended = false;
+        room_goto(global.editor_return_room);
+    }
+    return; // Program has ended, exit step event
+}
+
+// Handle live user input for INPUT command
+if (global.interpreter_running) {
+    if (global.awaiting_input) {
+        for (var k = 32; k <= 126; k++) {
+            if (keyboard_check_pressed(k)) {
+                show_debug_message("KEY PRESSED: " + string(k));
+                handle_interpreter_character_input(k);
+            }
+        }
+        if (keyboard_check_pressed(vk_enter)) {
+            show_debug_message("ENTER PRESSED");
+            handle_interpreter_character_input(vk_enter);
+        }
+        if (keyboard_check_pressed(vk_backspace)) {
+            show_debug_message("BACKSPACE PRESSED");
+            handle_interpreter_character_input(vk_backspace);
+        }
+        exit; // Exit if awaiting input, don't execute more BASIC code
+    }
+}
+
+// --- Interpreter Execution Loop ---
+// This is the core loop that executes one or more BASIC lines per step.
+// It will continue to loop *within this single step event* if a GOTO or WHILE/WEND loop back occurs.
+if (global.interpreter_running) {
+    while (global.interpreter_running && !global.awaiting_input) { // New inner while loop
+        // 1. Apply any pending jumps (from previous command's setting of interpreter_next_line)
+        if (global.interpreter_next_line >= 0) {
+            line_index = global.interpreter_next_line; // Apply the jump
+            global.interpreter_next_line = -1; // Reset the jump flag
+            show_debug_message("Jumped to line_index: " + string(line_index));
+        }
+
+        // 2. Check if we've run out of lines (or a command like END set interpreter_running to false)
+        if (line_index >= ds_list_size(global.line_list) || !global.interpreter_running) {
+            global.interpreter_running = false;
+            show_debug_message("Program ran out of lines or stopped. Ending inner loop.");
+            break; // Exit the while loop
+        }
+
+        // --- Start of NEW/MODIFIED LINE PARSING LOGIC ---
+
+        // Get the current line's code and PROCESS IT for commands and arguments
+        var current_basic_line_number = ds_list_find_value(global.line_list, line_index);
+        var full_raw_line_code = ds_map_find_value(global.program_map, current_basic_line_number);
+
+        show_debug_message("Processing Line (index " + string(line_index) + ", Line " + string(current_basic_line_number) + "): " + full_raw_line_code);
+
+        var processed_line_for_commands = string_trim(full_raw_line_code);
+
+        // --- Strip out comments first ---
+        // This handles cases like "LET A=10 : REM comment" or "PRINT A ' another comment"
+        var comment_stripped_this_pass = false; // Flag to indicate if a comment was stripped in this block
+
+        // Check for :REM
+        var colon_rem_pos = string_pos(":REM", string_upper(processed_line_for_commands));
+        if (colon_rem_pos > 0) {
+            processed_line_for_commands = string_trim(string_copy(processed_line_for_commands, 1, colon_rem_pos - 1));
+            comment_stripped_this_pass = true;
+        }
+
+        // Check for :'
+        var colon_quote_pos = string_pos(":'", processed_line_for_commands);
+        if (!comment_stripped_this_pass && colon_quote_pos > 0) {
+            processed_line_for_commands = string_trim(string_copy(processed_line_for_commands, 1, colon_quote_pos - 1));
+            comment_stripped_this_pass = true;
+        }
+
+        // Check for standalone REM (e.g., "REM This is a comment" or "PRINT A REM comment")
+        if (!comment_stripped_this_pass) { // Only check for standalone if inline wasn't found first
+            var standalone_rem_pos = string_pos("REM", string_upper(processed_line_for_commands));
+            if (standalone_rem_pos == 1) { // Line starts with REM
+                processed_line_for_commands = ""; // Entire line is a comment, making it empty for execution
+            } else if (standalone_rem_pos > 1) { // REM somewhere in the middle (e.g., "PRINT A REM comment")
+                processed_line_for_commands = string_trim(string_copy(processed_line_for_commands, 1, standalone_rem_pos - 1));
+            }
+            // Add a check for standalone ' if supported as a comment
+            var standalone_quote_pos = string_pos("'", processed_line_for_commands);
+            if (standalone_quote_pos == 1) { // Line starts with '
+                processed_line_for_commands = "";
+            } else if (standalone_quote_pos > 1) { // ' somewhere in the middle
+                processed_line_for_commands = string_trim(string_copy(processed_line_for_commands, 1, standalone_quote_pos - 1));
+            }
+        }
+        
+        // --- Handle multiple commands on a single line (separated by ':') ---
+        var commands_to_execute = string_split(processed_line_for_commands, ":");
+
+        // Flag to know if a jump command (GOTO, GOSUB, etc.) occurred within this line's processing
+        var jump_occurred_in_line = false;
+
+        for (var cmd_on_line_idx = 0; cmd_on_line_idx < array_length(commands_to_execute); cmd_on_line_idx++) {
+            var current_cmd_and_arg_str = string_trim(commands_to_execute[cmd_on_line_idx]);
+
+            if (current_cmd_and_arg_str == "") {
+                continue; // Skip empty strings that might result from splitting (e.g., "A::B")
+            }
+
+            var first_space_pos_in_cmd_arg = string_pos(" ", current_cmd_and_arg_str);
+            var command_name_to_execute;
+            var command_arg_to_execute = "";
+
+            if (first_space_pos_in_cmd_arg > 0) {
+                command_name_to_execute = string_upper(string_copy(current_cmd_and_arg_str, 1, first_space_pos_in_cmd_arg - 1));
+                command_arg_to_execute = string_trim(string_copy(current_cmd_and_arg_str, first_space_pos_in_cmd_arg + 1, string_length(current_cmd_and_arg_str)));
+            } else {
+                command_name_to_execute = string_upper(current_cmd_and_arg_str); // Command with no arguments
+            }
+
+            show_debug_message("PRE-EXECUTE - Command: " + command_name_to_execute + ", Argument: '" + command_arg_to_execute + "'");
+
+            // 4. Execute the command (now with clean arguments)
+            handle_basic_command(command_name_to_execute, command_arg_to_execute);
+
+            // Check if handle_basic_command caused a jump (GOTO, GOSUB, IF, WHILE/WEND, etc.)
+            // If global.interpreter_next_line is set (not -1), a jump has occurred.
+            // We must stop processing any further commands on *this* physical line.
+            if (global.interpreter_next_line >= 0) {
+                jump_occurred_in_line = true;
+                break; // Exit the for loop for commands_to_execute
+            }
+        }
+
+        // --- End of NEW/MODIFIED LINE PARSING LOGIC ---
+
+        // 5. Determine next line
+        // If no jump occurred within the processing of this physical line,
+        // then advance to the next physical line.
+        // If a jump DID occur (jump_occurred_in_line is true), global.interpreter_next_line is already set,
+        // and the outer 'while' loop will apply it in its next iteration.
+        if (!jump_occurred_in_line) {
+            line_index++;
+        }
+        // If 'processed_line_for_commands' was empty (e.g., due to being a full comment line like "REM ..."),
+        // line_index will still increment, correctly skipping the comment line.
+    }
+}
+
+// Check if interpreter has finished running entirely after the while loop completes
+// This handles cases where `global.interpreter_running` becomes false within the while loop
+if (!global.interpreter_running && !global.awaiting_input && !global.program_has_ended) {
+    global.program_has_ended = true;
+    show_debug_message("Program has ended - waiting for user input.");
+}
+
+// Escape returns to editor immediately (outside of interpreter execution flow)
+if (keyboard_check_pressed(vk_escape)) {
+    room_goto(global.editor_return_room);
+    global.interpreter_running = false; // Ensure it stops if user escapes
+    global.awaiting_input = false;
+    global.program_has_ended = false;
+}
+
+// F5 dumps BASIC to console
+if (keyboard_check_released(vk_f5)) {
+    basic_run_to_console();
+}
+/// @description Insert description here
+// You can write your code in this editor
+ // Program storage
+
+
+ // Input handling
+ current_input = "";               // Current line being typed
+ cursor_pos = 0;                  // Text cursor position
+
+
+ input_buffer = "";               // Buffer for key repeat handling
+ // Display variables
+ display_start_line = 0;          // For scrolling through program
+ lines_per_screen = 20;           // How many lines to show
+ font_height = 16;                // Adjust based on your font
+ screen_width = room_width;
+ screen_height = room_height;
+ // Syntax highlighting settings
+ syntax_highlighting = true;      // Toggle for syntax highlighting
+ keyword_color = c_blue;          // Color for BASIC keywords
+ text_color = c_green;            // Default text color
+ number_color = c_yellow;         // Color for line numbers
+ // State management
+ editor_mode = "READY";           // States: "READY", "INPUT", "RUNNING"
+ current_filename = "";           // For save/load operations
+ // Keyboard handling
+ last_keyboard_string = "";       // Track keyboard_string changes
+ key_repeat_timer = 0;            // For handling key repeat timing
+ // Undo system
+
+ max_undo_levels = 20;            // Limit undo history
+ // Message system
+ message_text = "";
+ message_timer = 0;
+ 
+ drag_enabled = true;
+ //show_debug_message("Working directory: " + working_directory);
+keyboard_string = "";
+
+
+/// @description Insert description here
+// You can write your code in this editor
+ // In Draw Event
+ draw_set_font(fnt_basic); // Create a monospace font
+ draw_set_color(make_color_rgb(255, 191, 64));  // Classic green text
+ draw_rectangle_color(0, 0, room_width, room_height, c_black, c_black, c_black, c_black, false);
+ // Draw program lines
+ var y_pos = 32;
+ var lines_shown = 0;
+ var total_lines = ds_list_size(global.line_numbers);
+ for (var i = display_start_line; i < total_lines && lines_shown < lines_per_screen; i++) {
+    var line_num = ds_list_find_value(global.line_numbers, i);
+    var code = ds_map_find_value(global.program_lines, line_num);
+    var display_text = string(line_num) + " " + code;
+    
+    draw_text(16, y_pos, display_text);
+    y_pos += font_height;
+    lines_shown++;
+ }
+ // Draw input prompt
+ draw_text(16, room_height - 64, "READY");
+ draw_text(16, room_height - 32, "> " + current_input);
+ // Draw cursor
+ var cursor_x = 16 + string_width("> " + string_copy(current_input, 1, cursor_pos));
+ if (current_time % 1000 < 500) { // Blinking cursor
+    draw_text(cursor_x, room_height - 32, "_");
+ }
+ 
+ // In Draw Event (add to display code)
+ if (message_text != "") {
+    draw_set_color(c_yellow);
+    draw_text(16, room_height - 96, message_text);
+    draw_set_color(c_green);
+ }
+ 
+ 
+if (global.justreturned == 1) {
+    current_input = "";
+    cursor_pos = 0;
+    keyboard_string = "";
+    global.justreturned = 0;
+    exit; // skip the rest of this Step event
+}
+
+// Handle Enter key
+if (keyboard_check_pressed(vk_enter)) {
+    add_to_history(current_input);
+    process_input_line(current_input);
+    current_input = "";
+    cursor_pos = 0;
+    global.history_index = -1;
+    input_buffer = keyboard_string; // reset keyboard buffer
+}
+
+ else if (keyboard_check_released(vk_backspace)) {
+    if (cursor_pos > 0) {
+        current_input = string_delete(current_input, cursor_pos, 1);
+        cursor_pos--;
+    }
+ }
+ else if (keyboard_check_pressed(vk_left)) {
+    cursor_pos = max(0, cursor_pos - 1);
+ }
+ else if (keyboard_check_pressed(vk_right)) {
+    cursor_pos = min(string_length(current_input), cursor_pos + 1);
+ }
+ else if (keyboard_check_pressed(vk_up)) {
+    navigate_history_up();
+ }
+ else if (keyboard_check_pressed(vk_down)) {
+    navigate_history_down();
+ }
+ else if (keyboard_check_pressed(vk_pageup)) {
+    display_start_line = max(0, display_start_line - lines_per_screen);
+ }
+ else if (keyboard_check_pressed(vk_pagedown)) {
+    var max_start = max(0, ds_list_size(global.line_numbers) - lines_per_screen);
+    display_start_line = min(max_start, display_start_line + lines_per_screen);
+ }
+ else if (keyboard_check(vk_control) && keyboard_check_pressed(ord("Z"))) {
+    undo_last_change();
+ }
+ else if (keyboard_check(vk_f5)) {
+    dump_program_to_console();
+	basic_show_message("Dumped program to Console");	 
+ }
+ else {
+    // Handle character input with repeat
+    handle_character_input();
+ }
+ 
+  // In Step Event
+ if (message_timer > 0) {
+    message_timer--;
+    if (message_timer <= 0) {
+        message_text = "";
+    }
+ }
+ 
+/*  // Add to Step event
+ if (drag_enabled && drag_files > 0) {
+    var file_path = drag_file[0];
+    if (string_pos(".bas", string_lower(file_path)) > 0) {
+        // Extract filename without path and extension
+        var filename_start = 1;
+        for (var i = string_length(file_path); i >= 1; i--) {
+            if (string_char_at(file_path, i) == "/" || string_char_at(file_path, i) == "\\") {
+                filename_start = i + 1;
+                break;
+            }
+        }
+        var full_filename = string_copy(file_path, filename_start, string_length(file_path));
+        var dot_pos = string_pos(".", full_filename);
+        var filename = string_copy(full_filename, 1, dot_pos - 1);
+        
+        load_program_from_path(file_path, filename);
+    }
+    drag_clear();
+ }
+
+*/
+	/// @description All Global Variables
+	// obj_globals â†’ Create Event
+	global.justreturned = 0;
+	global.program_filename = "";
+	global.username = "";
+	// Add any future global state here
+	global.editor_spawned = false;
+
+	//Maps
+	global.program_lines = ds_map_create();
+	global.basic_program = ds_map_create();
+	global.program_map  = ds_map_create();
+
+	//lists
+	global.line_list    = ds_list_create();
+	global.line_numbers = ds_list_create();
+	global.undo_stack = ds_list_create();
+	global.output_lines = ds_list_create();
+	global.output_colors = ds_list_create();
+	global.input_history = ds_list_create();
+
+
+	//stacks	
+	global.gosub_stack = ds_stack_create();
+	global.for_stack = ds_stack_create(); // Used for FOR/NEXT tracking
+	global.while_stack = ds_stack_create();
+
+
+	global.history_index = -1;
+
+
+	// Spawn the editor after globals are ready
+	instance_create_layer(0, 0, "Instances", obj_editor);
+
+	if (!variable_global_exists("basic_variables")) {
+	    global.basic_variables = ds_map_create();
+	}
+
+	global.print_line_buffer = "";
+
+	global.basic_text_color = make_color_rgb(255, 191, 64);//c_green; // default color
+	global.current_draw_color = c_green; //current color
+
+	//For Input command
+	// Interpreter input state
+	global.awaiting_input = false;
+	global.input_target_var = "";
+	global.interpreter_input = "";
+	global.interpreter_cursor_pos = 0;
+	global.interpreter_running = false;
+	global.last_interpreter_string = "";
+
+	global.program_has_ended = false;
+
+	global.colors = ds_map_create();
+	global.colors[? "RED"] = c_red;
+	global.colors[? "GREEN"] = c_green;
+	global.colors[? "BLUE"] = c_blue;
+	global.colors[? "CYAN"] = c_teal;
+	global.colors[? "MAGENTA"] = c_fuchsia;
+	global.colors[? "YELLOW"] = c_yellow;
+	global.colors[? "WHITE"] = c_white;
+	global.colors[? "BLACK"] = c_black;
+	global.background_draw_color = c_black;
+	global.background_draw_enabled = false;
+
+
+	// Initialize the new global jump variable
+	global.interpreter_next_line = -1; // <--- ADD THIS LINE
+	
+	// --- ADD THIS LINE ---
+	global.input_buffer = undefined; // Initialize it as undefined, as it will be a ds_list only when needed for INPUT.
+	// Alternatively, if you prefer it always be a ds_list, you can initialize it like this:
+	// global.input_buffer = ds_list_create();
+	// But setting to `undefined` and creating it only when `INPUT` is called is generally more memory efficient.
+	
+/// @description Cleanup all global DS structures at game end
+
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// MAPS
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+if (ds_exists(global.basic_variables, ds_type_map)) ds_map_destroy(global.basic_variables);
+if (ds_exists(global.program_lines, ds_type_map)) ds_map_destroy(global.program_lines);
+if (ds_exists(global.basic_program, ds_type_map)) ds_map_destroy(global.basic_program);
+if (ds_exists(global.program_map, ds_type_map)) ds_map_destroy(global.program_map);
+if (ds_exists(global.colors, ds_type_map)) ds_map_destroy(global.colors);
+
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// LISTS
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+if (ds_exists(global.line_list, ds_type_list)) ds_list_destroy(global.line_list);
+if (ds_exists(global.line_numbers, ds_type_list)) ds_list_destroy(global.line_numbers);
+if (ds_exists(global.basic_line_numbers, ds_type_list)) ds_list_destroy(global.basic_line_numbers);
+if (ds_exists(global.undo_stack, ds_type_list)) ds_list_destroy(global.undo_stack);
+if (ds_exists(global.output_lines, ds_type_list)) ds_list_destroy(global.output_lines);
+if (ds_exists(global.output_colors, ds_type_list)) ds_list_destroy(global.output_colors);
+if (ds_exists(global.input_history, ds_type_list)) ds_list_destroy(global.input_history);
+
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// STACKS
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+if (ds_exists(global.gosub_stack, ds_type_stack)) ds_stack_destroy(global.gosub_stack);
+if (ds_exists(global.for_stack, ds_type_stack)) ds_stack_destroy(global.for_stack);
+if (ds_exists(global.while_stack, ds_type_stack)) ds_stack_destroy(global.while_stack);
+
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// TEMPORARY LIST (used in interpreter object)
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+if (variable_global_exists("interpreter_current_program")) {
+    if (ds_exists(interpreter_current_program, ds_type_list)) {
+        ds_list_destroy(interpreter_current_program);
+    }
+}
+
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Buffer & State Cleanup
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+global.print_line_buffer = "";
+global.editor_spawned = false;
+// obj_globals Step Event
+if (room == rm_editor) {
+    if (!instance_exists(obj_editor)) {
+        instance_create_layer(0, 0, "Instances", obj_editor);
+    }
+}
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+function add_or_update_program_line(line_num, code) {
+    ds_map_set(global.program_lines, line_num, code);
+    
+    // Update ordered line numbers list
+    var pos = ds_list_find_index(global.line_numbers, line_num);
+    if (pos == -1) {
+        // Insert in correct order
+        insert_line_number_ordered(line_num);
+    }
+ }
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+ function add_to_history(input_text) {
+    if (input_text != "" && (ds_list_size(global.input_history) == 0 || 
+        ds_list_find_value(global.input_history, ds_list_size(global.input_history) - 1) != input_text)) {
+        ds_list_add(global.input_history, input_text);
+        // Limit history size
+        while (ds_list_size(global.input_history) > 50) {
+            ds_list_delete(global.input_history, 0);
+        }
+	}
+ }
+function basic_cmd_bgcolor(arg) {
+    var colstr = string_upper(string_trim(arg));
+    var bg_color = c_black;
+
+    // Look up named color
+    if (ds_map_exists(global.colors, colstr)) {
+        bg_color = global.colors[? colstr];
+    }
+    // RGB() syntax
+    else if (string_pos("RGB(", colstr) == 1) {
+        var inner = string_copy(colstr, 5, string_length(colstr) - 5);
+        inner = string_replace_all(inner, ")", "");
+        var parts = string_split(inner, ",");
+        if (array_length(parts) == 3) {
+            var r = real(parts[0]);
+            var g = real(parts[1]);
+            var b = real(parts[2]);
+            bg_color = make_color_rgb(r, g, b);
+        }
+    }
+
+    global.background_draw_color = bg_color;
+    global.background_draw_enabled = (bg_color != c_black);
+}
+function basic_cmd_cls() {
+    show_debug_message("CLS called - current color was: " + string(global.current_draw_color));
+    ds_list_clear(global.output_lines);
+    ds_list_clear(global.output_colors);
+    global.current_draw_color = global.basic_text_color;
+    show_debug_message("CLS called - color now set to: " + string(global.current_draw_color));
+}
+function basic_cmd_color(arg) {
+    var color_arg = string_upper(string_trim(arg));
+    var new_color = c_green; // Default fallback
+    
+    // Check for RGB(...) pattern
+    if (string_copy(color_arg, 1, 4) == "RGB(" && string_char_at(color_arg, string_length(color_arg)) == ")") {
+        var inner = string_copy(color_arg, 5, string_length(color_arg) - 5); // Remove RGB( and )
+        var parts = string_split(inner, ",");
+        if (array_length(parts) == 3) {
+            var r = real(string_trim(parts[0]));
+            var g = real(string_trim(parts[1]));
+            var b = real(string_trim(parts[2]));
+            // Clamp and set color
+            r = clamp(r, 0, 255);
+            g = clamp(g, 0, 255);
+            b = clamp(b, 0, 255);
+            new_color = make_color_rgb(r, g, b);
+        } else {
+            show_debug_message("?COLOR ERROR: Invalid RGB format: " + arg);
+            return;
+        }
+    } else {
+        // Named colors
+        switch (color_arg) {
+            case "RED": new_color = c_red; break;
+            case "GREEN": new_color = c_green; break;
+            case "BLUE": new_color = c_blue; break;
+            case "WHITE": new_color = c_white; break;
+            case "YELLOW": new_color = c_yellow; break;
+            case "CYAN": new_color = c_teal; break;
+            case "MAGENTA": new_color = c_fuchsia; break;
+            case "BLACK": new_color = c_black; break;
+            default:
+                show_debug_message("?COLOR ERROR: Unknown color '" + arg + "'");
+				new_color = global.basic_text_color; //default color if unknown
+                return;
+        }
+    }
+    
+    // âœ… ONLY change the current draw color, NEVER change basic_text_color
+    global.current_draw_color = new_color;
+}
+function basic_cmd_end() {
+    global.program_has_ended = true;
+    interpreter_running = false;
+}
+/// @function basic_cmd_for(arg)
+/// @description Parses and handles BASIC FOR loop initialization
+
+function basic_cmd_for(arg) {
+    // Expected syntax: FOR I = 1 TO 10 STEP 1 (STEP is optional)
+    var parts = string_split(arg, " ");
+    if (array_length(parts) < 4 || parts[1] != "=" || string_upper(parts[3]) != "TO") {
+        basic_show_message("SYNTAX ERROR IN FOR STATEMENT: " + arg);
+        global.interpreter_running = false;
+        return;
+    }
+
+    var varname = string_upper(parts[0]);
+    var start = real(parts[2]);
+    var to_val = real(parts[4]);
+
+    var step = 1; // default
+    if (array_length(parts) >= 7 && string_upper(parts[5]) == "STEP") {
+        step = real(parts[6]);
+    }
+
+    // Store the variable in the global BASIC variable map
+    global.basic_variables[? varname] = start;
+
+    // Push loop frame to the for_stack
+    var frame = {
+        varname: varname,
+        to: to_val,
+        step: step,
+        return_line: line_index  // line_index points to current FOR line
+    };
+    ds_stack_push(global.for_stack, frame);
+}
+function basic_cmd_gosub(arg) {
+    var target = real(arg);
+
+    // Push return point (next line index) onto stack
+    ds_stack_push(global.gosub_stack, line_index + 1);
+
+    // Set interpreter jump
+    interpreter_next_line = -1;
+    for (var i = 0; i < ds_list_size(global.line_list); i++) {
+        if (ds_list_find_value(global.line_list, i) == target) {
+            interpreter_next_line = i;
+            break;
+        }
+    }
+
+    if (interpreter_next_line == -1) {
+        basic_show_error_message("GOSUB target line not found: " + string(target));
+        global.interpreter_running = false;
+    }
+}
+/// @function basic_cmd_goto(arg)
+/// @description Sets the program counter to a new line number if it exists.
+function basic_cmd_goto(arg) {
+    show_debug_message("GOTO TRIGGERED");
+    var target_line = real(string_trim(arg));
+    
+    // Find the index in your line_list
+    var index = ds_list_find_index(global.line_list, target_line);
+    if (index >= 0) {
+        interpreter_next_line = index;
+        show_debug_message("GOTO successful â†’ line " + string(target_line) + " (index " + string(index) + ")");
+    } else {
+        show_debug_message("?GOTO ERROR: Line " + string(target_line) + " not found");
+    }
+}
+function basic_cmd_if(arg) {
+	
+	//show_debug_message("Counter at IF: " + string(counter));
+	//show_debug_message("Condition result: " + string(cond_result));
+
+
+    var cond_str = string_trim(arg);
+
+    // Debug input
+    show_debug_message("IF raw argument: " + cond_str);
+
+    var then_pos = string_pos("THEN", string_upper(cond_str));
+    if (then_pos <= 0) {
+        show_debug_message("?IF ERROR: Missing THEN in '" + cond_str + "'");
+        return;
+    }
+
+    var condition = string_trim(string_copy(cond_str, 1, then_pos - 1));
+    var action = string_trim(string_copy(cond_str, then_pos + 4, string_length(cond_str)));
+
+    show_debug_message("Parsed condition: '" + condition + "'");
+    show_debug_message("Parsed action: '" + action + "'");
+
+    // Simple condition parser: A OP B
+    var ops = ["<=", ">=", "<", ">", "==", "="];
+    var op = "";
+    for (var i = 0; i < array_length(ops); i++) {
+        if (string_pos(ops[i], condition) > 0) {
+            op = ops[i];
+            break;
+        }
+    }
+
+    if (op == "") {
+        show_debug_message("?IF ERROR: No valid operator in '" + condition + "'");
+        return;
+    }
+
+    var parts = string_split(condition, op);
+    if (array_length(parts) != 2) {
+        show_debug_message("?IF ERROR: Malformed condition: '" + condition + "'");
+        return;
+    }
+
+    var left = string_trim(parts[0]);
+    var right = string_trim(parts[1]);
+
+	var left_eval = basic_evaluate_expression_v2(left);
+	var right_eval = basic_evaluate_expression_v2(right);
+
+	var a = real(left_eval);
+	var b = real(right_eval);
+
+    show_debug_message("Evaluating: " + string(a) + " " + op + " " + string(b));
+
+    var result = false;
+    switch (op) {
+        case "<":  result = a < b;  break;
+        case ">":  result = a > b;  break;
+        case "<=": result = a <= b; break;
+        case ">=": result = a >= b; break;
+        case "==":
+        case "=":  result = a == b; break;
+    }
+
+    show_debug_message("Condition result: " + string(result));
+
+    if (result) {
+        var prefix = string_upper(string_copy(action, 1, 4));
+        var target = string_trim(string_copy(action, 6, string_length(action)));
+
+        show_debug_message("THEN command: " + prefix + ", target: " + target);
+
+        if (prefix == "GOTO") {
+            var line_target = real(target);
+            var index = ds_list_find_index(global.basic_line_numbers, line_target);
+
+            if (index >= 0) {
+                interpreter_current_line_index = index;
+                interpreter_next_line = index;
+                show_debug_message("GOTO successful â†’ line " + string(line_target));
+            } else {
+                show_debug_message("?IF ERROR: Invalid GOTO target: " + string(line_target));
+            }
+        } else {
+            show_debug_message("?IF ERROR: THEN action not supported: '" + action + "'");
+        }
+    }
+}
+function basic_cmd_input(arg) {
+	show_debug_message("INPUT START â€” DRAW COLOR: " + string(global.current_draw_color));
+
+    global.awaiting_input = true;
+    global.input_target_var = string_upper(string_trim(arg));
+}
+/// @function basic_cmd_let(command_text_after_let)
+/// @description Handles the LET command for variable assignment.
+/// @param {string} command_text_after_let The text after "LET" (e.g., "A = 10" or "COUNT = COUNT + 1").
+function basic_cmd_let(command_text_after_let) { // Keeping your 'arg' name, just renamed for JSDoc clarity
+    show_debug_message("Executing LET command: " + command_text_after_let);
+
+    // Find the '=' sign to split variable name from expression
+    var equals_pos = string_pos("=", command_text_after_let);
+    if (equals_pos <= 0) { // Using <= 0 to catch both 0 and potential negative returns if string_pos fails
+        show_error_message("SYNTAX ERROR: Missing '=' in LET statement: " + command_text_after_let);
+        basic_stop_execution(); // Assuming this halts the main BASIC loop
+        return;
+    }
+
+    // Extract variable name (trim any whitespace)
+    var varname = string_upper(string_trim(string_copy(command_text_after_let, 1, equals_pos - 1)));
+
+    // Extract the expression string
+    var expr_string = string_trim(string_copy(command_text_after_let, equals_pos + 1, string_length(command_text_after_let) - equals_pos));
+
+    show_debug_message("Variable: '" + varname + "', Expression: '" + expr_string + "'");
+
+    // YOUR ORIGINAL LOGIC: Handle string literal assignment directly
+    // This is good because it short-circuits the full expression parser for simple string assignments
+    // and also allows direct un-evaluation (the parser expects quotes to be present).
+    if (string_length(expr_string) >= 2 && string_char_at(expr_string, 1) == "\"" && string_char_at(expr_string, string_length(expr_string)) == "\"") {
+        var str_val = string_copy(expr_string, 2, string_length(expr_string) - 2);
+        ds_map_replace(global.basic_variables, varname, str_val); // Use ds_map_replace for safety
+        show_debug_message("LET (string literal): " + varname + " = \"" + str_val + "\"");
+        return;
+    }
+
+    // Evaluate the expression using our new pipeline for numeric/variable expressions
+    var result = basic_evaluate_expression_v2(expr_string);
+
+    // CRITICAL: Check if the evaluation resulted in an error (NaN)
+    if (is_real(result) && is_nan(result)) { // is_real() check for NaN is important
+        show_error_message("RUNTIME ERROR: Error evaluating expression for variable " + varname + " -> " + expr_string);
+        basic_stop_execution(); // You'll need a way to stop execution on error
+        return;
+    }
+
+    // Store the result in the global variable map (using ds_map_replace is safer than direct [] access if key might not exist)
+    ds_map_replace(global.basic_variables, varname, result);
+    show_debug_message("LET (expression result): " + varname + " = " + string(result));
+}
+/// @function basic_cmd_next(arg)
+/// @description Handles BASIC NEXT loop continuation
+
+function basic_cmd_next(arg) {
+    if (ds_stack_empty(global.for_stack)) {
+        basic_show_message("NEXT without FOR");
+        global.interpreter_running = false;
+        return;
+    }
+
+    var frame = ds_stack_top(global.for_stack);
+
+    var varname = frame.varname;
+    var to_val = frame.to;
+    var step = frame.step;
+    var return_line = frame.return_line;
+
+    // Safely get and increment the loop variable
+    var current = global.basic_variables[? varname];
+    current += step;
+    global.basic_variables[? varname] = current;
+
+    // Determine whether the loop should continue
+    var continue_loop = (step > 0) ? (current <= to_val) : (current >= to_val);
+
+    if (continue_loop) {
+        // Rewind to the line after the FOR
+        interpreter_next_line = return_line + 1;
+    } else {
+        ds_stack_pop(global.for_stack);
+    }
+}
+/// @function basic_cmd_print(command_text)
+/// @description Handles the PRINT command, evaluating and displaying expressions.
+/// @param {string} command_text The text after "PRINT" (e.g., "A", "A+5", "\"HELLO\"+VAR").
+function basic_cmd_print(command_text) { // Renamed param from 'arg' to 'command_text' for clarity, consistent with other cmd functions
+    show_debug_message("Executing PRINT command: " + command_text);
+
+    var suppress_newline = false;
+
+    // Detect and remove trailing semicolon
+    if (string_length(command_text) > 0 && string_char_at(command_text, string_length(command_text)) == ";") {
+        suppress_newline = true;
+        command_text = string_copy(command_text, 1, string_length(command_text) - 1);
+    }
+
+    var output_for_line = ""; // Renamed to avoid conflict with `output` inside loop
+    var print_parts = string_split(command_text, "+"); // Your existing split by '+'
+
+    for (var i = 0; i < array_length(print_parts); i++) {
+        var current_part_expr = string_trim(print_parts[i]);
+
+        // If the part is an empty string (e.g., from "A++B"), skip it.
+        if (string_length(current_part_expr) == 0) {
+            continue;
+        }
+
+        // Evaluate the current part using our unified expression evaluator
+        // This will correctly handle:
+        // - Quoted strings (e.g., "\"HELLO\"")
+        // - Numbers (e.g., "10", "3.14")
+        // - Variables (e.g., "A", "COUNT")
+        // - Expressions within a part (e.g., "B * 5", "ABS(X+1)")
+        var evaluated_result = basic_evaluate_expression_v2(current_part_expr);
+
+        // Check if the evaluation resulted in an error (NaN)
+        if (is_real(evaluated_result) && is_nan(evaluated_result)) {
+            // Error message from basic_evaluate_expression_v2 should have been displayed already.
+            // We need a way to stop execution if an error occurred.
+            // Assuming basic_stop_execution() handles this, just return here.
+            basic_stop_execution(); // Assuming this halts the main BASIC loop
+            return;
+        }
+
+        output_for_line += string(evaluated_result);
+    }
+
+    // Append to print line buffer
+    global.print_line_buffer += output_for_line;
+
+    if (!suppress_newline) {
+        ds_list_add(global.output_lines, global.print_line_buffer);
+        ds_list_add(global.output_colors, global.current_draw_color);
+        global.print_line_buffer = "";
+    }
+    show_debug_message("Final PRINT output to buffer: " + output_for_line + (suppress_newline ? " (no newline)" : " (with newline)"));
+}
+function basic_cmd_rem() {
+    // Do nothing â€” comment line
+}
+function basic_cmd_return() {
+    if (ds_stack_empty(global.gosub_stack)) {
+        basic_show_error_message("RETURN called with empty stack.");
+        global.interpreter_running = false;
+        return;
+    }
+
+    interpreter_next_line = ds_stack_pop(global.gosub_stack);
+}
+// SCRIPT: basic_cmd_wend
+function basic_cmd_wend() {
+    show_debug_message("Executing WEND command.");
+    
+    // Check for WEND without a matching WHILE
+    if (!ds_exists(global.while_stack, ds_type_stack) || ds_stack_empty(global.while_stack)) {
+        show_debug_message("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+        show_debug_message("WEND ERROR: STACK IS EMPTY OR DOES NOT EXIST!");
+        show_debug_message("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+        show_error_message("RUNTIME ERROR: WEND without matching WHILE.");
+        basic_stop_execution();
+        return;
+    }
+
+    // Pop the WHILE statement's line index from the stack.
+    // We assume it's there because of the check above.
+    var while_line_idx = ds_stack_pop(global.while_stack); 
+    
+    // Get the actual line number from line_list to retrieve the original code
+    var actual_while_line_num = ds_list_find_value(global.line_list, while_line_idx);
+    var while_code = ds_map_find_value(global.program_map, actual_while_line_num);
+    
+    // Extract the condition part from the WHILE statement (e.g., "C < 3")
+    var condition_start_pos = string_pos(" ", while_code);
+    var condition_expr = string_trim(string_copy(while_code, condition_start_pos + 1, string_length(while_code)));
+
+    // Re-evaluate the WHILE condition
+    var condition_value = basic_evaluate_expression_v2(string_upper(condition_expr));
+
+    // If condition evaluates to TRUE (non-zero), loop back
+    if (condition_value != 0 && !is_nan(condition_value)) {
+        show_debug_message("WEND: WHILE condition is TRUE (" + string(condition_value) + "). Looping back to line after WHILE: " + string(while_line_idx + 1));
+        global.interpreter_next_line = while_line_idx + 1; // Set the interpreter to jump to the line *after* the WHILE statement
+        
+        // <<< THE CRUCIAL FIX HERE: PUSH THE WHILE LINE INDEX BACK ONTO THE STACK
+        //     because we are going to re-enter the loop. If we don't, the stack
+        //     will be empty on the next WEND execution for this same loop.
+        ds_stack_push(global.while_stack, while_line_idx);
+    } else {
+        // Condition is FALSE. The loop should naturally terminate.
+        show_debug_message("WEND: WHILE condition is FALSE (" + string(condition_value) + "). Exiting loop.");
+        // The while_line_idx was already popped, and since we're exiting the loop,
+        // it should NOT be pushed back onto the stack. This is correct behavior.
+    }
+}
+function basic_cmd_while(arg) {
+    show_debug_message("Executing WHILE command: " + arg);
+    var condition_value = basic_evaluate_expression_v2(string_upper(arg)); // Use v2 for condition evaluation
+
+    // If condition evaluates to 0 (false) or NaN (error)
+    if (is_real(condition_value) && condition_value == 0 || is_nan(condition_value)) { // Condition is FALSE, skip to WEND
+        show_debug_message("WHILE condition FALSE or ERROR. Skipping to WEND.");
+        var _depth = 1;
+        for (var i = line_index + 1; i < ds_list_size(global.line_list); i++) {
+            var _ln_num = ds_list_find_value(global.line_list, i); // Get actual line number
+            var code = ds_map_find_value(global.program_map, _ln_num); // Get full code line
+            var cmd = string_upper(string_trim(string_copy(code, 1, string_pos(" ", code + " ") - 1)));
+
+            if (cmd == "WHILE") _depth++;
+            if (cmd == "WEND") _depth--;
+
+            if (_depth == 0) {
+                // Set interpreter_next_line to jump directly to the line *after* the matching WEND
+                // The main loop will then increment line_index, effectively skipping WEND.
+                global.interpreter_next_line = i + 1; // Jump *after* the WEND
+                show_debug_message("WHILE skipped to line_index: " + string(global.interpreter_next_line));
+                return; // Exit basic_cmd_while
+            }
+        }
+        show_error_message("SYNTAX ERROR: WHILE without matching WEND.");
+        basic_stop_execution();
+        return;
+    } else { // Condition is TRUE, enter loop
+        show_debug_message("WHILE condition TRUE. Pushing loop start line: " + string(line_index + 1));
+        if (!ds_exists(global.while_stack, ds_type_stack)) {
+            global.while_stack = ds_stack_create();
+        }
+        // Push the line_index of the *WHILE* statement itself,
+        // as WEND will pop this and re-evaluate the condition from this line.
+        ds_stack_push(global.while_stack, line_index); // Push current WHILE line_index
+    }
+    // No explicit line_index change here; the main loop's line_index++ will handle advancing to the next statement.
+}
+function basic_evaluate_condition(expr) {
+    var tokens = string_split(expr, " ");
+	
+	
+	
+    if (array_length(tokens) == 3) {
+        var lhs = string_trim(tokens[0]);
+        var op  = string_trim(tokens[1]);
+        var rhs = string_trim(tokens[2]);
+
+		lhs = string_upper(lhs);
+		rhs = string_upper(rhs);
+
+		if (ds_map_exists(global.basic_variables, lhs)) lhs = string(global.basic_variables[? lhs]);
+		if (ds_map_exists(global.basic_variables, rhs)) rhs = string(global.basic_variables[? rhs]);
+
+		// Evaluate math functions if present
+		lhs = string(basic_evaluate_expression_v2(lhs));
+		rhs = string(basic_evaluate_expression_v2(rhs));
+
+		lhs = real(lhs);
+		rhs = real(rhs);
+
+
+        switch (op) {
+            case "=": return lhs == rhs;
+            case "<": return lhs < rhs;
+            case ">": return lhs > rhs;
+            case "<=": return lhs <= rhs;
+            case ">=": return lhs >= rhs;
+            case "<>": return lhs != rhs;
+			case "MOD": return lhs % rhs;
+        }
+    }
+	
+	// Support for unary functions: ABS(x), RND(x)
+if (array_length(tokens) == 1) {
+    var single = string_upper(string_trim(tokens[0]));
+
+    if (string_pos("ABS(", single) == 1) {
+        var inside = string_copy(single, 5, string_length(single) - 5); // strip ABS(
+        inside = string_delete(inside, string_length(inside), 1); // remove closing )
+        var val = real(inside);
+        return abs(val);
+    }
+
+    if (string_pos("RND(", single) == 1) {
+        var inside = string_copy(single, 5, string_length(single) - 5); // strip RND(
+        inside = string_delete(inside, string_length(inside), 1); // remove closing )
+        var val = real(inside);
+        return irandom(val);
+    }
+}
+
+
+    return false;
+}
+function basic_evaluate_expression(expr) {
+    expr = string_trim(expr);
+
+    // Variable lookup
+    if (ds_map_exists(global.basic_variables, string_upper(expr))) {
+        return global.basic_variables[? string_upper(expr)];
+    }
+
+    // Handle MOD
+    if (string_pos("MOD", string_upper(expr)) > 0) {
+        var parts = string_split(string_upper(expr), "MOD");
+        if (array_length(parts) == 2) {
+            var a = real(basic_evaluate_expression(parts[0]));
+            var b = real(basic_evaluate_expression(parts[1]));
+            return a mod b;
+        }
+    }
+
+    // Handle RND(n)
+    if (string_upper(string_copy(expr, 1, 4)) == "RND(" && string_char_at(expr, string_length(expr)) == ")") {
+        var inner = string_copy(expr, 5, string_length(expr) - 5);
+        return irandom(real(basic_evaluate_expression(inner)));
+    }
+
+    // Handle ABS(x)
+    if (string_upper(string_copy(expr, 1, 4)) == "ABS(" && string_char_at(expr, string_length(expr)) == ")") {
+        var inner = string_copy(expr, 5, string_length(expr) - 5);
+        return abs(real(basic_evaluate_expression(inner)));
+    }
+
+    // Fallback to real()
+    return real(expr);
+}
+/// @function basic_evaluate_expression_v2(expression_string)
+/// @description Orchestrates the evaluation of a BASIC expression.
+/// @param {string} expression_string The raw expression string (e.g., "A + B * 5").
+/// @returns {real or string} The result of the evaluation (number or string), or NaN/empty array on error.
+function basic_evaluate_expression_v2(expression_string) {
+    show_debug_message("Evaluating expression: " + expression_string);
+
+    // 1. Tokenize the expression
+    var tokens = basic_tokenize_expression_v2(expression_string);
+    if (array_length(tokens) == 0) { // Check for tokenizer errors (empty array returned on error)
+        show_debug_message("  Expression tokenization failed.");
+        return NaN; // Or whatever your error indicator is for numbers/strings
+    }
+
+    // 2. Convert infix tokens to postfix
+    var postfix_tokens = infix_to_postfix(tokens);
+    if (array_length(postfix_tokens) == 0) { // Check for infix_to_postfix errors
+        show_debug_message("  Infix to postfix conversion failed.");
+        return NaN; // Or whatever your error indicator is
+    }
+
+    // 3. Evaluate the postfix expression
+    var result = evaluate_postfix(postfix_tokens);
+
+    show_debug_message("  Expression result: " + string(result));
+    return result;
+}
+/// @function basic_run_to_console()
+/// @description Executes the BASIC program in memory and prints the output to the console instead of the screen.
+
+function basic_run_to_console() {
+    show_debug_message("==== BEGIN PROGRAM CONSOLE OUTPUT ====");
+
+    // Safety check
+    if (!ds_exists(global.program_lines, ds_type_map) || !ds_exists(global.line_numbers, ds_type_list)) {
+        show_debug_message("No program loaded.");
+        return;
+    }
+
+    // Local context for LET variable storage
+    var local_vars = ds_map_create();
+
+    // Run through each line in order
+    for (var i = 0; i < ds_list_size(global.line_numbers); i++) {
+        var line_num = ds_list_find_value(global.line_numbers, i);
+        var code = ds_map_find_value(global.program_lines, line_num);
+        var trimmed = string_trim(code);
+
+        var sp = string_pos(" ", trimmed);
+        var cmd = (sp > 0) ? string_upper(string_copy(trimmed, 1, sp - 1)) : string_upper(trimmed);
+        var arg = (sp > 0) ? string_trim(string_copy(trimmed, sp + 1, string_length(trimmed))) : "";
+
+        switch (cmd) {
+            case "LET":
+                var eq_pos = string_pos("=", arg);
+                if (eq_pos > 0) {
+                    var varname = string_trim(string_copy(arg, 1, eq_pos - 1));
+                    var value = string_trim(string_copy(arg, eq_pos + 1, string_length(arg)));
+                    var value_num = real(value);
+                    ds_map_replace(local_vars, varname, value_num);
+                }
+                break;
+
+            case "PRINT":
+                // Check if last character is semicolon
+                var ends_with_semicolon = (string_char_at(arg, string_length(arg)) == ";");
+                if (ends_with_semicolon) {
+                    arg = string_copy(arg, 1, string_length(arg) - 1);
+                }
+
+                var segments = string_split(arg, "+");
+                var output = "";
+                for (var j = 0; j < array_length(segments); j++) {
+                    var segment = string_trim(segments[j]);
+                    if (string_length(segment) >= 2 && string_char_at(segment, 1) == "\"" && string_char_at(segment, string_length(segment)) == "\"") {
+                        output += string_copy(segment, 2, string_length(segment) - 2);
+                    } else if (ds_map_exists(local_vars, segment)) {
+                        output += string(ds_map_find_value(local_vars, segment));
+                    } else {
+                        output += segment;
+                    }
+                }
+
+                if (ends_with_semicolon) {
+                    // no newline
+                    show_debug_message(">> " + output);
+                } else {
+                    show_debug_message(">> " + output + "\n");
+                }
+                break;
+
+            default:
+                show_debug_message("Unknown command on line " + string(line_num) + ": " + cmd);
+        }
+    }
+
+    ds_map_destroy(local_vars);
+
+    show_debug_message("==== END PROGRAM CONSOLE OUTPUT ====");
+}
+
+// Optional helper for errors: prefix message with a "?" as classic BASIC did.
+function basic_show_error_message(err) {
+    basic_show_message("?" + err);
+}
+
+
+// Call this to display a message for roughly 2 seconds (120 frames at 60â€¯fps).
+function basic_show_message(msg) {
+    message_text  = msg;
+    global.message_timer = 120;
+}
+// SCRIPT: basic_stop_execution
+function basic_stop_execution() {
+    show_debug_message("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+    show_debug_message("BASIC_STOP_EXECUTION CALLED!");
+    show_debug_message("Call Stack:");
+    show_debug_message(debug_get_callstack()); // THIS IS THE KEY!
+    show_debug_message("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+
+    global.interpreter_running = false;
+    global.awaiting_input = false;
+    global.program_has_ended = true;
+
+    // Clear input buffer if input was pending
+    if (global.input_buffer != undefined && ds_list_exists(global.input_buffer, ds_type_list)) {
+        ds_list_clear(global.input_buffer);
+    }
+}
+/// @function basic_tokenize_expression_v2(expr)
+/// @description Tokenizes a BASIC expression string, handling numbers, operators, variables, functions, and quoted strings.
+/// @param {string} expr The expression string to tokenize.
+/// @returns {array<string>} An array of tokens.
+function basic_tokenize_expression_v2(expr) {
+    var tokens = [];
+    var i = 1; // GML strings are 1-indexed
+    var len = string_length(expr);
+
+    show_debug_message("Tokenizing expression: " + expr);
+
+    while (i <= len) {
+        var ch = string_char_at(expr, i);
+
+        // 1. Skip whitespace
+        if (ch == " " || ch == "\t") {
+            i++;
+            continue;
+        }
+
+        // 2. Multi-character operators and keywords (MOD, AND, OR, NOT, comparison)
+        // Check for longer operators first to avoid matching '<' instead of '<='
+        var found_multi_char = false;
+
+        // Check for MOD (case-insensitive)
+        if (string_upper(string_copy(expr, i, 3)) == "MOD") {
+            array_push(tokens, "MOD");
+            i += 3;
+            found_multi_char = true;
+        }
+        // Add other multi-character keywords (AND, OR, NOT, etc.) here if needed
+        // For example:
+        /*
+        else if (string_upper(string_copy(expr, i, 3)) == "AND") {
+            array_push(tokens, "AND"); i += 3; found_multi_char = true;
+        }
+        */
+
+        if (found_multi_char) {
+            continue;
+        }
+
+        // Comparison operators (2 characters)
+        if (i + 1 <= len) {
+            var two_chars = string_copy(expr, i, 2);
+            if (two_chars == ">=" || two_chars == "<=" || two_chars == "<>" || two_chars == "==") {
+                array_push(tokens, two_chars);
+                i += 2;
+                continue;
+            }
+        }
+
+        // 3. Single-character operators and parentheses
+        if (ch == "+" || ch == "*" || ch == "/" || ch == "^" || ch == "(" || ch == ")") {
+            array_push(tokens, ch);
+            i++;
+        }
+        // Special handling for '-' (unary vs. binary)
+        else if (ch == "-") {
+            // If it's the first token, or the previous token was an operator or '(', it's unary minus
+            var is_unary_minus = (array_length(tokens) == 0 ||
+                                  (array_length(tokens) > 0 && (is_operator(tokens[array_length(tokens) - 1]) || tokens[array_length(tokens) - 1] == "(")));
+            if (is_unary_minus) {
+                // If the next character is a digit, it's part of a negative number literal
+                if (i + 1 <= len && (ord(string_char_at(expr, i + 1)) >= 48 && ord(string_char_at(expr, i + 1)) <= 57)) {
+                    // It's the start of a negative number, handle it below with number parsing
+                    var num_str = "";
+                    num_str += ch; // Add the '-'
+                    i++; // Move past the '-'
+                    // Parse the rest of the number (digits and possibly one dot)
+                    var dot_found = false;
+                    while (i <= len) {
+                        var next_ch = string_char_at(expr, i);
+                        if (next_ch >= "0" && next_ch <= "9") {
+                            num_str += next_ch;
+                            i++;
+                        } else if (next_ch == "." && !dot_found) {
+                            num_str += next_ch;
+                            dot_found = true;
+                            i++;
+                        } else {
+                            break;
+                        }
+                    }
+                    array_push(tokens, num_str);
+                } else {
+                    // It's a unary minus operator (e.g., -A, -(B+C))
+                    array_push(tokens, "_UNARY_MINUS"); // Use a special token for unary minus
+                    i++;
+                }
+            } else {
+                // It's a binary minus operator (e.g., A - B)
+                array_push(tokens, "-");
+                i++;
+            }
+        }
+        // Single comparison operators (>, <, =)
+        else if (ch == "=" || ch == "<" || ch == ">") {
+            array_push(tokens, ch);
+            i++;
+        }
+        // 4. Numbers
+        else if (ch >= "0" && ch <= "9") {
+            var num = "";
+            var dot_count = 0;
+            while (i <= len) {
+                var current_char = string_char_at(expr, i);
+                if (current_char >= "0" && current_char <= "9") {
+                    num += current_char;
+                } else if (current_char == ".") {
+                    dot_count++;
+                    if (dot_count > 1) {
+                        show_debug_message("SYNTAX ERROR: Malformed number with multiple decimal points: " + num + current_char);
+                        // For a real BASIC, you'd probably return an error token or throw.
+                        // For now, we'll just stop parsing this number and proceed.
+                        break;
+                    }
+                    num += current_char;
+                } else {
+                    break; // End of number
+                }
+                i++;
+            }
+            array_push(tokens, num);
+        }
+        // 5. Quoted Strings (e.g., "HELLO")
+        else if (ch == "\"") {
+            var str = "";
+            i++; // Move past the opening quote
+            while (i <= len && string_char_at(expr, i) != "\"") {
+                // Handle escaped quotes if your BASIC supports them (e.g., "" for a single ")
+                // For simplicity, we'll assume no escaped quotes for now.
+                str += string_char_at(expr, i);
+                i++;
+            }
+            if (i > len) {
+                show_error_message("SYNTAX ERROR: Unclosed string literal.");
+                // @ignore
+				var _empty_string_array = [];
+                return []; // Return empty array on error
+            }
+            i++; // Move past the closing quote
+            array_push(tokens, "\"" + str + "\""); // Keep quotes for easy identification later
+        }
+        // 6. Variables or Functions
+        else if (is_letter(ch)) { // Uses your existing is_letter helper
+            var identifier = "";
+            while (i <= len && is_letter_or_digit(string_char_at(expr, i))) { // Uses your existing is_letter_or_digit helper
+                identifier += string_char_at(expr, i);
+                i++;
+            }
+            // A quick check if the next char is '('. If so, it's likely a function call.
+            // infix_to_postfix will properly handle if it's a function or just a variable.
+            array_push(tokens, identifier);
+        }
+        // 7. Comma (for function arguments or PRINT list)
+        else if (ch == ",") {
+            array_push(tokens, ",");
+            i++;
+        }
+        // 8. Unrecognized character
+        else {
+            show_error_message("SYNTAX ERROR: Unrecognized character '" + ch + "' in expression at position " + string(i));
+            return []; // Return empty array on error
+        }
+    }
+    show_debug_message("Tokenized result: " + string(tokens));
+    return tokens;
+}
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+function delete_program_line(line_num) {
+    ds_map_delete(global.program_lines, line_num);
+    var pos = ds_list_find_index(global.line_numbers, line_num);
+    if (pos != -1) {
+        ds_list_delete(global.line_numbers, pos);
+    }
+ }
+function dump_program_to_console() {
+    show_debug_message("==== BASIC PROGRAM DUMP ====");
+
+    var lines = global.line_numbers; // numeric line numbers
+    var prog = global.program_lines;
+
+    for (var i = 0; i < ds_list_size(lines); i++) {
+        var linenum = ds_list_find_value(lines, i); // numeric
+        if (ds_map_exists(prog, linenum)) {
+            var code = ds_map_find_value(prog, linenum);
+            show_debug_message(string(linenum) + " " + code);
+        } else {
+            show_debug_message("Missing entry for key: " + string(linenum));
+        }
+    }
+
+    show_debug_message("==== END OF DUMP ====");
+}
+function editor_handle_paste_command() {
+    var raw_clip = clipboard_get_text();
+    if (string_length(raw_clip) <= 0) {
+        show_message("Clipboard is empty.");
+        return;
+    }
+
+    var lines = string_split(raw_clip, "\n");
+
+    for (var i = 0; i < array_length(lines); i++) {
+        var line = string_trim(lines[i]);
+
+        if (string_length(line) == 0) continue;
+
+        // Expect format: line_number followed by space and code
+        var space_pos = string_pos(" ", line);
+        if (space_pos > 0) {
+            var line_num_str = string_copy(line, 1, space_pos - 1);
+            var code_str = string_copy(line, space_pos + 1, string_length(line) - space_pos);
+
+            // âœ… Only proceed if line_num_str is a valid number
+            if (string_digits(line_num_str) == line_num_str) {
+                var line_num = real(line_num_str);
+
+                if (line_num > 0 && string_length(code_str) > 0) {
+                    ds_map_replace(global.program_lines, line_num, code_str);
+
+                    if (!ds_list_find_index(global.line_numbers, line_num)) {
+                        ds_list_add(global.line_numbers, line_num);
+                        ds_list_sort(global.line_numbers, true);
+                    }
+                }
+            }
+        }
+    }
+
+    basic_show_message("Program pasted successfully.");
+}
+/// @function evaluate_postfix(postfix_tokens)
+/// @description Evaluates an expression in postfix (Reverse Polish Notation) form.
+/// @param {array<string>} postfix_tokens The array of tokens in postfix order.
+/// @returns {real} The result of the expression.
+function evaluate_postfix(postfix_tokens) {
+    show_debug_message("Evaluating postfix: " + string(postfix_tokens));
+    var stack = []; // This is our calculation stack
+
+    // Loop through each token in the postfix expression
+    for (var i = 0; i < array_length(postfix_tokens); i++) {
+        var token = postfix_tokens[i];
+        var token_upper = string_upper(token); // Convert to uppercase for case-insensitive checks
+        show_debug_message("Processing token in evaluate_postfix: '" + token + "'");
+
+        // 1. Is it a number?
+        if (is_numeric_string(token)) {
+            array_push(stack, real(token)); // Convert string to a number and push it onto the stack
+            show_debug_message(" Pushed number: " + token);
+        }
+        // 2. Is it a string literal (e.g., "HELLO")?
+        else if (is_quoted_string(token)) {
+            // Remove the quotes and push the string value onto the stack
+            var unquoted_string = string_copy(token, 2, string_length(token) - 2);
+            array_push(stack, unquoted_string);
+            show_debug_message(" Pushed string literal: " + unquoted_string);
+        }
+        // 3. Is it a variable? (Crucial for COUNT = COUNT + 1)
+        else if (ds_map_exists(global.basic_variables, token_upper)) {
+            // Look up the variable's value in our global variable storage
+            // Push that VALUE (which can be a number or string) onto the stack
+            array_push(stack, global.basic_variables[? token_upper]);
+            show_debug_message(" Pushed variable value: " + token_upper + " = " + string(global.basic_variables[? token_upper]));
+        }
+        // 4. Is it a function?
+        else if (is_function_token(token_upper)) {
+            // Functions pop their arguments, calculate, and push result
+            if (array_length(stack) < 1) { // Functions usually need at least one argument
+                show_error_message("SYNTAX ERROR: Not enough arguments for function " + token);
+                return NaN; // Indicate an error
+            }
+            var arg = array_pop(stack); // Get the argument for the function
+
+            switch (token_upper) {
+                case "RND":
+                    // RND(X) returns a random integer from 0 to X-1
+                    // For simplicity, let's assume arg is a positive real number
+                    if (is_real(arg)) {
+                        array_push(stack, floor(random(real(arg))));
+                    } else {
+                        show_error_message("TYPE MISMATCH in RND function. Argument must be numeric.");
+                        return NaN;
+                    }
+                    break;
+                case "ABS":
+                    if (is_real(arg)) {
+                        array_push(stack, abs(real(arg)));
+                    } else {
+                        show_error_message("TYPE MISMATCH in ABS function. Argument must be numeric.");
+                        return NaN;
+                    }
+                    break;
+                // Add more functions here as you implement them
+                case "RGB": // Assuming RGB(R,G,B) is handled as a function
+                    if (array_length(stack) < 2) { // Need 3 arguments for RGB
+                        show_error_message("SYNTAX ERROR: Not enough arguments for RGB function.");
+                        return NaN;
+                    }
+                    var b_val = array_pop(stack); // Blue component
+                    var g_val = array_pop(stack); // Green component
+                    var r_val = arg; // Red component (was the first pop, now named arg)
+
+                    if (!is_real(r_val) || !is_real(g_val) || !is_real(b_val)) {
+                        show_error_message("TYPE MISMATCH in RGB function. Arguments must be numeric.");
+                        return NaN;
+                    }
+                    array_push(stack, make_colour_rgb(r_val, g_val, b_val));
+                    break;
+
+                default:
+                    show_error_message("RUNTIME ERROR: Unknown function " + token);
+                    return NaN;
+            }
+            show_debug_message(" Pushed function result: " + token + "(" + string(arg) + ") -> " + string(stack[array_length(stack)-1]));
+        }
+        // 5. Is it an operator?
+        else if (is_operator(token_upper)) {
+            // Operators need operands (numbers or values) from the stack
+            if (array_length(stack) < 2 && token_upper != "_UNARY_MINUS") { // Most operators need two operands, unary minus needs one
+                show_error_message("SYNTAX ERROR: Not enough operands for operator " + token);
+                return NaN;
+            }
+
+            var b = array_pop(stack); // Second operand (top of stack)
+            var a = NaN; // First operand
+
+            // Handle unary minus
+            if (token_upper == "_UNARY_MINUS") {
+                if (!is_real(b)) {
+                    show_error_message("TYPE MISMATCH: Unary minus operand not numeric.");
+                    return NaN;
+                }
+                array_push(stack, -real(b));
+                show_debug_message(" Applied unary minus: -" + string(b) + " -> " + string(stack[array_length(stack)-1]));
+                continue; // Move to next token
+            }
+
+            a = array_pop(stack); // First operand
+
+            var result = NaN;
+            var num_a = is_real(a) ? real(a) : 0; // Coerce to number, BASIC often uses 0 for non-numeric in math
+            var num_b = is_real(b) ? real(b) : 0; // Coerce to number
+
+            // Perform the operation based on the operator
+            switch (token_upper) {
+                case "+":
+                    // BASIC's '+' can be for numbers or strings. We'll prioritize numbers first.
+                    // For full BASIC compatibility, you'd need more complex type checking here.
+                    // For now, if either is a string, we assume string concatenation.
+                    if (is_string(a) || is_string(b)) {
+                        result = string(a) + string(b); // String concatenation
+                    } else {
+                        result = num_a + num_b; // Numeric addition
+                    }
+                    break;
+                case "-":
+                    result = num_a - num_b;
+                    break;
+                case "*":
+                    result = num_a * num_b;
+                    break;
+                case "/":
+                    if (num_b == 0) {
+                        show_error_message("DIVISION BY ZERO ERROR!");
+                        return NaN;
+                    }
+                    result = num_a / num_b;
+                    break;
+                case "^":
+                    result = power(num_a, num_b); // x^y
+                    break;
+                case "%": // Or MOD
+                case "MOD":
+                    if (num_b == 0) {
+                        show_error_message("MODULO BY ZERO ERROR!");
+                        return NaN;
+                    }
+                    result = num_a mod num_b;
+                    break;
+
+                // Comparison Operators (return 1 for true, 0 for false in BASIC)
+                case "=":
+                case "==": result = (num_a == num_b); break;
+                case "<":  result = (num_a < num_b); break;
+                case ">":  result = (num_a > num_b); break;
+                case "<=": result = (num_a <= num_b); break;
+                case ">=": result = (num_a >= num_b); break;
+                case "<>": result = (num_a != num_b); break; // NOT EQUAL
+
+                // --- ADDED LOGICAL OPERATORS HERE ---
+                case "AND":
+                    result = (num_a != 0 && num_b != 0); // BASIC logical AND (non-zero is true)
+                    break;
+                case "OR":
+                    result = (num_a != 0 || num_b != 0); // BASIC logical OR (non-zero is true)
+                    break;
+                // --- END ADDED LOGICAL OPERATORS ---
+
+                default:
+                    show_error_message("RUNTIME ERROR: Unknown operator " + token);
+                    return NaN;
+            }
+            array_push(stack, result); // Push the result of the operation back onto the stack
+            show_debug_message(" Applied operator: " + string(a) + " " + token + " " + string(b) + " -> " + string(result));
+        }
+        // 6. Unknown token
+        else {
+            show_error_message("RUNTIME ERROR: Unrecognized token in postfix expression: " + token);
+            return NaN;
+        }
+    }
+
+    // After processing all tokens, the final result should be the only item left on the stack
+    if (array_length(stack) != 1) {
+        show_error_message("SYNTAX ERROR: Malformed expression. Stack size: " + string(array_length(stack)));
+        return NaN; // Error: something went wrong
+    }
+    show_debug_message("Final result of postfix evaluation: " + string(stack[0]));
+    return stack[0]; // Return the final result
+}
+/// @function get_precedence(op)
+/// @description Returns the precedence level of an operator. Higher number means higher precedence.
+/// @param {string} op The operator token.
+/// @returns {real} The precedence level.
+function get_precedence(op) {
+    var op_upper = string_upper(op);
+    switch (op_upper) {
+        case "=": case "==": case "<": case ">": case "<=": case ">=": case "<>": return 1; // Comparison operators (lowest)
+        case "+": case "-": return 2;
+        case "*": case "/": case "%": case "MOD": return 3;
+        case "_UNARY_MINUS": return 4; // Unary minus (higher than binary +/-)
+        case "^": return 5; // Exponentiation (highest)
+        default: return 0; // For non-operators or unknown
+    }
+}
+/// @function handle_basic_command(cmd, arg)
+/// @description Routes BASIC commands to the correct function
+function handle_basic_command(cmd, arg) {
+    switch (cmd) {
+        case "PRINT":
+            basic_cmd_print(arg);
+            break;
+
+        case "LET":
+            basic_cmd_let(arg);
+            break;
+
+        case "GOTO":
+            basic_cmd_goto(arg);
+            break;
+
+        case "INPUT":
+            basic_cmd_input(arg);
+            break;
+
+        case "COLOR":
+            basic_cmd_color(arg);
+            break;
+
+        case "CLS":
+            basic_cmd_cls();
+            break;
+
+        case "IF":
+            basic_cmd_if(arg);
+            break;
+
+        case "END":
+            basic_cmd_end();
+            break;
+
+        case "REM":
+            // REM is a no-op, no function call needed
+            break;
+
+        case "GOSUB":
+            basic_cmd_gosub(arg);
+            break;
+
+        case "RETURN":
+            basic_cmd_return();
+            break;
+
+        case "FOR":
+			basic_cmd_for(arg);
+            break;
+
+        case "NEXT":
+            basic_cmd_next(arg);
+            break;
+
+		case "WHILE":
+		    basic_cmd_while(arg);
+		    break;
+
+		case "WEND":
+		    basic_cmd_wend();
+		    break;
+
+		case "BGCOLOR":
+			basic_cmd_bgcolor(arg);
+			break;
+
+        default:
+            basic_show_message("UNKNOWN COMMAND: " + cmd);
+    }
+}
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+ // Functions for input handling
+ function handle_character_input() {
+    var key_string = keyboard_string;
+    
+    // Robust keyboard handling with fallback
+    if (key_string != last_keyboard_string) {
+        var new_chars = string_copy(key_string, string_length(last_keyboard_string) + 1, 
+                                   string_length(key_string) - string_length(last_keyboard_string));
+        
+        // Filter out control characters and validate input
+        var filtered_chars = "";
+        for (var i = 1; i <= string_length(new_chars); i++) {
+            var char = string_char_at(new_chars, i);
+            var char_code = ord(char);
+            // Accept printable ASCII characters (32-126)
+            if (char_code >= 32 && char_code <= 126) {
+                filtered_chars += char;
+            }
+        }
+        
+        if (filtered_chars != "") {
+            current_input = string_insert(filtered_chars, current_input, cursor_pos + 1);
+            cursor_pos += string_length(filtered_chars);
+        }
+        
+        last_keyboard_string = key_string;
+    }
+    
+    // Fallback: Direct key detection for special cases
+  //  if (keyboard_check_pressed(vk_space)) {
+        // Ensure space is captured even if keyboard_string fails
+  //      if (string_char_at(current_input, cursor_pos + 1) != " ") {
+   //         current_input = string_insert(" ", current_input, cursor_pos + 1);
+   //         cursor_pos++;
+   //     }
+   // }
+ }
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+function handle_command(command) {
+	
+var original_command = string_trim(command);
+    command = string_upper(original_command);
+    
+    // Split command from parameters to preserve case in filenames
+    var space_pos = string_pos(" ", command);
+    var cmd_word = "";
+    var cmd_params = "";
+    
+    if (space_pos > 0) {
+        cmd_word = string_copy(command, 1, space_pos - 1);
+        cmd_params = string_trim(string_copy(original_command, space_pos + 1, string_length(original_command)));
+    } else {
+        cmd_word = command;
+    }
+    
+    switch (cmd_word) {
+        case "LIST":
+            if (cmd_params == "") {
+                list_program();
+            } else {
+                list_program_range(cmd_params);
+            }
+            break;
+            
+        case "RUN":
+            run_program();
+            break;
+            
+        case "NEW":
+            new_program();
+            break;
+            
+        case "SAVE":
+            if (cmd_params == "") {
+                save_program();
+            } else {
+                save_program_as(cmd_params);
+            }
+            break;
+            
+        case "LOAD":
+            if (cmd_params == "") {
+                show_error_message("FILENAME REQUIRED");
+            } else {
+                load_program_from(cmd_params);
+            }
+            break;
+			
+		case "DIR":
+        list_saved_programs();
+        break;
+
+		case ":PASTE":
+		editor_handle_paste_command();
+		break;
+
+		case "QUIT":
+		quit_program()
+		break;
+			
+        default:
+            show_error_message("SYNTAX ERROR");
+            break;
+    }
+ }
+function handle_interpreter_character_input(key) {
+    // Printable ASCII characters
+    if (key >= 32 && key <= 126) {
+        var ch = keyboard_lastchar;
+
+        global.interpreter_input = string_insert(ch, global.interpreter_input, global.interpreter_cursor_pos + 1);
+        global.interpreter_cursor_pos += 1;
+        return;
+    }
+
+    // BACKSPACE
+    if (key == vk_backspace) {
+        if (global.interpreter_cursor_pos > 0) {
+            global.interpreter_input = string_delete(global.interpreter_input, global.interpreter_cursor_pos, 1);
+            global.interpreter_cursor_pos -= 1;
+        }
+        return;
+    }
+
+    // SPACE
+    if (key == vk_space) {
+        global.interpreter_input = string_insert(" ", global.interpreter_input, global.interpreter_cursor_pos + 1);
+        global.interpreter_cursor_pos += 1;
+        return;
+    }
+
+    // LEFT arrow
+    if (key == vk_left) {
+        if (global.interpreter_cursor_pos > 0) {
+            global.interpreter_cursor_pos -= 1;
+        }
+        return;
+    }
+
+    // RIGHT arrow
+    if (key == vk_right) {
+        if (global.interpreter_cursor_pos < string_length(global.interpreter_input)) {
+            global.interpreter_cursor_pos += 1;
+        }
+        return;
+    }
+
+    // ENTER â€” finalize the input and resume execution
+    if (key == vk_enter) {
+        var val = global.interpreter_input;
+        var varname = string_upper(global.input_target_var);
+
+        // Store in variable map
+        global.basic_variables[? varname] = val;
+
+        // Echo to output
+       // ds_list_add(output_lines, val);
+       // ds_list_add(global.output_colors, global.current_draw_color);
+
+        // Reset input state
+        global.interpreter_input = "";
+        global.awaiting_input = false;
+        global.input_target_var = "";
+        global.interpreter_cursor_pos = 0;
+    }
+}
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+function handle_program_line(input_text) {
+    var space_pos = string_pos(" ", input_text);
+    var line_num = real(string_copy(input_text, 1, space_pos - 1));
+    var code_content = string_copy(input_text, space_pos + 1, string_length(input_text));
+    
+    // If no code content, delete the line
+    if (string_trim(code_content) == "") {
+        delete_program_line(line_num);
+    } else {
+        add_or_update_program_line(line_num, code_content);
+    }
+    
+    update_display();
+ }
+/// @function infix_to_postfix(tokens)
+/// @description Converts an infix expression (array of tokens) to postfix (Reverse Polish Notation) using the Shunting-Yard algorithm.
+/// @param {array<string>} tokens An array of tokens from a tokenizer.
+/// @returns {array<string>} An array of tokens in postfix order.
+function infix_to_postfix(tokens) {
+    show_debug_message("Converting to postfix (infix): " + string(tokens));
+    var output_queue = [];
+    var operator_stack = [];
+
+    for (var i = 0; i < array_length(tokens); i++) {
+        var token = tokens[i];
+        var token_upper = string_upper(token); // For case-insensitive checks
+        show_debug_message(" Processing infix token: '" + token + "'");
+
+        // 1. Numbers and String Literals (Operands)
+        if (is_numeric_string(token) || is_quoted_string(token)) {
+            array_push(output_queue, token);
+            show_debug_message("  Pushed operand to output: " + token);
+        }
+        // 2. Variables (Operands)
+        // If it's a letter (start of variable) and not a recognized function/operator
+        else if (is_letter(string_char_at(token, 1)) && !is_function_token(token_upper) && !is_operator(token_upper)) {
+            array_push(output_queue, token_upper); // Push variable NAME to output queue
+            show_debug_message("  Pushed variable name to output: " + token_upper);
+        }
+        // 3. Functions
+        else if (is_function_token(token_upper)) {
+            array_push(operator_stack, token_upper); // Push function onto the operator stack
+            show_debug_message("  Pushed function to stack: " + token_upper);
+        }
+        // 4. Parentheses
+        else if (token == "(") {
+            array_push(operator_stack, token);
+            show_debug_message("  Pushed '(' to stack.");
+        }
+        else if (token == ")") {
+            // Pop operators from stack to output queue until '(' is found
+            while (array_length(operator_stack) > 0 && operator_stack[array_length(operator_stack) - 1] != "(") {
+                array_push(output_queue, array_pop(operator_stack));
+            }
+            if (array_length(operator_stack) == 0) {
+                show_error_message("SYNTAX ERROR: Mismatched parentheses (no opening parenthesis found).");
+                return []; // Error state
+            }
+            array_pop(operator_stack); // Pop the '('
+            show_debug_message("  Popped to ')' and removed '('.");
+
+            // If a function token is at the top of the stack, pop it to the output queue
+            if (array_length(operator_stack) > 0 && is_function_token(operator_stack[array_length(operator_stack) - 1])) {
+                array_push(output_queue, array_pop(operator_stack));
+                show_debug_message("  Popped function after parentheses.");
+            }
+        }
+        // 5. Operators
+        else if (is_operator(token_upper)) {
+            show_debug_message("  Found operator: " + token_upper);
+            while (array_length(operator_stack) > 0) {
+                var top_operator = operator_stack[array_length(operator_stack) - 1];
+                var top_operator_upper = string_upper(top_operator);
+
+                // Conditions for popping operators from stack to output queue:
+                // a. Top is an operator
+                // b. Top has higher precedence OR (Top has equal precedence AND is left-associative)
+                if (is_operator(top_operator_upper) && (
+                    get_precedence(top_operator_upper) > get_precedence(token_upper) ||
+                    (get_precedence(top_operator_upper) == get_precedence(token_upper) && !is_right_associative(token_upper))
+                )) {
+                    array_push(output_queue, array_pop(operator_stack));
+                    show_debug_message("   Popped higher/equal precedence operator: " + top_operator_upper);
+                } else {
+                    break; // Stop popping
+                }
+            }
+            array_push(operator_stack, token_upper); // Push current operator onto the stack
+            show_debug_message("  Pushed current operator to stack: " + token_upper);
+        }
+        // 6. Comma (for function arguments) - treat as operator for stack clearing within functions
+        else if (token == ",") {
+            // Pop operators from stack to output queue until '(' is found
+            while (array_length(operator_stack) > 0 && operator_stack[array_length(operator_stack) - 1] != "(") {
+                array_push(output_queue, array_pop(operator_stack));
+            }
+            // Do NOT pop the '(', keep it on the stack for the next argument
+            show_debug_message("  Handled comma, popped operators before next argument.");
+        }
+        // 7. Unrecognized token
+        else {
+            show_error_message("SYNTAX ERROR: Unrecognized token in expression: " + token);
+            return []; // Error state
+        }
+    }
+
+    // After processing all tokens, pop any remaining operators from the stack to the output queue
+    while (array_length(operator_stack) > 0) {
+        var top = array_pop(operator_stack);
+        if (top == "(" || top == ")") {
+            show_error_message("SYNTAX ERROR: Mismatched parentheses (unclosed).");
+            return []; // Error state
+        }
+        array_push(output_queue, top);
+    }
+
+    show_debug_message("Final postfix result: " + string(output_queue));
+    return output_queue;
+}
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+ function insert_line_number_ordered(new_line_num) {
+    var size = ds_list_size(global.line_numbers);
+    var inserted = false;
+    
+    for (var i = 0; i < size; i++) {
+        if (ds_list_find_value(global.line_numbers, i) > new_line_num) {
+            ds_list_insert(global.line_numbers, i, new_line_num);
+            inserted = true;
+            break;
+      }
+    }
+    
+    if (!inserted) {
+        ds_list_add(global.line_numbers, new_line_num);
+    }
+ }
+/// @function interpreter_cmd_print(argument)
+/// @description Handles the BASIC PRINT command.
+/// @param arg - The string argument from the BASIC code
+
+function interpreter_cmd_print(arg) {
+    // Remove surrounding double quotes if present
+    if (string_length(arg) >= 2 &&
+        string_char_at(arg, 1) == "\"" &&
+        string_char_at(arg, string_length(arg)) == "\"") {
+        arg = string_copy(arg, 2, string_length(arg) - 2);
+    }
+
+    ds_list_add(output_lines, arg);
+}
+/// @function is_function_token(token)
+/// @description Checks if a given token is a recognized BASIC function.
+/// @param {string} token The token to check.
+/// @returns {boolean} True if it's a function, false otherwise.
+function is_function_token(token) {
+    var upper_token = string_upper(token);
+    // Add more functions here as you implement them in evaluate_postfix
+    return upper_token == "RND" || upper_token == "ABS";
+}
+function is_letter(ch) {
+    var o = ord(string_upper(ch));
+    return (o >= 65 && o <= 90);
+}
+
+
+/// @function is_letter_or_digit(char)
+/// @description Checks if a character is a letter or a digit (or an underscore for identifiers).
+/// @param {string} char The character to check.
+/// @returns {bool} True if it's a letter, digit, or underscore, false otherwise.
+function is_letter_or_digit(char) {
+    var char_code = ord(char);
+    // Check for A-Z (ASCII 65-90), a-z (ASCII 97-122), 0-9 (ASCII 48-57)
+    // Add underscore '_' (ASCII 95)
+    return (char_code >= 65 && char_code <= 90) || // Uppercase letters
+           (char_code >= 97 && char_code <= 122) || // Lowercase letters
+           (char_code >= 48 && char_code <= 57) || // Digits
+           (char_code == 95); // Underscore character '_'
+}
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+ function is_line_number(str) {
+    // Check if string contains only digits
+    if (string_length(str) == 0) return false;
+    
+    for (var i = 1; i <= string_length(str); i++) {
+        var char = string_char_at(str, i);
+        if (char < "0" || char > "9") return false;
+    }
+    
+    // Convert to number and validate range
+    var line_num = real(str);
+    return (line_num >= 1 && line_num <= 65535);
+ }
+/// @function is_numeric_string(str)
+/// @description Checks if a string can be interpreted as a numeric value (integer or float).
+/// @param {string} str The string to check.
+/// @returns {boolean} True if numeric, false otherwise.
+function is_numeric_string(str) {
+    if (string_length(str) == 0) return false;
+
+    var start_index = 1;
+    // Handle optional leading sign
+    if (string_char_at(str, 1) == "-" || string_char_at(str, 1) == "+") {
+        if (string_length(str) == 1) return false; // Just a sign, not a number
+        start_index = 2;
+    }
+
+    var dot_count = 0;
+    for (var i = start_index; i <= string_length(str); i++) {
+        var c = string_char_at(str, i);
+        if (c == ".") {
+            dot_count++;
+            if (dot_count > 1) return false; // More than one decimal point
+        } else if (ord(c) < ord("0") || ord(c) > ord("9")) {
+            return false; // Not a digit or a dot
+        }
+    }
+    return true;
+}
+/// @function is_operator(token)
+/// @description Checks if a given token is a recognized operator.
+/// @param {string} token The token string to check.
+/// @returns {bool} True if it's an operator, false otherwise.
+function is_operator(token) {
+    return token == "+" || token == "-" || token == "*" || token == "/" || token == "^" ||
+           token == "MOD" || token == "%" || // Include both if you support both
+           token == "=" || token == "==" || token == "<" || token == ">" ||
+           token == "<=" || token == ">=" || token == "<>" ||
+           token == "AND" || token == "OR" || token == "NOT" || // Add logical operators
+           token == "_UNARY_MINUS"; // Special token for unary minus
+}
+/// @function is_quoted_string(str)
+/// @description Checks if a string starts and ends with double quotes.
+/// @param {string} str The string to check.
+/// @returns {boolean} True if it's a quoted string, false otherwise.
+function is_quoted_string(str) {
+    return (string_length(str) >= 2 &&
+            string_char_at(str, 1) == "\"" &&
+            string_char_at(str, string_length(str)) == "\"");
+}
+/// @function is_right_associative(op)
+/// @description Checks if an operator is right-associative (e.g., ^).
+/// @param {string} op The operator token.
+/// @returns {boolean} True if right-associative, false otherwise.
+function is_right_associative(op) {
+    var op_upper = string_upper(op);
+    return (op_upper == "^" || op_upper == "_UNARY_MINUS");
+}
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+ function is_valid_line_number(line_num) {
+    return (line_num >= 1 && line_num <= 65535);
+ }
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+function list_program() {
+    display_start_line = 0;
+    update_display();
+ }
+ function list_program_range(range) {
+    // Parse range like "10-50" or single number "10"
+    var dash_pos = string_pos("-", range);
+    if (dash_pos > 0) {
+        var start_line = real(string_copy(range, 1, dash_pos - 1));
+        var end_line = real(string_copy(range, dash_pos + 1, string_length(range)));
+        list_between_lines(start_line, end_line);
+    } else {
+        var single_line = real(range);
+        list_single_line(single_line);
+    }
+ }
+/// @desc Lists all .bas files in the working directory and shows them to the user
+function list_saved_programs() {
+    var files  = "";
+    var fname  = file_find_first(working_directory + "*.bas", 0); // 0 = find files
+    while (fname != "") {
+        files += fname + "\n";
+        fname = file_find_next();
+    }
+    file_find_close();
+
+    if (files == "") {
+        files = "No .bas files found.";
+    }
+
+    // Use your custom message display so it appears at the bottom of the screen
+    basic_show_message(files);
+}
+function load_program_from(filename) {
+    var file_path = working_directory + filename + ".bas";
+    if (!file_exists(file_path)) {
+        basic_show_error_message("FILE NOT FOUND: " + filename);
+        return;
+    }
+
+    // clear current program
+    new_program(); // use your existing clear function
+
+    var file = file_text_open_read(file_path);
+    if (file == -1) {
+        basic_show_error_message("COULD NOT OPEN FILE: " + filename);
+        return;
+    }
+
+    while (!file_text_eof(file)) {
+        var line = file_text_read_string(file);
+        file_text_readln(file);
+
+        line = string_trim(line);
+        if (line != "") {
+            var space_pos = string_pos(" ", line);
+            if (space_pos > 0) {
+                var line_num_str = string_copy(line, 1, space_pos - 1);
+                var code_content = string_copy(line, space_pos + 1, string_length(line));
+                var line_num = real(line_num_str);
+
+                if (is_line_number(line_num_str)) {
+                    ds_map_set(global.program_lines, line_num, code_content);
+                    insert_line_number_ordered(line_num);
+                }
+            }
+        }
+    }
+    file_text_close(file);
+    current_filename = filename;
+    basic_show_message("LOADED: " + filename);
+    update_display();
+}
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+function load_program_from_path(file_path, filename) {
+    if (!file_exists(file_path)) {
+        show_error_message("DRAG FILE NOT FOUND");
+        return;
+    }
+    
+    try {
+        save_undo_state();
+        new_program_without_undo();
+        
+        var file = file_text_open_read(file_path);
+        while (!file_text_eof(file)) {
+            var line = file_text_read_string(file);
+            file_text_readln(file);
+            
+            if (string_trim(line) != "") {
+                var space_pos = string_pos(" ", line);
+                if (space_pos > 0) {
+                    var line_num_str = string_copy(line, 1, space_pos - 1);
+					                    var line_num = real(line_num_str);
+                    var code_content = string_copy(line, space_pos + 1, string_length(line));
+                    
+                    if (is_line_number(line_num_str) && is_valid_line_number(line_num)) {
+                        ds_map_set(global.program_lines, line_num, code_content);
+                        insert_line_number_ordered(line_num);
+                    }
+                }
+            }
+        }
+        file_text_close(file);
+        current_filename = filename;
+        basic_show_message("LOADED via DRAG: " + filename);
+        update_display();
+    } catch (e) {
+        show_error_message("DRAG LOAD ERROR");
+    }
+ }
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+function load_program_json(filename) {
+    var file_path = working_directory + filename + ".json";
+    
+    if (!file_exists(file_path)) {
+        show_error_message("JSON FILE NOT FOUND");
+        return;
+    }
+    
+    try {
+        var file = file_text_open_read(file_path);
+        var json_string = file_text_read_string(file);
+        file_text_close(file);
+        
+        var loaded_map = json_decode(json_string);
+        
+        new_program();
+        ds_map_copy(global.program_lines, loaded_map);
+        
+        // Rebuild line numbers list
+        var key = ds_map_find_first(global.program_lines);
+        while (!is_undefined(key)) {
+            insert_line_number_ordered(real(key));
+            key = ds_map_find_next(global.program_lines, key);
+        }
+        
+        ds_map_destroy(loaded_map);
+        basic_show_message("LOADED JSON: " + filename);
+        update_display();
+    } catch (e) {
+        show_error_message("JSON LOAD ERROR");
+    }
+ }
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+ function navigate_history_down() {
+	 if (global.justreturned == 1) return; // ðŸ›‘ Block history on return
+	 
+    if (global.history_index != -1) {
+        global.history_index++;
+        if (global.history_index >= ds_list_size(global.input_history)) {
+            global.history_index = -1;
+            current_input = "";
+        } else {
+            current_input = ds_list_find_value(global.input_history, global.history_index);
+        }
+        cursor_pos = string_length(current_input);
+    }
+ }
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+function navigate_history_up() {
+	
+	if (global.justreturned == 1) return; // ðŸ›‘ Block history on return
+	
+    if (ds_list_size(global.input_history) > 0) {
+        if (global.history_index == -1) {
+            global.history_index = ds_list_size(global.input_history) - 1;
+        } else {
+            global.history_index = max(0, global.history_index - 1);
+        }
+        current_input = ds_list_find_value(global.input_history, global.history_index);
+        cursor_pos = string_length(current_input);
+    }
+ }
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+ function new_program() {
+    // Save state for undo before clearing
+    if (ds_list_size(global.line_numbers) > 0) {
+        save_undo_state();
+    }
+    
+    ds_map_clear(global.program_lines);
+    ds_list_clear(global.line_numbers);
+    current_filename = "";
+    display_start_line = 0;
+    update_display();
+    basic_show_message("NEW PROGRAM");
+ }
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+ function new_program_without_undo() {
+    ds_map_clear(global.program_lines);
+    ds_list_clear(global.line_numbers);
+    current_filename = "";
+    display_start_line = 0;
+ }
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+function process_input_line(input_text) {
+    // Trim whitespace
+    input_text = string_trim(input_text);
+    
+    if (input_text == "") return;
+    
+    // Check if line starts with a number
+    var first_space = string_pos(" ", input_text);
+    var potential_line_num = "";
+    
+    if (first_space > 0) {
+        potential_line_num = string_copy(input_text, 1, first_space - 1);
+    } else {
+        potential_line_num = input_text;
+    }
+    
+    // Check if it's a valid line number
+    if (is_line_number(potential_line_num)) {
+        handle_program_line(input_text);
+    } else {
+        handle_command(input_text);
+    }
+ }
+function resolve_basic_value(key) {
+    return ds_map_exists(global.basic_variables, key) ? global.basic_variables[? key] : real(key);
+}
+
+function run_program() {
+	  show_debug_message("RUN_PROGRAM START - color is: " + string(global.current_draw_color));
+    if (ds_list_size(global.line_numbers) == 0) {
+        show_error_message("NO PROGRAM");
+        return;
+    }
+
+    // Deep copy program data to prevent interpreter from modifying editor data
+    ds_map_copy(global.basic_program, global.program_lines);
+
+    global.basic_line_numbers = ds_list_create();
+    ds_list_copy(global.basic_line_numbers, global.line_numbers);
+
+    // âœ… Clear previous output
+    if (ds_exists(global.output_lines, ds_type_list)) {
+        ds_list_clear(global.output_lines);
+    } else {
+        global.output_lines = ds_list_create();
+    }
+
+    if (ds_exists(global.output_colors, ds_type_list)) {
+        ds_list_clear(global.output_colors);
+    } else {
+        global.output_colors = ds_list_create();
+    }
+
+    // âœ… Reset interpreter state
+    global.interpreter_input = "";
+    global.awaiting_input = false;
+    global.input_target_var = "";
+    global.interpreter_running = true;
+
+    global.current_draw_color = make_color_rgb(255, 191, 64); // Amber //c_green;// global.basic_text_color;
+   // show_debug_message("RUN_PROGRAM AFTER RESET - color is: " + string(global.current_draw_color));
+    
+    interpreter_current_line_index = 0;
+    interpreter_next_line = -1;
+
+    // Store editor state to return to
+    global.editor_return_room = room;
+
+    // Switch to interpreter room
+    room_goto(rm_basic_interpreter);
+}
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+function save_program() {
+    if (current_filename == "") {
+        show_error_message("NO FILENAME");
+        return;
+    }
+    save_program_as(current_filename);
+ }
+/// @desc Saves the current program to a .bas file
+/// @param filename The filename to save as (without extension)
+function save_program_as(filename) {
+    // Trim spaces
+    filename = string_trim(filename);
+
+    // Remove surrounding quotes if present
+    if (string_length(filename) >= 2) {
+        var first = string_char_at(filename, 1);
+        var last  = string_char_at(filename, string_length(filename));
+        if ((first == "\"" || first == "'") && first == last) {
+            filename = string_copy(filename, 2, string_length(filename) - 2);
+        }
+    }
+
+    var file_path = working_directory + filename + ".bas";
+    var file = file_text_open_write(file_path);
+    if (file == -1) {
+        show_error_message("COULD NOT OPEN FILE: " + filename);
+        return;
+    }
+
+    var count = ds_list_size(global.line_numbers);
+    for (var i = 0; i < count; i++) {
+        var line_num = ds_list_find_value(global.line_numbers, i);
+        var code     = ds_map_find_value(global.program_lines, line_num);
+        file_text_write_string(file, string(line_num) + " " + code);
+        file_text_writeln(file);
+    }
+
+    file_text_close(file);
+    current_filename = filename;
+    basic_show_message("SAVED: " + filename + " (working_directory)");
+}
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+ function save_program_json(filename) {
+    try {
+        var save_data = ds_map_create();
+        ds_map_copy(save_data, global.program_lines);
+        
+        var json_string = json_encode(save_data);
+        var file_path = working_directory + filename + ".json";
+        var file = file_text_open_write(file_path);
+        file_text_write_string(file, json_string);
+        file_text_close(file);
+        
+        ds_map_destroy(save_data);
+        basic_show_message("SAVED: " + filename + " (JSON)");
+    } catch (e) {
+        show_error_message("JSON SAVE ERROR");
+    }
+ }
+function save_undo_state() {
+    // Placeholder for undo system
+    // Eventually, you could push a copy of global.program_lines to a stack
+	/// TODO: Implement undo functionality for BASIC editor
+/// --------------------------------------------------
+/// This function should snapshot the current program state so it can be restored later via an "UNDO" command.
+/// A stack-based approach is recommended, where each saved state is pushed onto a list (e.g., global.undo_stack).
+///
+/// Suggested structure per snapshot:
+/// - A ds_map with keys like "global.program_lines", "global.line_numbers", and optionally "cursor_pos"
+/// - Each key maps to a *copy* (not a reference) of the original ds_map or ds_list
+///
+/// Pseudocode for future implementation:
+/// ```gml
+/// var snapshot = ds_map_create();
+/// ds_map_add_list(snapshot, "global.line_numbers", ds_list_copy(global.line_numbers));
+/// ds_map_add_map(snapshot, "global.program_lines", ds_map_copy(global.program_lines));
+/// ds_stack_push(global.undo_stack, snapshot);
+/// ```
+///
+/// Don't forget to:
+/// - Create `global.undo_stack` once during initialization (e.g., in obj_globals)
+/// - Clean up with `ds_map_destroy()` and `ds_list_destroy()` when popping or discarding states
+///
+/// For now, this is a placeholder to suppress runtime errors.
+
+}
+function quit_program()
+{
+	game_end();
+}
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+function set_color_scheme(scheme) {
+    scheme = string_upper(scheme);
+    switch (scheme) {
+        case "GREEN":
+            keyword_color = c_lime;
+            text_color = c_green;
+            number_color = c_yellow;
+            break;
+        case "BLUE":
+            keyword_color = c_cyan;
+            text_color = c_blue;
+            number_color = c_white;
+            break;
+        case "AMBER":
+            keyword_color = c_orange;
+            text_color = c_yellow;
+            number_color = c_white;
+            break;
+        default:
+            show_error_message("UNKNOWN COLOR SCHEME");
+            return;
+    }
+    basic_show_message("COLOR SCHEME: " + scheme);
+    update_display();
+ }
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+ function show_current_colors() {
+    basic_show_message("CURRENT SCHEME - USE: COLOR GREEN/BLUE/AMBER");
+ }
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+ function show_error_message(error) {
+    basic_show_message("?" + error);
+ }
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+ function show_stat_message(msg) {
+    message_text = msg;
+    message_timer = 120; // Show for 2 seconds at 60 FPS
+ }
+/// @function string_is_number(str)
+/// @desc Returns true if the input string can be safely converted to a number.
+/// @param {string} str - The string to check
+function string_is_number(str) {
+    if (is_real(str)) return true; // Already a number
+    var trimmed = string_trim(str);
+    if (trimmed == "") return false;
+
+    var dot_found = false;
+    var start = 1;
+
+    // Allow for optional leading minus sign
+    if (string_char_at(trimmed, 1) == "-") {
+        if (string_length(trimmed) == 1) return false;
+        start = 2;
+    }
+
+    for (var i = start; i <= string_length(trimmed); i++) {
+        var ch = string_char_at(trimmed, i);
+        if (ch >= "0" && ch <= "9") continue;
+        else if (ch == ".") {
+            if (dot_found) return false; // only one dot allowed
+            dot_found = true;
+        } else {
+            return false;
+        }
+    }
+
+    return true;
+}
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+function toggle_syntax_highlighting() {
+    syntax_highlighting = !syntax_highlighting;
+    basic_show_message("SYNTAX HIGHLIGHTING: " + (syntax_highlighting ? "ON" : "OFF"));
+    update_display();
+ }
+function tokenize_expression(expr) {
+    var tokens = [];
+    var i = 1;
+    while (i <= string_length(expr)) {
+        var ch = string_char_at(expr, i);
+
+        if (ch == " " || ch == "\t") {
+            i++;
+            continue;
+        }
+
+        if (ch == "+" || ch == "-" || ch == "*" || ch == "/" || ch == "^" || ch == "(" || ch == ")") {
+            array_push(tokens, ch);
+            i++;
+        }
+        else if (ord(ch) >= 48 && ord(ch) <= 57) {
+            var num = "";
+            while (i <= string_length(expr) && (ord(string_char_at(expr, i)) >= 48 && ord(string_char_at(expr, i)) <= 57)) {
+                num += string_char_at(expr, i);
+                i++;
+            }
+            array_push(tokens, num);
+        }
+        else if (is_letter(ch)) {
+            var ident = "";
+            while (i <= string_length(expr) && (is_letter_or_digit(string_char_at(expr, i)))) {
+                ident += string_char_at(expr, i);
+                i++;
+            }
+            if (string_char_at(expr, i) == "(") {
+                array_push(tokens, ident); // Function name
+            } else {
+                array_push(tokens, ident); // Variable
+            }
+        }
+        else if (ch == ",") {
+            array_push(tokens, ",");
+            i++;
+        }
+        else {
+            show_debug_message("Unknown character in expression: " + ch);
+            i++;
+        }
+    }
+
+    return tokens;
+}
+
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+ function update_display() {
+    // This will be called in the Draw event
+ }
+ 

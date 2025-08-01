@@ -20,3 +20,4 @@ interpreter_next_line = -1;
 
 // Local list to hold current run if needed
 interpreter_current_program = ds_list_create(); // OK to keep local
+

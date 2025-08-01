@@ -1,15 +1,9 @@
 function basic_cmd_if(arg) {
-	
-	//show_debug_message("Counter at IF: " + string(counter));
-	//show_debug_message("Condition result: " + string(cond_result));
-
+    show_debug_message("IF START — Raw arg: '" + arg + "'");
 
     var cond_str = string_trim(arg);
-
-    // Debug input
-    show_debug_message("IF raw argument: " + cond_str);
-
     var then_pos = string_pos("THEN", string_upper(cond_str));
+
     if (then_pos <= 0) {
         show_debug_message("?IF ERROR: Missing THEN in '" + cond_str + "'");
         return;
@@ -21,7 +15,7 @@ function basic_cmd_if(arg) {
     show_debug_message("Parsed condition: '" + condition + "'");
     show_debug_message("Parsed action: '" + action + "'");
 
-    // Simple condition parser: A OP B
+    // Find operator
     var ops = ["<=", ">=", "<", ">", "==", "="];
     var op = "";
     for (var i = 0; i < array_length(ops); i++) {
@@ -45,11 +39,11 @@ function basic_cmd_if(arg) {
     var left = string_trim(parts[0]);
     var right = string_trim(parts[1]);
 
-	var left_eval = basic_evaluate_expression(left);
-	var right_eval = basic_evaluate_expression(right);
+    var left_eval = basic_evaluate_expression_v2(left);
+    var right_eval = basic_evaluate_expression_v2(right);
 
-	var a = real(left_eval);
-	var b = real(right_eval);
+    var a = real(left_eval);
+    var b = real(right_eval);
 
     show_debug_message("Evaluating: " + string(a) + " " + op + " " + string(b));
 
@@ -73,17 +67,18 @@ function basic_cmd_if(arg) {
 
         if (prefix == "GOTO") {
             var line_target = real(target);
-            var index = ds_list_find_index(global.basic_line_numbers, line_target);
+            var index = ds_list_find_index(global.line_list, line_target);
 
             if (index >= 0) {
-                interpreter_current_line_index = index;
                 interpreter_next_line = index;
-                show_debug_message("GOTO successful → line " + string(line_target));
+                show_debug_message("GOTO from IF → line " + string(line_target) + " (index " + string(index) + ")");
             } else {
-                show_debug_message("?IF ERROR: Invalid GOTO target: " + string(line_target));
+                show_debug_message("?IF ERROR: GOTO target line not found: " + string(line_target));
             }
         } else {
-            show_debug_message("?IF ERROR: THEN action not supported: '" + action + "'");
+            show_debug_message("?IF ERROR: THEN action not supported yet: '" + action + "'");
         }
+    } else {
+        show_debug_message("IF condition was FALSE — no action taken.");
     }
 }

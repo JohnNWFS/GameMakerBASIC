@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"string_is_number",
   "parent":{
-    "name":"BASIC_COMMANDS",
-    "path":"folders/Scripts/BASIC_COMMANDS.yy",
+    "name":"BASIC COMMANDS HELPERS",
+    "path":"folders/Scripts/BASIC_COMMANDS/BASIC COMMANDS HELPERS.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

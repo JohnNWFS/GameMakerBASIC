@@ -1,4 +1,6 @@
 function basic_cmd_end() {
+    show_debug_message("END: Program termination requested");
     global.program_has_ended = true;
-    interpreter_running = false;
+    global.interpreter_running = false;
+    show_debug_message("END: interpreter_running set to false");
 }

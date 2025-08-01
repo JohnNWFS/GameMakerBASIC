@@ -1,0 +1,4 @@
+function is_operator(op) {
+    return (op == "+" || op == "-" || op == "*" || op == "/" || op == "^" || 
+            op == "%" || string_upper(op) == "MOD");
+}

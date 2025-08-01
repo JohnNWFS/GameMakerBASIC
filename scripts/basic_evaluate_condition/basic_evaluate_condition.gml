@@ -15,8 +15,8 @@ function basic_evaluate_condition(expr) {
 		if (ds_map_exists(global.basic_variables, rhs)) rhs = string(global.basic_variables[? rhs]);
 
 		// Evaluate math functions if present
-		lhs = string(basic_evaluate_expression(lhs));
-		rhs = string(basic_evaluate_expression(rhs));
+		lhs = string(basic_evaluate_expression_v2(lhs));
+		rhs = string(basic_evaluate_expression_v2(rhs));
 
 		lhs = real(lhs);
 		rhs = real(rhs);
