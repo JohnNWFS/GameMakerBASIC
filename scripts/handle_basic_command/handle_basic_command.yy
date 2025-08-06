@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"handle_basic_command",
   "parent":{
-    "name":"BASIC_COMMANDS",
-    "path":"folders/Scripts/BASIC_COMMANDS.yy",
+    "name":"Scripts",
+    "path":"folders/Scripts.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

@@ -1,3 +1,5 @@
+(for /r "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3" %f in (*.gml) do type "%f") > "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\combined_gml_output.txt"
+
 10 REM --- PROGRAM: GRAND TOUR OF BASIC COMMANDS ---
 20 CLS : REM Clear the screen
 30 BGCOLOR BLUE : REM Set background to Dark Blue

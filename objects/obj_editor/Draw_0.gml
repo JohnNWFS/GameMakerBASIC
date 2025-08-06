@@ -4,6 +4,40 @@
  draw_set_font(fnt_basic); // Create a monospace font
  draw_set_color(make_color_rgb(255, 191, 64));  // Classic green text
  draw_rectangle_color(0, 0, room_width, room_height, c_black, c_black, c_black, c_black, false);
+ 
+ if (showing_dir_overlay) {
+    draw_set_color(c_black);
+    draw_rectangle(0, 0, room_width, room_height, false);
+
+    draw_set_color(c_lime); // or whatever your readable text color is
+    draw_set_font(fnt_basic); // or whatever font you use
+
+    var col_count = 3;
+    var row_height = font_height;
+    var col_width = room_width div col_count;
+    var x_pad = 16;
+    var y_pad = 16;
+
+    for (var i = 0; i < array_length(dir_listing); i++) {
+        var col = i mod col_count;
+        var row = i div col_count;
+
+        var _x = x_pad + col * col_width;
+        var _y = y_pad + row * row_height;
+
+        draw_text(_x, _y, dir_listing[i]);
+    }
+
+    draw_text(x_pad, room_height - 32, "Press ENTER or ESC to close");
+
+    return; // skip rest of Draw so editor doesn't draw underneath
+}
+
+ 
+ 
+ 
+ 
+ 
  // Draw program lines
  var y_pos = 32;
  var lines_shown = 0;

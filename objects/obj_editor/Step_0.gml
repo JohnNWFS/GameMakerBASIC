@@ -6,6 +6,17 @@ if (global.justreturned == 1) {
     exit; // skip the rest of this Step event
 }
 
+if (showing_dir_overlay) {
+    if (keyboard_check_pressed(vk_enter) || keyboard_check_pressed(vk_escape)) {
+        showing_dir_overlay = false;
+        dir_listing = []; // Clear the array
+    }
+    exit; // prevent editor interaction while overlay is up
+}
+
+
+
+
 // Handle Enter key
 if (keyboard_check_pressed(vk_enter)) {
     add_to_history(current_input);

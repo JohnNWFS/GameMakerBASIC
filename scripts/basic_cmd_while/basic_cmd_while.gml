@@ -22,7 +22,7 @@ function basic_cmd_while(arg) {
 
             if (_depth == 0) {
                 show_debug_message("WHILE: Found matching WEND at line index " + string(i) + ", line " + string(_ln));
-                interpreter_next_line = i;
+                global.interpreter_next_line = i;
                 return;
             }
         }
@@ -46,6 +46,6 @@ function basic_cmd_while(arg) {
         }
 
         // Ensure interpreter continues to next line
-        interpreter_next_line = -1;
+        global.interpreter_next_line = -1;
     }
 }

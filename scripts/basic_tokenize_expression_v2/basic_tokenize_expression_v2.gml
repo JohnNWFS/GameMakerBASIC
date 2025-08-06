@@ -6,11 +6,27 @@ function basic_tokenize_expression_v2(expr) {
     var len = string_length(expr);
     var current = "";
 
-    var function_names = ["RND", "ABS", "EXP", "LOG", "SGN", "INT", "SIN", "COS", "TAN"];
+    var function_names = ["RND", "ABS", "EXP", "LOG", "LOG10", "SGN", "INT", "SIN", "COS", "TAN", "STR$", "CHR$", "REPEAT$"];
 
     while (i <= len) {
         var c = string_char_at(expr, i);
         show_debug_message("TOKENIZER: Char[" + string(i) + "] = '" + c + "'");
+
+        // --- STRING LITERAL SUPPORT (preserve exact quoted content) ---
+        if (c == "\"") {
+            var str = "\"";
+            i++;
+            while (i <= len) {
+                var ch = string_char_at(expr, i);
+                str += ch;
+                if (ch == "\"") break;
+                i++;
+            }
+            array_push(tokens, str);
+            show_debug_message("TOKENIZER: Token added (quoted string): " + str);
+            i++;
+            continue;
+        }
 
         if (c == " ") {
             if (current != "") {
@@ -28,11 +44,9 @@ function basic_tokenize_expression_v2(expr) {
                 current = "";
             }
 
-            // Handle function call: EXP( → "EXP", "("
             if (c == "(" && array_length(tokens) > 0) {
                 var last = string_upper(tokens[array_length(tokens) - 1]);
                 if (array_contains(function_names, last)) {
-                    // Leave function name, just add the paren
                     array_push(tokens, "(");
                     show_debug_message("TOKENIZER: Function call detected: " + last + "(");
                 } else {
@@ -43,6 +57,16 @@ function basic_tokenize_expression_v2(expr) {
                 array_push(tokens, c);
                 show_debug_message("TOKENIZER: Operator token added: " + c);
             }
+        }
+        else if (c == ",") {
+            if (current != "") {
+                show_debug_message("TOKENIZER: Finalizing token before comma: '" + current + "'");
+                array_push(tokens, string_upper(current) == "MOD" ? "MOD" : current);
+                show_debug_message("TOKENIZER: Token added: " + current);
+                current = "";
+            }
+            array_push(tokens, ",");
+            show_debug_message("TOKENIZER: Comma token added");
         }
         else if (c == "-") {
             var is_negative_number = false;
@@ -74,6 +98,7 @@ function basic_tokenize_expression_v2(expr) {
         else {
             current += c;
         }
+
         i += 1;
     }
 

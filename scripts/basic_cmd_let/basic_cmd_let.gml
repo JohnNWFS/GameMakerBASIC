@@ -31,9 +31,16 @@ function basic_cmd_let(arg) {
         return;
     }
 
-    // Evaluate numeric or expression assignment
-    var result = basic_evaluate_expression_v2(expr);
-    global.basic_variables[? varname] = result;
+	// Evaluate numeric or expression assignment
+	var result = basic_evaluate_expression_v2(expr);
 
-    show_debug_message("LET: Assigned numeric value: " + string(result) + " to '" + varname + "'");
+	// Type-check before storing
+	if (is_string(result)) {
+	    global.basic_variables[? varname] = result;
+	    show_debug_message("LET: Assigned string value: '" + result + "' to '" + varname + "'");
+	} else {
+	    global.basic_variables[? varname] = result;
+	    show_debug_message("LET: Assigned numeric value: " + string(result) + " to '" + varname + "'");
+	}
+
 }

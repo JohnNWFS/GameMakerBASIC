@@ -1,7 +1,9 @@
-// obj_basic_interpreter Step Event
+// obj_basic_interpreter → Step Event
 
 // Sort program lines in ascending order
-ds_list_sort(global.line_list, true);
+if (ds_exists(global.line_list, ds_type_list)) {
+    ds_list_sort(global.line_list, true);
+}
 
 // === Program Ended: Wait for user action ===
 if (global.program_has_ended) {
@@ -17,6 +19,7 @@ if (global.program_has_ended) {
 
     if (keyboard_check_pressed(vk_enter) || keyboard_check_pressed(vk_escape)) {
         global.program_has_ended = false;
+        global.current_mode = 0;  
         room_goto(global.editor_return_room);
     }
     return;
@@ -33,24 +36,23 @@ if (global.awaiting_input) {
         }
     } else {
         for (var k = 32; k <= 126; k++) {
-            if (keyboard_check_pressed(k)) {
-                handle_interpreter_character_input(k);
-            }
+            if (keyboard_check_pressed(k)) handle_interpreter_character_input(k);
         }
-        if (keyboard_check_pressed(vk_enter)) {
-            handle_interpreter_character_input(vk_enter);
-        }
-        if (keyboard_check_pressed(vk_backspace)) {
-            handle_interpreter_character_input(vk_backspace);
-        }
+        if (keyboard_check_pressed(vk_enter)) handle_interpreter_character_input(vk_enter);
+        if (keyboard_check_pressed(vk_backspace)) handle_interpreter_character_input(vk_backspace);
     }
     return;
 }
 
+// === Synchronize for structured IF…ELSE handling ===
+// Ensure handlers read the correct current line index
+global.interpreter_current_line_index = line_index;
+
 // === Handle IF/GOTO Jump ===
-if (interpreter_next_line >= 0) {
-    line_index = interpreter_next_line;
-    interpreter_next_line = -1;
+if (global.interpreter_next_line >= 0) {
+    line_index = global.interpreter_next_line;
+    global.interpreter_current_line_index = global.interpreter_next_line;
+    global.interpreter_next_line = -1;
 }
 
 // === End of Program Check ===
@@ -71,9 +73,11 @@ if (line_index < ds_list_size(global.line_list)) {
     show_debug_message("Running line " + string(line_number));
     show_debug_message("Command: " + cmd + " | Arg: " + arg);
 
+    // Dispatch to the command handlers (including IF/ELSEIF/ELSE/ENDIF)
     handle_basic_command(cmd, arg);
 
-    if (interpreter_next_line < 0) {
+    // If no jump was requested, advance to next line
+    if (global.interpreter_next_line < 0) {
         line_index++;
     }
 } else {
@@ -82,11 +86,13 @@ if (line_index < ds_list_size(global.line_list)) {
 
 // === Escape Returns to Editor ===
 if (keyboard_check_pressed(vk_escape)) {
+    global.current_mode = 0;
     room_goto(global.editor_return_room);
 }
 
 // === F5 Dumps BASIC to Console ===
-if (keyboard_check_released(vk_f5)) {
+if (keyboard_check_released(vk_f5) && basic_run_to_console_flag == false) {
+    basic_run_to_console_flag = true;
     basic_run_to_console();
 }
 

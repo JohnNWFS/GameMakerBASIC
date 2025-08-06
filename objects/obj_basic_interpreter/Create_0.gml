@@ -15,9 +15,10 @@ current_input = "";
 cursor_pos = 0;
 last_keyboard_string = "";
 
-interpreter_current_line_index = 0;
-interpreter_next_line = -1;
+global.interpreter_current_line_index = 0;
+global.interpreter_next_line = -1;
 
 // Local list to hold current run if needed
 interpreter_current_program = ds_list_create(); // OK to keep local
 
+basic_run_to_console_flag = false;

@@ -29,8 +29,8 @@ function basic_cmd_next(arg) {
     show_debug_message("NEXT: Loop check — continue = " + string(continue_loop));
 
     if (continue_loop) {
-        interpreter_next_line = return_line + 1;
-        show_debug_message("NEXT: Looping back to line index: " + string(interpreter_next_line));
+        global.interpreter_next_line = return_line + 1;
+        show_debug_message("NEXT: Looping back to line index: " + string(global.interpreter_next_line));
     } else {
         ds_stack_pop(global.for_stack);
         show_debug_message("NEXT: Loop complete — popped FOR frame");

@@ -13,17 +13,33 @@ function basic_cmd_for(arg) {
     }
 
     var varname = string_upper(parts[0]);
-    var start = real(parts[2]);
-    var to_val = real(parts[4]);
 
-    var step = 1; // Default step
+    // Evaluate start expression
+    var start_expr = parts[2];
+    var start_tokens = basic_tokenize_expression_v2(start_expr);
+    var start_postfix = infix_to_postfix(start_tokens);
+    var start = evaluate_postfix(start_postfix);
+
+    // Evaluate TO expression
+    var to_val_expr = parts[4];
+    var to_val_tokens = basic_tokenize_expression_v2(to_val_expr);
+    var to_val_postfix = infix_to_postfix(to_val_tokens);
+    var to_val = evaluate_postfix(to_val_postfix);
+
+    // Default step
+    var step = 1;
+
+    // Evaluate optional STEP expression
     if (array_length(parts) >= 7 && string_upper(parts[5]) == "STEP") {
-        step = real(parts[6]);
+        var step_expr = parts[6];
+        var step_tokens = basic_tokenize_expression_v2(step_expr);
+        var step_postfix = infix_to_postfix(step_tokens);
+        step = evaluate_postfix(step_postfix);
     }
 
     show_debug_message("FOR: Parsed var='" + varname + "', start=" + string(start) + ", to=" + string(to_val) + ", step=" + string(step));
 
-    // Initialize the loop control variable
+    // Initialize loop control variable
     global.basic_variables[? varname] = start;
     show_debug_message("FOR: Initialized variable " + varname + " = " + string(start));
 

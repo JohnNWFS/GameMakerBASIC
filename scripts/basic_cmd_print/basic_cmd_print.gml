@@ -12,17 +12,26 @@ function basic_cmd_print(arg, line_number) {
     var output = "";
 
     // Split into parts by semicolon for multi-part print
-    var parts = string_split(arg, ";");
+   var parts = split_on_unquoted_semicolons(arg);
+
 
     for (var i = 0; i < array_length(parts); i++) {
         var part = string_trim(parts[i]);
 
         if (part == "") continue;
 
+        var treat_as_literal = false;
+
         if (is_quoted_string(part)) {
-            var literal = string_copy(part, 2, string_length(part) - 2);
-            output += literal;
-            show_debug_message("PRINT: Part " + string(i) + " is string literal → " + literal);
+            var inner = string_copy(part, 2, string_length(part) - 2);
+            if (!string_pos("+", inner) && !string_pos("-", inner) && !string_pos("*", inner) && !string_pos("/", inner)) {
+                treat_as_literal = true;
+            }
+        }
+
+        if (treat_as_literal) {
+            output += string_copy(part, 2, string_length(part) - 2);
+            show_debug_message("PRINT: Part " + string(i) + " is string literal → " + string_copy(part, 2, string_length(part) - 2));
         } else {
             show_debug_message("PRINT: Part " + string(i) + " is expression → " + part);
             var tokens = basic_tokenize_expression_v2(part);
@@ -34,17 +43,31 @@ function basic_cmd_print(arg, line_number) {
             var result = evaluate_postfix(postfix);
             show_debug_message("PRINT: Evaluated result = " + string(result));
 
-            // Format numbers with higher precision
-            if (is_real(result)) {
-                output += string_format(result, 12, 8); // 8 decimal digits, up to 12 characters wide
-            } else {
-                output += string(result);
-            }
+		if (is_real(result)) {
+		    if (frac(result) == 0) {
+		        output += string(round(result)); // whole number → no decimal
+		    } else {
+		        output += string_format(result, 12, 8); // retain full format for decimals
+		    }
+		} else {
+		    output += string(result);
+		}
+
         }
     }
 
-    // Append to line buffer
-    global.print_line_buffer += output;
+    // Append to line buffer with wrap
+    var wrap_width = 40;
+    var full_line = global.print_line_buffer + output;
+
+    while (string_length(full_line) > wrap_width) {
+        var line = string_copy(full_line, 1, wrap_width);
+        ds_list_add(global.output_lines, line);
+        ds_list_add(global.output_colors, global.current_draw_color);
+        full_line = string_copy(full_line, wrap_width + 1, string_length(full_line) - wrap_width);
+    }
+
+    global.print_line_buffer = full_line;
 
     if (!suppress_newline) {
         ds_list_add(global.output_lines, global.print_line_buffer);

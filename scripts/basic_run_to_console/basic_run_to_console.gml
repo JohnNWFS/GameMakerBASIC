@@ -68,6 +68,6 @@ function basic_run_to_console() {
     }
 
     ds_map_destroy(local_vars);
-
+	basic_run_to_console_flag = false;
     show_debug_message("==== END PROGRAM CONSOLE OUTPUT ====");
 }

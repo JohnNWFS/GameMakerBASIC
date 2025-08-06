@@ -3,6 +3,10 @@
 function handle_basic_command(cmd, arg) {
     show_debug_message("COMMAND DISPATCH: " + cmd + " | ARG: " + arg);
 
+	// Clean up the argument string by removing BASIC-style remarks
+	arg = strip_basic_remark(arg);
+
+
     switch (cmd) {
         case "PRINT":
             show_debug_message("Dispatching to PRINT");
@@ -89,6 +93,50 @@ function handle_basic_command(cmd, arg) {
 			basic_cmd_pause();
 			break;
 
+        case "MODE":
+            show_debug_message("Dispatching to MODE");
+            basic_cmd_mode(arg);
+            break;
+
+		case "CLSCHAR":
+		    show_debug_message("Dispatching to CLSCHAR");
+		    basic_cmd_clschar(arg);
+		    break;
+
+	    case "PSET":
+		    show_debug_message("Dispatching to PSET");
+	        basic_cmd_pset(arg);
+	        break;
+
+	    case "CHARAT":
+	        show_debug_message("Dispatching to CHARAT");
+			basic_cmd_charat(arg);
+	        break;
+
+		case "PRINTAT":
+	        show_debug_message("Dispatching to PRINTAT");
+			basic_cmd_printat(arg);
+		    break;
+
+		case "FONT":
+	        show_debug_message("Dispatching to FONT");
+			basic_cmd_font(arg);
+			break;
+
+	    case "ELSEIF":
+		    show_debug_message("Dispatching to ELSEIF");
+		    basic_cmd_elseif(arg);
+			break;
+			
+		case "ELSE":
+		    show_debug_message("Dispatching to ELSE");
+		    basic_cmd_else();
+			break;
+
+		case "ENDIF":
+		    show_debug_message("Dispatching to ENDIF");
+		    basic_cmd_endif();
+			break;
 
         default:
             // Check for implicit LET (e.g. "X = 5")

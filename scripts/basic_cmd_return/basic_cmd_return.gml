@@ -7,6 +7,6 @@ function basic_cmd_return() {
     }
 
     var return_index = ds_stack_pop(global.gosub_stack);
-    interpreter_next_line = return_index;
+    global.interpreter_next_line = return_index;
     show_debug_message("RETURN: Popped return index from gosub_stack: " + string(return_index));
 }

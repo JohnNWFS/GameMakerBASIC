@@ -1,42 +1,54 @@
+/// @script basic_cmd_color
+/// @description Change text color (and optional background): COLOR fg[, bg]
 function basic_cmd_color(arg) {
-    var color_arg = string_upper(string_trim(arg));
-    var new_color = c_green; // Default fallback
-    
-    // Check for RGB(...) pattern
-    if (string_copy(color_arg, 1, 4) == "RGB(" && string_char_at(color_arg, string_length(color_arg)) == ")") {
-        var inner = string_copy(color_arg, 5, string_length(color_arg) - 5); // Remove RGB( and )
-        var parts = string_split(inner, ",");
-        if (array_length(parts) == 3) {
-            var r = real(string_trim(parts[0]));
-            var g = real(string_trim(parts[1]));
-            var b = real(string_trim(parts[2]));
-            // Clamp and set color
-            r = clamp(r, 0, 255);
-            g = clamp(g, 0, 255);
-            b = clamp(b, 0, 255);
-            new_color = make_color_rgb(r, g, b);
-        } else {
-            show_debug_message("?COLOR ERROR: Invalid RGB format: " + arg);
-            return;
+    // Split into up to two parts: foreground and optional background
+    var parts = string_split(string_trim(arg), ",");
+    var fgStr = string_upper(string_trim(parts[0]));
+    var bgStr = (array_length(parts) > 1)
+                ? string_upper(string_trim(parts[1]))
+                : "";
+
+    // Helper: parse a single color spec (named or RGB), returns -1 on error
+    var parse_color = function(colSpec) {
+        // RGB(r,g,b) form?
+        if (string_copy(colSpec, 1, 4) == "RGB("
+            && string_char_at(colSpec, string_length(colSpec)) == ")")
+        {
+            var inner = string_copy(colSpec, 5, string_length(colSpec) - 5);
+            var comps = string_split(inner, ",");
+            if (array_length(comps) == 3) {
+                var r = clamp(real(string_trim(comps[0])), 0, 255);
+                var g = clamp(real(string_trim(comps[1])), 0, 255);
+                var b = clamp(real(string_trim(comps[2])), 0, 255);
+                return make_color_rgb(r, g, b);
+            } else {
+                return -1;
+            }
         }
+        // Named color lookup
+        if (ds_map_exists(global.colors, colSpec)) {
+            return global.colors[? colSpec];
+        }
+        return -1;
+    };
+
+    // Parse and apply foreground
+    var fgCol = parse_color(fgStr);
+    if (fgCol >= 0) {
+        global.basic_text_color   = fgCol;
+        global.current_draw_color = fgCol;
     } else {
-        // Named colors
-        switch (color_arg) {
-            case "RED": new_color = c_red; break;
-            case "GREEN": new_color = c_green; break;
-            case "BLUE": new_color = c_blue; break;
-            case "WHITE": new_color = c_white; break;
-            case "YELLOW": new_color = c_yellow; break;
-            case "CYAN": new_color = c_teal; break;
-            case "MAGENTA": new_color = c_fuchsia; break;
-            case "BLACK": new_color = c_black; break;
-            default:
-                show_debug_message("?COLOR ERROR: Unknown color '" + arg + "'");
-				new_color = global.basic_text_color; //default color if unknown
-                return;
+        show_debug_message("?COLOR ERROR: Unknown foreground color '" + fgStr + "'");
+    }
+
+    // Parse and apply background (if provided)
+    if (bgStr != "") {
+        var bgCol = parse_color(bgStr);
+        if (bgCol >= 0) {
+            global.background_draw_color   = bgCol;
+            global.background_draw_enabled = true;
+        } else {
+            show_debug_message("?COLOR ERROR: Unknown background color '" + bgStr + "'");
         }
     }
-    
-    // ✅ ONLY change the current draw color, NEVER change basic_text_color
-    global.current_draw_color = new_color;
 }

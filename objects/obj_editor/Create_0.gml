@@ -37,4 +37,7 @@
  //show_debug_message("Working directory: " + working_directory);
 keyboard_string = "";
 
+//for directory listings
+showing_dir_overlay = false;
+dir_listing = [];
 
