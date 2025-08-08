@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"quit_program",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"quit_program",
+  "parent":{
+    "name":"BASIC_COMMANDS",
+    "path":"folders/Scripts/BASIC_COMMANDS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

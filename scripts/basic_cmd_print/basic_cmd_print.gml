@@ -1,5 +1,13 @@
 function basic_cmd_print(arg, line_number) {
-    var suppress_newline = false;
+
+if (!ds_exists(global.output_lines, ds_type_list))  global.output_lines  = ds_list_create();
+if (!ds_exists(global.output_colors, ds_type_list)) global.output_colors = ds_list_create();
+
+
+
+
+
+	var suppress_newline = false;
 
     // Check for and remove trailing semicolon
     if (string_length(arg) > 0 && string_char_at(arg, string_length(arg)) == ";") {
@@ -60,18 +68,18 @@ function basic_cmd_print(arg, line_number) {
     var wrap_width = 40;
     var full_line = global.print_line_buffer + output;
 
-    while (string_length(full_line) > wrap_width) {
-        var line = string_copy(full_line, 1, wrap_width);
-        ds_list_add(global.output_lines, line);
-        ds_list_add(global.output_colors, global.current_draw_color);
-        full_line = string_copy(full_line, wrap_width + 1, string_length(full_line) - wrap_width);
-    }
+	while (string_length(full_line) > wrap_width) {
+	    var line = string_copy(full_line, 1, wrap_width);
+	    ds_list_add(global.output_lines, line);
+	    ds_list_add(global.output_colors, global.current_draw_color);
+	    full_line = string_copy(full_line, wrap_width + 1, string_length(full_line) - wrap_width);
+	}
+
 
     global.print_line_buffer = full_line;
 
     if (!suppress_newline) {
-        ds_list_add(global.output_lines, global.print_line_buffer);
-        ds_list_add(global.output_colors, global.current_draw_color);
+		basic_wrap_and_commit(global.print_line_buffer, global.current_draw_color);
         show_debug_message("PRINT: Line committed → " + global.print_line_buffer);
         global.print_line_buffer = "";
     } else {

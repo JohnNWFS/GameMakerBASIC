@@ -12,21 +12,26 @@ function basic_cmd_bgcolor(arg) {
         show_debug_message("BGCOLOR: Matched named color → " + string(bg_color));
     }
     // RGB() syntax
-    else if (string_pos("RGB(", colstr) == 1) {
-        var inner = string_copy(colstr, 5, string_length(colstr) - 5);
-        inner = string_replace_all(inner, ")", "");
-        var parts = string_split(inner, ",");
-        if (array_length(parts) == 3) {
-            var r = real(parts[0]);
-            var g = real(parts[1]);
-            var b = real(parts[2]);
-            bg_color = make_color_rgb(r, g, b);
-            matched = true;
-            show_debug_message("BGCOLOR: Parsed RGB → R: " + string(r) + ", G: " + string(g) + ", B: " + string(b));
-        } else {
-            show_debug_message("BGCOLOR: Invalid RGB syntax in '" + colstr + "'");
+   else if (string_pos("RGB(", colstr) == 1) {
+    var l = string_pos("(", colstr), r = string_last_pos(")", colstr);
+    if (r > l) {
+        var inner = string_copy(colstr, l + 1, r - l - 1);
+        var parts = []; var buf = ""; var _depth = 0;
+        for (var i = 1; i <= string_length(inner); i++) {
+            var ch = string_char_at(inner, i);
+            if (ch == "(") _depth++; else if (ch == ")") _depth--;
+            if (ch == "," && _depth == 0) { array_push(parts, buf); buf = ""; } else buf += ch;
         }
-    } else {
+        array_push(parts, buf);
+        if (array_length(parts) == 3) {
+            var rV = clamp(floor(basic_evaluate_expression_v2(string_trim(parts[0]))), 0, 255);
+            var gV = clamp(floor(basic_evaluate_expression_v2(string_trim(parts[1]))), 0, 255);
+            var bV = clamp(floor(basic_evaluate_expression_v2(string_trim(parts[2]))), 0, 255);
+            bg_color = make_color_rgb(rV, gV, bV); matched = true;
+        } else show_debug_message("BGCOLOR: Invalid RGB arg count in '" + inner + "'");
+    } else show_debug_message("BGCOLOR: Missing ) in '" + colstr + "'");
+}
+ else {
         show_debug_message("BGCOLOR: No matching named color or RGB format found for '" + colstr + "'");
     }
 

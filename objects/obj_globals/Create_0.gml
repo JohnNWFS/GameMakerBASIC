@@ -96,3 +96,16 @@ global.active_font_sprite = global.font_sheets[? global.active_font_name];
 
 global.grid_refresh_needed = false;
 global.grid_refresh_char = 32;
+
+global.basic_arrays = ds_map_create(); // name (string) → ds_list
+
+global.interpreter_target_line = -1;
+global.interpreter_target_stmt = 0;
+global.interpreter_use_stmt_jump = false;
+global.interpreter_resume_stmt_index = 0;
+
+global.interpreter_current_stmt_index = 0;
+
+
+
+

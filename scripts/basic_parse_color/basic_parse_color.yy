@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"basic_parse_color",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"basic_parse_color",
+  "parent":{
+    "name":"MODE_1_COMMANDS",
+    "path":"folders/Scripts/MODE_1_COMMANDS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

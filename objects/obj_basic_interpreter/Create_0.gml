@@ -22,3 +22,4 @@ global.interpreter_next_line = -1;
 interpreter_current_program = ds_list_create(); // OK to keep local
 
 basic_run_to_console_flag = false;
+

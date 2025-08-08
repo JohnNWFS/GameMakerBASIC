@@ -1,0 +1,204 @@
+✅ Already Implemented (for reference)
+PRINT, LET, GOTO, INPUT, IF, CLS, END, REM, FOR/NEXT, WHILE/WEND, GOSUB/RETURN, BGCOLOR, PAUSE
+
+🔹 Easy / Low Complexity
+These are standalone or single-line commands.
+
+DATA / READ / RESTORE
+
+DATA: Defines values in program lines.
+
+READ: Reads values sequentially from DATA.
+
+RESTORE: Resets the read pointer.
+
+Would require a global.data_list, global.data_pointer, and a pass to collect DATA lines at program start.
+
+DIM
+
+Declares arrays. Could store in global.basic_variables as arrays (e.g., ARR(3) → ARR = [val0, val1, val2, val3]).
+
+RANDOMIZE
+
+Seeds the RNG, useful before calling RND.
+
+STOP
+
+Like END but optionally allows resuming later.
+
+🔸 Medium Complexity
+Require changes to the interpreter’s program flow or memory model.
+
+ON GOTO / ON GOSUB
+
+Uses a numeric expression to jump to one of several destinations.
+
+ON X GOTO 100, 200, 300
+
+DEF FN
+
+Custom functions. BASIC syntax like DEF FNX(Y) = Y^2 + 1.
+
+Likely overkill right now but doable with string parsing and token capture.
+
+🔺 Higher Complexity
+Require runtime memory allocation and indexable data access.
+
+String functions (LEFT$, RIGHT$, MID$, LEN, CHR$, ASC)
+
+Would require extending expression evaluator to support these.
+
+Array math and slicing
+
+A(1) = A(2) + A(3)
+
+Requires robust variable parsing to differentiate between scalar and indexed access.
+
+MODES:
+Your MODE-based architecture is a **sound and extensible approach** that mirrors classic computer systems like the VIC-20, Commodore 64, and early IBM PCs. You're capturing the essence of those machines: separate modes for text vs graphics, with dedicated logic and renderers. Here's an evaluation of your plan, along with recommendations.
+
+---
+
+## ✅ Summary of Your Plan
+
+### 1. **`MODE 0` (Text Mode – Current)**
+
+* Already implemented in `rm_basic_interpreter` using `obj_basic_interpreter` and text rendering with line buffers.
+* Uses string output, colors, and scrollable text.
+
+### 2. **`MODE 1` (Tile Graphics Mode)**
+
+* A new room or overlay object will handle graphics:
+
+  * A **tilemap-like grid**, e.g. 40×25 of 32×32 sprites.
+  * Sprites represent characters or graphical elements (frame-based sprite strip, indexed by value 0–255).
+  * Controlled via new BASIC commands like `PLOT`, `DRAW`, or `CHARAT`.
+
+### 3. **`MODE 2` (Pixel Mode)**
+
+* True pixel access (e.g. `PSET`, `LINE`, `CIRCLE`).
+* Would require surface drawing or pixel arrays.
+* Ideal for dynamic pixel manipulation.
+
+---
+
+## 🧠 Analysis & Recommendations
+
+### ✔ Why Your Plan Is Solid
+
+* **Matches Retro Hardware Metaphors**: Commodore used mode switching between text (PETSCII) and bitmap. Your MODE command echoes this.
+* **Modularity**: Each MODE having its own interpreter/renderer object is clean. Objects can specialize without bloating `obj_basic_interpreter`.
+* **Flexible Expansion**: You could implement Mode 3, Mode 4, etc. in the future (e.g., sprite overlay, waveform audio visualization).
+* **Room-based Switching**: Keeps memory and logic scoped per mode, preventing conflicts between text and graphics pipelines.
+
+---
+
+## 🔧 Implementation Tips
+
+### A. MODE Command
+
+Have `basic_cmd_mode(arg)`:
+
+```gml
+switch (real(arg)) {
+    case 0: room_goto(rm_basic_interpreter); break;
+    case 1: room_goto(rm_graphic_tiles); break;
+    case 2: room_goto(rm_graphic_pixels); break;
+}
+```
+
+Each room would include a variant of `obj_basic_interpreter` AND the appropriate drawing controller (`obj_graphics_tilemode`, `obj_graphics_pixmode`, etc.).
+
+---
+
+### B. MODE 1 – Tile-Based Graphics
+
+**Setup:**
+
+* Global 2D array or 1D ds\_grid: `global.char_grid[columns, rows]`
+* Sprite: 256-frame sheet, 32×32 or 16×16 tiles
+* Draw using:
+
+```gml
+draw_sprite(spr_chars, value, x * 32, y * 32);
+```
+
+**New BASIC Commands:**
+
+* `PLOT x, y, code` – sets grid position
+* `CLEAR code` – fills with a value
+* `COLOR index` – sets current tile color (optional)
+* `DRAWSTR x, y, "HELLO"` – auto-places characters
+
+---
+
+### C. MODE 2 – Pixel Graphics
+
+**Options:**
+
+* Use `draw_pixel`, `draw_line`, or draw on a surface
+* Surface buffer for `PSET x, y, c`, `LINE x1, y1, x2, y2`, `CIRCLE x, y, r`
+* Needs full coordinate access and color handling
+
+---
+
+### D. Object Architecture (Best Practice)
+
+| Object                  | Role                                             |
+| ----------------------- | ------------------------------------------------ |
+| `obj_basic_interpreter` | Handles parsing + logic, shared across all modes |
+| `obj_text_renderer`     | Present in MODE 0 room only                      |
+| `obj_graphics_tilemode` | Present in MODE 1, interprets PLOT/CLEAR/CHARAT  |
+| `obj_graphics_pixmode`  | Present in MODE 2, handles PSET/LINE/etc.        |
+
+Decouple display logic from `obj_basic_interpreter`. You’ll gain more control and cleaner specialization.
+
+---
+
+## 📈 Suggested Command Rollout by Mode
+
+| Command               | Mode  | Description                      |
+| --------------------- | ----- | -------------------------------- |
+| `MODE`                | 0,1,2 | Switch between text and graphics |
+| `PLOT x, y, c`        | 1     | Set tile code at position        |
+| `CHARAT x, y`         | 1     | Return tile value                |
+| `PSET x, y, color`    | 2     | Set pixel                        |
+| `LINE x1,y1,x2,y2`    | 2     | Draw line                        |
+| `CIRCLE x, y, r`      | 2     | Draw circle                      |
+| `CLEAR`               | 1,2   | Reset display                    |
+| `DRAWSTR x, y, "TXT"` | 1     | Fast text in tile mode           |
+
+---
+
+## 📎 Optional Enhancements
+
+* Add `GETMODE()` function (returns current mode)
+* Maintain variables like `CURX`, `CURY` for drawing state
+* Add `SPRITE` command in higher modes for displaying custom art
+
+---
+
+## 🚦 Final Verdict
+
+**Your approach is excellent.** It's grounded in retro computing principles but adapts well to modern GameMaker workflows. Going with:
+
+* Room-based separation
+* Interpreter reuse
+* Specialized render/controller objects per mode
+  ...gives you a **scalable, organized framework**.
+
+If you'd like, I can scaffold the `basic_cmd_mode()` function and a starting `obj_graphics_tilemode` with grid drawing logic and a `PLOT` command.
+
+errors to fix:
+E GM1041 The type 'String' appears where the type 'Id.DsMap' is expected. add_or_update_program_line 4:16
+E GM1041 The type 'String' appears where the type 'Id.DsList' is expected. basic_cmd_cls 5:19
+E GM1041 The type 'String' appears where the type 'Id.DsList' is expected. basic_cmd_print 50:21
+E GM1041 The type 'Constant.Color' appears where the type 'Id.DsList' is expected. basic_cmd_print 51:21
+E GM1041 The type 'String' appears where the type 'Id.DsMap' is expected. basic_run_to_console 19:38
+E GM1041 The type 'String' appears where the type 'Id.DsMap' is expected. editor_handle_paste_command 26:36
+W GM1062 Malformed type 'boolean' in jsdoc. is_function_token 5:35
+E GM1041 The type 'String' appears where the type 'Id.DsMap' is expected. load_program_from 30:32
+E GM1041 The type 'String' appears where the type 'Id.DsMap' is expected. new_program 9:18
+E GM1041 The type 'String' appears where the type 'Id.DsList' is expected. obj_basic_interpreter : Step 14:40
+E GM1041 The type 'String' appears where the type 'Id.DsList' is expected. obj_basic_interpreter : Step 102:36
+

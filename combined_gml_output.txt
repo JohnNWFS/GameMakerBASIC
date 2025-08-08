@@ -1,0 +1,3569 @@
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\objects\obj_basic_interpreter\Create_0.gml" 
+/// obj_basic_interpreter → Create Event
+
+// Set the current draw color
+global.current_draw_color = global.basic_text_color;
+
+// Use the shared global data structures
+global.program_map  = global.basic_program; // optional if you're not modifying
+global.line_list    = global.basic_line_numbers;
+
+// Interpreter control variables
+line_index = 0;                         // current line being executed
+font_height = 16;
+
+current_input = "";
+cursor_pos = 0;
+last_keyboard_string = "";
+
+interpreter_current_line_index = 0;
+interpreter_next_line = -1;
+
+// Local list to hold current run if needed
+interpreter_current_program = ds_list_create(); // OK to keep local
+
+basic_run_to_console_flag = false;
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\objects\obj_basic_interpreter\Destroy_0.gml" 
+/// @description Insert description here
+// You can write your code in this editor
+ds_list_destroy(interpreter_current_program);
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\objects\obj_basic_interpreter\Draw_0.gml" 
+/// @description obj_basic_interpreter Draw interpreter output and current input
+draw_set_font(fnt_basic);
+
+// === BACKGROUND === //
+if (global.background_draw_enabled) {
+    draw_set_color(global.background_draw_color);
+    draw_rectangle(0, 0, room_width, room_height, false);
+}
+
+var font_height = string_height("A");
+var visible_lines = floor(room_height / font_height) - 2;
+var total_lines = ds_list_size(global.output_lines) + (global.awaiting_input ? 1 : 0);
+
+// === SCROLL MANAGEMENT === //
+if (!global.scroll_lock && global.interpreter_running && !global.awaiting_input && !global.program_has_ended) {
+    global.scroll_offset = max(0, total_lines - visible_lines);
+}
+global.scroll_offset = clamp(global.scroll_offset, 0, max(0, total_lines - visible_lines));
+
+// === OUTPUT TEXT === //
+var y1 = 0;
+for (var i = global.scroll_offset; i < ds_list_size(global.output_lines); i++) {
+    var col = (i < ds_list_size(global.output_colors)) ? global.output_colors[| i] : global.basic_text_color;
+    draw_set_color(col);
+    draw_text(16, y1, global.output_lines[| i]);
+    y1 += font_height;
+}
+
+// === INPUT LINE OR PAUSE === //
+if (global.awaiting_input) {
+    draw_set_color(global.basic_text_color);
+    var input_str = "";
+
+    if (global.input_expected) {
+        // We're in INPUT mode
+        input_str = "? " + global.interpreter_input;
+    } else {
+        // We're in PAUSE mode
+        input_str = global.interpreter_input;
+
+        var curr_color = draw_get_color();
+        var txt = "PAUSED...";
+        var xx = room_width div 2;
+        var yy = room_height div 2;
+
+        draw_set_color(c_black);
+        draw_text(xx - 1, yy - 1, txt);
+        draw_text(xx + 1, yy - 1, txt);
+        draw_text(xx - 1, yy + 1, txt);
+        draw_text(xx + 1, yy + 1, txt);
+
+        draw_set_color(c_yellow);
+        draw_text(xx, yy, txt);
+
+        draw_set_color(curr_color);
+    }
+
+    if (current_time mod 1000 < 500) input_str += "|";
+    draw_text(16, y1, input_str);
+    y1 += font_height;
+}
+
+// === END MESSAGE === //
+if (global.program_has_ended) {
+    draw_set_color(c_lime);
+    draw_text(16, y1 + 16, "Program has ended - ESC or ENTER to return");
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\objects\obj_basic_interpreter\Step_0.gml" 
+// obj_basic_interpreter Step Event
+
+// Sort program lines in ascending order
+ds_list_sort(global.line_list, true);
+
+// === Program Ended: Wait for user action ===
+if (global.program_has_ended) {
+    if (keyboard_check_pressed(vk_pageup)) {
+        global.scroll_offset = max(global.scroll_offset - 1, 0);
+    }
+    if (keyboard_check_pressed(vk_pagedown)) {
+        var font_height = string_height("A");
+        var visible_lines = floor(room_height / font_height) - 2;
+        var total_lines = ds_list_size(global.output_lines);
+        global.scroll_offset = min(global.scroll_offset + 1, max(0, total_lines - visible_lines));
+    }
+
+    if (keyboard_check_pressed(vk_enter) || keyboard_check_pressed(vk_escape)) {
+        global.program_has_ended = false;
+		global.current_mode = 0;  
+        room_goto(global.editor_return_room);
+    }
+    return;
+}
+
+// === Handle INPUT or PAUSE ===
+if (global.awaiting_input) {
+    if (global.pause_mode) {
+        if (keyboard_check_pressed(vk_enter)) {
+            global.awaiting_input = false;
+            global.pause_mode = false;
+            global.input_target_var = "";
+            global.interpreter_input = "";
+        }
+    } else {
+        for (var k = 32; k <= 126; k++) {
+            if (keyboard_check_pressed(k)) {
+                handle_interpreter_character_input(k);
+            }
+        }
+        if (keyboard_check_pressed(vk_enter)) {
+            handle_interpreter_character_input(vk_enter);
+        }
+        if (keyboard_check_pressed(vk_backspace)) {
+            handle_interpreter_character_input(vk_backspace);
+        }
+    }
+    return;
+}
+
+// === Handle IF/GOTO Jump ===
+if (interpreter_next_line >= 0) {
+    line_index = interpreter_next_line;
+    interpreter_next_line = -1;
+}
+
+// === End of Program Check ===
+if (line_index >= ds_list_size(global.line_list)) {
+    global.interpreter_running = false;
+}
+
+// === Execute BASIC Line ===
+if (line_index < ds_list_size(global.line_list)) {
+    var line_number = ds_list_find_value(global.line_list, line_index);
+    var code = ds_map_find_value(global.program_map, line_number);
+    var trimmed = string_trim(code);
+    var sp = string_pos(" ", trimmed);
+    var cmd = (sp > 0) ? string_upper(string_copy(trimmed, 1, sp - 1)) : string_upper(trimmed);
+    var arg = (sp > 0) ? string_trim(string_copy(trimmed, sp + 1, string_length(trimmed))) : "";
+
+    global.current_line_number = line_number;
+    show_debug_message("Running line " + string(line_number));
+    show_debug_message("Command: " + cmd + " | Arg: " + arg);
+
+    handle_basic_command(cmd, arg);
+
+    if (interpreter_next_line < 0) {
+        line_index++;
+    }
+} else {
+    global.interpreter_running = false;
+}
+
+// === Escape Returns to Editor ===
+if (keyboard_check_pressed(vk_escape)) {
+	global.current_mode = 0;
+    room_goto(global.editor_return_room);
+}
+
+// === F5 Dumps BASIC to Console ===
+if (keyboard_check_released(vk_f5) && basic_run_to_console_flag == false) {
+	basic_run_to_console_flag = true;
+	basic_run_to_console();
+}
+
+// === Manual Scroll (Always Available) ===
+if (keyboard_check_pressed(vk_pageup)) {
+    global.scroll_offset = max(global.scroll_offset - 1, 0);
+}
+if (keyboard_check_pressed(vk_pagedown)) {
+    var font_height = string_height("A");
+    var visible_lines = floor(room_height / font_height) - 2;
+    var total_lines = ds_list_size(global.output_lines) + (global.awaiting_input ? 1 : 0);
+    global.scroll_offset = min(global.scroll_offset + 1, max(0, total_lines - visible_lines));
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\objects\obj_editor\Create_0.gml" 
+/// @description Insert description here
+// You can write your code in this editor
+ // Program storage
+
+
+ // Input handling
+ current_input = "";               // Current line being typed
+ cursor_pos = 0;                  // Text cursor position
+
+
+ input_buffer = "";               // Buffer for key repeat handling
+ // Display variables
+ display_start_line = 0;          // For scrolling through program
+ lines_per_screen = 20;           // How many lines to show
+ font_height = 16;                // Adjust based on your font
+ screen_width = room_width;
+ screen_height = room_height;
+ // Syntax highlighting settings
+ syntax_highlighting = true;      // Toggle for syntax highlighting
+ keyword_color = c_blue;          // Color for BASIC keywords
+ text_color = c_green;            // Default text color
+ number_color = c_yellow;         // Color for line numbers
+ // State management
+ editor_mode = "READY";           // States: "READY", "INPUT", "RUNNING"
+ current_filename = "";           // For save/load operations
+ // Keyboard handling
+ last_keyboard_string = "";       // Track keyboard_string changes
+ key_repeat_timer = 0;            // For handling key repeat timing
+ // Undo system
+
+ max_undo_levels = 20;            // Limit undo history
+ // Message system
+ message_text = "";
+ message_timer = 0;
+ 
+ drag_enabled = true;
+ //show_debug_message("Working directory: " + working_directory);
+keyboard_string = "";
+
+//for directory listings
+showing_dir_overlay = false;
+dir_listing = [];
+
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\objects\obj_editor\Draw_0.gml" 
+/// @description Insert description here
+// You can write your code in this editor
+ // In Draw Event
+ draw_set_font(fnt_basic); // Create a monospace font
+ draw_set_color(make_color_rgb(255, 191, 64));  // Classic green text
+ draw_rectangle_color(0, 0, room_width, room_height, c_black, c_black, c_black, c_black, false);
+ 
+ if (showing_dir_overlay) {
+    draw_set_color(c_black);
+    draw_rectangle(0, 0, room_width, room_height, false);
+
+    draw_set_color(c_lime); // or whatever your readable text color is
+    draw_set_font(fnt_basic); // or whatever font you use
+
+    var col_count = 3;
+    var row_height = font_height;
+    var col_width = room_width div col_count;
+    var x_pad = 16;
+    var y_pad = 16;
+
+    for (var i = 0; i < array_length(dir_listing); i++) {
+        var col = i mod col_count;
+        var row = i div col_count;
+
+        var _x = x_pad + col * col_width;
+        var _y = y_pad + row * row_height;
+
+        draw_text(_x, _y, dir_listing[i]);
+    }
+
+    draw_text(x_pad, room_height - 32, "Press ENTER or ESC to close");
+
+    return; // skip rest of Draw so editor doesn't draw underneath
+}
+
+ 
+ 
+ 
+ 
+ 
+ // Draw program lines
+ var y_pos = 32;
+ var lines_shown = 0;
+ var total_lines = ds_list_size(global.line_numbers);
+ for (var i = display_start_line; i < total_lines && lines_shown < lines_per_screen; i++) {
+    var line_num = ds_list_find_value(global.line_numbers, i);
+    var code = ds_map_find_value(global.program_lines, line_num);
+    var display_text = string(line_num) + " " + code;
+    
+    draw_text(16, y_pos, display_text);
+    y_pos += font_height;
+    lines_shown++;
+ }
+ // Draw input prompt
+ draw_text(16, room_height - 64, "READY");
+ draw_text(16, room_height - 32, "> " + current_input);
+ // Draw cursor
+ var cursor_x = 16 + string_width("> " + string_copy(current_input, 1, cursor_pos));
+ if (current_time % 1000 < 500) { // Blinking cursor
+    draw_text(cursor_x, room_height - 32, "_");
+ }
+ 
+ // In Draw Event (add to display code)
+ if (message_text != "") {
+    draw_set_color(c_yellow);
+    draw_text(16, room_height - 96, message_text);
+    draw_set_color(c_green);
+ }
+ 
+ 
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\objects\obj_editor\Other_3.gml" 
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\objects\obj_editor\Step_0.gml" 
+if (global.justreturned == 1) {
+    current_input = "";
+    cursor_pos = 0;
+    keyboard_string = "";
+    global.justreturned = 0;
+    exit; // skip the rest of this Step event
+}
+
+if (showing_dir_overlay) {
+    if (keyboard_check_pressed(vk_enter) || keyboard_check_pressed(vk_escape)) {
+        showing_dir_overlay = false;
+        dir_listing = []; // Clear the array
+    }
+    exit; // prevent editor interaction while overlay is up
+}
+
+
+
+
+// Handle Enter key
+if (keyboard_check_pressed(vk_enter)) {
+    add_to_history(current_input);
+    process_input_line(current_input);
+    current_input = "";
+    cursor_pos = 0;
+    global.history_index = -1;
+    input_buffer = keyboard_string; // reset keyboard buffer
+}
+
+ else if (keyboard_check_released(vk_backspace)) {
+    if (cursor_pos > 0) {
+        current_input = string_delete(current_input, cursor_pos, 1);
+        cursor_pos--;
+    }
+ }
+ else if (keyboard_check_pressed(vk_left)) {
+    cursor_pos = max(0, cursor_pos - 1);
+ }
+ else if (keyboard_check_pressed(vk_right)) {
+    cursor_pos = min(string_length(current_input), cursor_pos + 1);
+ }
+ else if (keyboard_check_pressed(vk_up)) {
+    navigate_history_up();
+ }
+ else if (keyboard_check_pressed(vk_down)) {
+    navigate_history_down();
+ }
+ else if (keyboard_check_pressed(vk_pageup)) {
+    display_start_line = max(0, display_start_line - lines_per_screen);
+ }
+ else if (keyboard_check_pressed(vk_pagedown)) {
+    var max_start = max(0, ds_list_size(global.line_numbers) - lines_per_screen);
+    display_start_line = min(max_start, display_start_line + lines_per_screen);
+ }
+ else if (keyboard_check(vk_control) && keyboard_check_pressed(ord("Z"))) {
+    undo_last_change();
+ }
+ else if (keyboard_check(vk_f5)) {
+    dump_program_to_console();
+	basic_show_message("Dumped program to Console");	 
+ }
+ else {
+    // Handle character input with repeat
+    handle_character_input();
+ }
+ 
+  // In Step Event
+ if (message_timer > 0) {
+    message_timer--;
+    if (message_timer <= 0) {
+        message_text = "";
+    }
+ }
+ 
+/*  // Add to Step event
+ if (drag_enabled && drag_files > 0) {
+    var file_path = drag_file[0];
+    if (string_pos(".bas", string_lower(file_path)) > 0) {
+        // Extract filename without path and extension
+        var filename_start = 1;
+        for (var i = string_length(file_path); i >= 1; i--) {
+            if (string_char_at(file_path, i) == "/" || string_char_at(file_path, i) == "\\") {
+                filename_start = i + 1;
+                break;
+            }
+        }
+        var full_filename = string_copy(file_path, filename_start, string_length(file_path));
+        var dot_pos = string_pos(".", full_filename);
+        var filename = string_copy(full_filename, 1, dot_pos - 1);
+        
+        load_program_from_path(file_path, filename);
+    }
+    drag_clear();
+ }
+
+*/
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\objects\obj_globals\Create_0.gml" 
+/// @description All Global Variables
+// obj_globals → Create Event
+
+global.justreturned = 0;
+global.program_filename = "";
+global.username = "";
+global.editor_spawned = false;
+
+// Program and source management
+global.program_lines = ds_map_create();
+global.basic_program = ds_map_create();
+global.program_map  = ds_map_create();
+
+// Line tracking
+global.line_list    = ds_list_create();
+global.line_numbers = ds_list_create();
+global.undo_stack = ds_list_create();
+global.output_lines = ds_list_create();
+global.output_colors = ds_list_create();
+global.input_history = ds_list_create();
+
+// Interpreter control stacks
+global.gosub_stack = ds_stack_create();
+global.for_stack   = ds_stack_create();
+global.while_stack = ds_stack_create();
+
+global.history_index = -1;
+
+// Spawn the editor after globals are ready
+instance_create_layer(0, 0, "Instances", obj_editor);
+
+// Initialize variable store
+if (!variable_global_exists("basic_variables")) {
+    global.basic_variables = ds_map_create();
+}
+
+// Output buffer
+global.print_line_buffer = "";
+
+// Color settings
+global.basic_text_color = make_color_rgb(255, 191, 64);
+global.current_draw_color = c_green;
+global.background_draw_color = c_black;
+global.background_draw_enabled = false;
+
+// Input / Pause
+global.awaiting_input = false;
+global.input_target_var = "";
+global.interpreter_input = "";
+global.interpreter_cursor_pos = 0;
+global.interpreter_running = false;
+global.last_interpreter_string = "";
+global.program_has_ended = false;
+global.pause_in_effect = false;
+global.input_expected = false;
+global.pause_mode = false;
+
+// Scrolling control
+global.scroll_offset = 0;
+global.scroll_lock = false;
+
+// Named colors
+global.colors = ds_map_create();
+global.colors[? "RED"]     = c_red;
+global.colors[? "GREEN"]   = c_green;
+global.colors[? "BLUE"]    = c_blue;
+global.colors[? "CYAN"]    = c_teal;
+global.colors[? "MAGENTA"] = c_fuchsia;
+global.colors[? "YELLOW"]  = c_yellow;
+global.colors[? "WHITE"]   = c_white;
+global.colors[? "BLACK"]   = c_black;
+global.colors[? "GRAY"]    = c_gray;
+global.colors[? "ORANGE"]  = c_orange;
+global.colors[? "LIME"]    = c_lime;
+global.colors[? "NAVY"] = make_color_rgb(0, 0, 128);
+global.colors[? "DKGRAY"] = make_color_rgb(64, 64, 64);
+
+// MODE control
+global.current_mode = 0; // 0 = Text, 1 = Tile graphics, 2 = Pixel graphics
+global.mode_rooms = ds_map_create();
+global.mode_rooms[? 0] = rm_basic_interpreter; // Text
+global.mode_rooms[? 1] = rm_mode1_graphics;    // Tile graphics
+global.mode_rooms[? 2] = rm_mode2_pixel;       // Pixel graphics
+
+//MODE 1 sprite sheet container
+// FONT registry for MODE 1
+global.font_sheets = ds_map_create();
+ds_map_add(global.font_sheets, "DEFAULT", spr_charactersheet);
+ds_map_add(global.font_sheets, "SPECIAL", spr_charactersheet_special);
+
+global.active_font_name = "DEFAULT";
+global.active_font_sprite = global.font_sheets[? global.active_font_name];
+
+global.grid_refresh_needed = false;
+global.grid_refresh_char = 32;
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\objects\obj_globals\Other_3.gml" 
+/// @description Cleanup all global DS structures at game end
+
+// ─────────────────────────────
+// MAPS
+// ─────────────────────────────
+if (ds_exists(global.basic_variables, ds_type_map)) ds_map_destroy(global.basic_variables);
+if (ds_exists(global.program_lines, ds_type_map)) ds_map_destroy(global.program_lines);
+if (ds_exists(global.basic_program, ds_type_map)) ds_map_destroy(global.basic_program);
+if (ds_exists(global.program_map, ds_type_map)) ds_map_destroy(global.program_map);
+if (ds_exists(global.colors, ds_type_map)) ds_map_destroy(global.colors);
+
+// ─────────────────────────────
+// LISTS
+// ─────────────────────────────
+if (ds_exists(global.line_list, ds_type_list)) ds_list_destroy(global.line_list);
+if (ds_exists(global.line_numbers, ds_type_list)) ds_list_destroy(global.line_numbers);
+
+if (variable_global_exists("basic_line_numbers")) {
+    if (ds_exists(global.basic_line_numbers, ds_type_list)) {
+        ds_list_destroy(global.basic_line_numbers);
+    }
+}
+
+if (ds_exists(global.undo_stack, ds_type_list)) ds_list_destroy(global.undo_stack);
+if (ds_exists(global.output_lines, ds_type_list)) ds_list_destroy(global.output_lines);
+if (ds_exists(global.output_colors, ds_type_list)) ds_list_destroy(global.output_colors);
+if (ds_exists(global.input_history, ds_type_list)) ds_list_destroy(global.input_history);
+
+// ─────────────────────────────
+// STACKS
+// ─────────────────────────────
+if (ds_exists(global.gosub_stack, ds_type_stack)) ds_stack_destroy(global.gosub_stack);
+if (ds_exists(global.for_stack, ds_type_stack)) ds_stack_destroy(global.for_stack);
+if (ds_exists(global.while_stack, ds_type_stack)) ds_stack_destroy(global.while_stack);
+
+// ─────────────────────────────
+// TEMPORARY LIST (used in interpreter object)
+// ─────────────────────────────
+if (variable_global_exists("interpreter_current_program")) {
+    if (ds_exists(interpreter_current_program, ds_type_list)) {
+        ds_list_destroy(interpreter_current_program);
+    }
+}
+
+// ─────────────────────────────
+// Buffer & State Cleanup
+// ─────────────────────────────
+global.print_line_buffer = "";
+global.editor_spawned = false;
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\objects\obj_globals\Step_0.gml" 
+// obj_globals Step Event
+if (room == rm_editor) {
+    if (!instance_exists(obj_editor)) {
+        instance_create_layer(0, 0, "Instances", obj_editor);
+    }
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\objects\obj_mode1_grid\Create_0.gml" 
+// @description obj_mode1_grid Create Event
+//Create 40x25 grid for 32x32 character tiles
+grid_cols = 40;
+grid_rows = 25;
+tile_width = 32;
+tile_height = 32;
+
+grid = array_create(grid_cols * grid_rows);
+
+// Each grid cell will be a struct:
+function make_tile_struct(char = 32, fg = c_white, bg = c_black) {
+    return { char: char, fg: fg, bg: bg };
+}
+
+// Initialize all tiles
+for (var i = 0; i < array_length(grid); i++) {
+    grid[i] = make_tile_struct();
+}
+
+self.mode1_grid_fill = function(char, fg, bg) {
+    show_debug_message(">> GRID FILL START: char=" + string(char) + ", fg=" + string(fg) + ", bg=" + string(bg));
+    show_debug_message(">> Grid array length: " + string(array_length(grid)));
+    
+    for (var i = 0; i < array_length(grid); i++) {
+        grid[i].char = char;
+        grid[i].fg = fg;
+        grid[i].bg = bg;
+    }
+    
+    // Check first few tiles to verify they were set
+    for (var i = 0; i < 3; i++) {
+        show_debug_message(">> Tile[" + string(i) + "]: char=" + string(grid[i].char) + ", fg=" + string(grid[i].fg) + ", bg=" + string(grid[i].bg));
+    }
+    show_debug_message(">> GRID FILL END");
+}
+
+drewfont = 0;//temp var
+
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\objects\obj_mode1_grid\Destroy_0.gml" 
+/// @description Insert description here
+// You can write your code in this editor
+reset_interpreter_state();
+global.current_mode = 0;
+show_message(" Unto the abyss I fall");
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\objects\obj_mode1_grid\Draw_0.gml" 
+/// @description ob_mode1_grid Draw Event
+//draw_sprite(spr_charactersheet,10,10,10);
+var cols = 40;
+var rows = 25;
+var tile_w = 32;
+var tile_h = 32;
+var max_chars = sprite_get_number(spr_charactersheet);
+
+if (global.grid_refresh_needed) {
+    global.grid_refresh_needed = false;
+    
+    for (var row = 0; row < 25; row++) {
+        for (var col = 0; col < 40; col++) {
+            var i = col + row * 40;
+            if (i < array_length(grid)) {
+                grid[i].char = global.grid_refresh_char;
+            }
+        }
+    }
+}
+
+
+
+for (var _y = 0; _y < rows; _y++) {
+    for (var _x = 0; _x < cols; _x++) {
+        var i = _x + _y * cols;
+        if (i < array_length(grid)) {
+            var tile = grid[i];
+            
+            // Draw background
+            draw_set_color(tile.bg);
+            draw_rectangle(_x * tile_w, _y * tile_h, (_x + 1) * tile_w, (_y + 1) * tile_h, false);
+            
+            // Draw foreground (sprite tint)
+            draw_set_color(tile.fg);
+            
+            // ADD THESE LINES TO FORCE PROPER BLENDING:
+            gpu_set_blendmode(bm_normal);
+            draw_set_alpha(1.0);
+            
+            var subimg = clamp(tile.char, 0, max_chars - 1);
+            
+            // Draw character sprite
+            draw_sprite_ext(global.active_font_sprite, subimg, _x * tile_w, _y * tile_h, 1, 1, 0, tile.fg, 1.0);
+	//if (drewfont  < 5000) {show_debug_message(global.active_font_sprite);drewfont++;}
+		//enable the following to debug
+		//draw_text(_x * tile_w, _y * tile_h + tile_h - 12, string(tile.char));
+
+		}
+    }
+}
+
+// Reset draw state after the loop
+draw_set_color(c_white);
+gpu_set_blendmode(bm_normal);
+
+//draw_text(10, 24, "Font: " + global.active_font_name);
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\objects\obj_mode1_grid\Step_0.gml" 
+/// @description Insert description here
+// You can write your code in this editor
+// No active logic yet, but this is where future interactions (like SCROLL or POKE) will go.
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\add_or_update_program_line\add_or_update_program_line.gml" 
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+function add_or_update_program_line(line_num, code) {
+    ds_map_set(global.program_lines, line_num, code);
+    
+    // Update ordered line numbers list
+    var pos = ds_list_find_index(global.line_numbers, line_num);
+    if (pos == -1) {
+        // Insert in correct order
+        insert_line_number_ordered(line_num);
+    }
+ }
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\add_to_history\add_to_history.gml" 
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+ function add_to_history(input_text) {
+    if (input_text != "" && (ds_list_size(global.input_history) == 0 || 
+        ds_list_find_value(global.input_history, ds_list_size(global.input_history) - 1) != input_text)) {
+        ds_list_add(global.input_history, input_text);
+        // Limit history size
+        while (ds_list_size(global.input_history) > 50) {
+            ds_list_delete(global.input_history, 0);
+        }
+	}
+ }
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_cmd_bgcolor\basic_cmd_bgcolor.gml" 
+function basic_cmd_bgcolor(arg) {
+    var colstr = string_upper(string_trim(arg));
+    show_debug_message("BGCOLOR: Raw argument: '" + arg + "', Normalized: '" + colstr + "'");
+    
+    var bg_color = c_black;
+    var matched = false;
+
+    // Look up named color
+    if (ds_map_exists(global.colors, colstr)) {
+        bg_color = global.colors[? colstr];
+        matched = true;
+        show_debug_message("BGCOLOR: Matched named color → " + string(bg_color));
+    }
+    // RGB() syntax
+    else if (string_pos("RGB(", colstr) == 1) {
+        var inner = string_copy(colstr, 5, string_length(colstr) - 5);
+        inner = string_replace_all(inner, ")", "");
+        var parts = string_split(inner, ",");
+        if (array_length(parts) == 3) {
+            var r = real(parts[0]);
+            var g = real(parts[1]);
+            var b = real(parts[2]);
+            bg_color = make_color_rgb(r, g, b);
+            matched = true;
+            show_debug_message("BGCOLOR: Parsed RGB → R: " + string(r) + ", G: " + string(g) + ", B: " + string(b));
+        } else {
+            show_debug_message("BGCOLOR: Invalid RGB syntax in '" + colstr + "'");
+        }
+    } else {
+        show_debug_message("BGCOLOR: No matching named color or RGB format found for '" + colstr + "'");
+    }
+
+    global.background_draw_color = bg_color;
+    global.background_draw_enabled = (bg_color != c_black);
+
+    show_debug_message("BGCOLOR: Final color set to " + string(bg_color) + ", background_draw_enabled: " + string(global.background_draw_enabled));
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_cmd_charat\basic_cmd_charat.gml" 
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+function basic_cmd_charat(arg) {
+    var args = string_split(arg, ",");
+
+    if (array_length(args) < 3) {
+        show_debug_message("CHARAT requires 3 arguments: x, y, char");
+        return;
+    }
+
+    var _x = real(string_trim(args[0]));
+    var _y = real(string_trim(args[1]));
+    var char_index = real(string_trim(args[2]));
+
+    var grid_obj = instance_find(obj_mode1_grid, 0);
+    if (instance_exists(grid_obj)) {
+        var cols = 40;
+        var rows = 25;
+        if (_x >= 0 && _x < cols && _y >= 0 && _y < rows) {
+            var index = _x + _y * cols;
+            grid_obj.grid[index].char = char_index;
+        } else {
+            show_debug_message("CHARAT: coordinates out of bounds.");
+        }
+    }
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_cmd_cls\basic_cmd_cls.gml" 
+function basic_cmd_cls() {
+    show_debug_message("CLS: Called");
+    show_debug_message("CLS: Current color before clear: " + string(global.current_draw_color));
+
+    ds_list_clear(global.output_lines);
+    ds_list_clear(global.output_colors);
+
+    global.current_draw_color = global.basic_text_color;
+
+    show_debug_message("CLS: Screen cleared");
+    show_debug_message("CLS: Current color reset to default: " + string(global.current_draw_color));
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_cmd_clschar\basic_cmd_clschar.gml" 
+function basic_cmd_clschar(arg) {
+    show_debug_message("=== CLSCHAR DEBUG START ===");
+    show_debug_message("Raw arg: '" + string(arg) + "'");
+    
+    var args = string_split(arg, ",");
+    show_debug_message("Split args count: " + string(array_length(args)));
+    for (var i = 0; i < array_length(args); i++) {
+        show_debug_message("Arg[" + string(i) + "]: '" + string(args[i]) + "'");
+    }
+
+    var char_index = 0;
+    var fg_color = c_white;
+    var bg_color = c_black;
+
+    if (array_length(args) >= 1) {
+        char_index = real(string_trim(args[0]));
+        show_debug_message("Parsed char_index: " + string(char_index));
+    }
+
+    if (array_length(args) >= 2) {
+        var fg_str = string_upper(string_trim(args[1]));
+        show_debug_message("Looking for fg color: '" + fg_str + "'");
+        if (ds_map_exists(global.colors, fg_str)) {
+            fg_color = global.colors[? fg_str];
+            show_debug_message("Found fg color: " + string(fg_color));
+        } else {
+            show_debug_message("FG COLOR NOT FOUND!");
+        }
+    }
+
+    if (array_length(args) >= 3) {
+        var bg_str = string_upper(string_trim(args[2]));
+        show_debug_message("Looking for bg color: '" + bg_str + "'");
+        if (ds_map_exists(global.colors, bg_str)) {
+            bg_color = global.colors[? bg_str];
+            show_debug_message("Found bg color: " + string(bg_color));
+        } else {
+            show_debug_message("BG COLOR NOT FOUND!");
+        }
+    }
+
+    var grid_obj = instance_find(obj_mode1_grid, 0);
+    if (!instance_exists(grid_obj)) {
+        show_debug_message("❌ CLSCHAR: No obj_mode1_grid found!");
+    } else {
+        show_debug_message("✅ CLSCHAR: Found grid obj - calling fill...");
+        show_debug_message("Calling fill with: char=" + string(char_index) + ", fg=" + string(fg_color) + ", bg=" + string(bg_color));
+        grid_obj.mode1_grid_fill(char_index, fg_color, bg_color);
+    }
+    show_debug_message("=== CLSCHAR DEBUG END ===");
+}
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_cmd_color\basic_cmd_color.gml" 
+function basic_cmd_color(arg) {
+    var color_arg = string_upper(string_trim(arg));
+    var new_color = c_green; // Default fallback
+    
+    // Check for RGB(...) pattern
+    if (string_copy(color_arg, 1, 4) == "RGB(" && string_char_at(color_arg, string_length(color_arg)) == ")") {
+        var inner = string_copy(color_arg, 5, string_length(color_arg) - 5); // Remove RGB( and )
+        var parts = string_split(inner, ",");
+        if (array_length(parts) == 3) {
+            var r = real(string_trim(parts[0]));
+            var g = real(string_trim(parts[1]));
+            var b = real(string_trim(parts[2]));
+            // Clamp and set color
+            r = clamp(r, 0, 255);
+            g = clamp(g, 0, 255);
+            b = clamp(b, 0, 255);
+            new_color = make_color_rgb(r, g, b);
+        } else {
+            show_debug_message("?COLOR ERROR: Invalid RGB format: " + arg);
+            return;
+        }
+    } else {
+        // Named colors
+        switch (color_arg) {
+            case "RED": new_color = c_red; break;
+            case "GREEN": new_color = c_green; break;
+            case "BLUE": new_color = c_blue; break;
+            case "WHITE": new_color = c_white; break;
+            case "YELLOW": new_color = c_yellow; break;
+            case "CYAN": new_color = c_teal; break;
+            case "MAGENTA": new_color = c_fuchsia; break;
+            case "BLACK": new_color = c_black; break;
+            default:
+                show_debug_message("?COLOR ERROR: Unknown color '" + arg + "'");
+				new_color = global.basic_text_color; //default color if unknown
+                return;
+        }
+    }
+    
+    // ✅ ONLY change the current draw color, NEVER change basic_text_color
+    global.current_draw_color = new_color;
+}
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_cmd_end\basic_cmd_end.gml" 
+function basic_cmd_end() {
+    show_debug_message("END: Program termination requested");
+    global.program_has_ended = true;
+    global.interpreter_running = false;
+	 global.current_mode = 0;
+    show_debug_message("END: interpreter_running set to false");
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_cmd_font\basic_cmd_font.gml" 
+function basic_cmd_font(arg) {
+    if (global.current_mode < 1) {
+        basic_print_system_message("FONT not implemented in MODE " + string(global.current_mode));
+        return;
+    }
+
+    var fontname = string_upper(string_trim(arg));
+
+    // Remove surrounding quotes if user used them
+    if (string_length(fontname) >= 2) {
+        var first = string_char_at(fontname, 1);
+        var last  = string_char_at(fontname, string_length(fontname));
+        if ((first == "\"" || first == "'") && first == last) {
+            fontname = string_copy(fontname, 2, string_length(fontname) - 2);
+        }
+    }
+
+    if (ds_map_exists(global.font_sheets, fontname)) {
+        global.active_font_name = fontname;
+        global.active_font_sprite = global.font_sheets[? fontname];
+ 
+		show_debug_message("Font set to: " + fontname + " " + " global.active_font_sprite: " + string( global.active_font_sprite));
+
+		global.grid_refresh_needed = true; // re-blank the screen using current font’s subimage 32
+		show_debug_message("Cleared Screen after font change");
+	} else {
+        // Call with direct string, avoid expression parsing
+        basic_cmd_print("FONT " + fontname + " not found", false);
+    }
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_cmd_for\basic_cmd_for.gml" 
+/// @function basic_cmd_for(arg)
+/// @description Parses and handles BASIC FOR loop initialization
+
+function basic_cmd_for(arg) {
+    show_debug_message("FOR: Entering handler with argument: '" + arg + "'");
+
+    var parts = string_split(arg, " ");
+    if (array_length(parts) < 4 || parts[1] != "=" || string_upper(parts[3]) != "TO") {
+        show_debug_message("FOR: SYNTAX ERROR — parts = " + string(parts));
+        basic_show_message("SYNTAX ERROR IN FOR STATEMENT: " + arg);
+        global.interpreter_running = false;
+        return;
+    }
+
+    var varname = string_upper(parts[0]);
+
+    // Evaluate start expression
+    var start_expr = parts[2];
+    var start_tokens = basic_tokenize_expression_v2(start_expr);
+    var start_postfix = infix_to_postfix(start_tokens);
+    var start = evaluate_postfix(start_postfix);
+
+    // Evaluate TO expression
+    var to_val_expr = parts[4];
+    var to_val_tokens = basic_tokenize_expression_v2(to_val_expr);
+    var to_val_postfix = infix_to_postfix(to_val_tokens);
+    var to_val = evaluate_postfix(to_val_postfix);
+
+    // Default step
+    var step = 1;
+
+    // Evaluate optional STEP expression
+    if (array_length(parts) >= 7 && string_upper(parts[5]) == "STEP") {
+        var step_expr = parts[6];
+        var step_tokens = basic_tokenize_expression_v2(step_expr);
+        var step_postfix = infix_to_postfix(step_tokens);
+        step = evaluate_postfix(step_postfix);
+    }
+
+    show_debug_message("FOR: Parsed var='" + varname + "', start=" + string(start) + ", to=" + string(to_val) + ", step=" + string(step));
+
+    // Initialize loop control variable
+    global.basic_variables[? varname] = start;
+    show_debug_message("FOR: Initialized variable " + varname + " = " + string(start));
+
+    // Ensure the for_stack exists
+    if (!ds_exists(global.for_stack, ds_type_stack)) {
+        global.for_stack = ds_stack_create();
+        show_debug_message("FOR: Created new for_stack");
+    }
+
+    // Build and push loop frame
+    var frame = {
+        varname: varname,
+        to: to_val,
+        step: step,
+        return_line: line_index  // will resume at NEXT
+    };
+    ds_stack_push(global.for_stack, frame);
+    show_debug_message("FOR: Pushed frame to for_stack with return_line = " + string(line_index));
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_cmd_gosub\basic_cmd_gosub.gml" 
+function basic_cmd_gosub(arg) {
+    var target = real(arg);
+    show_debug_message("GOSUB: Target line requested: " + string(target));
+
+    // Push return point (next line index) onto stack
+    var return_index = line_index + 1;
+    ds_stack_push(global.gosub_stack, return_index);
+    show_debug_message("GOSUB: Pushed return index: " + string(return_index));
+
+    // Search for the target line in the program
+    interpreter_next_line = -1;
+    for (var i = 0; i < ds_list_size(global.line_list); i++) {
+        if (ds_list_find_value(global.line_list, i) == target) {
+            interpreter_next_line = i;
+            show_debug_message("GOSUB: Found target line at index " + string(i));
+            break;
+        }
+    }
+
+    if (interpreter_next_line == -1) {
+        show_debug_message("GOSUB: ERROR — Target line " + string(target) + " not found");
+        basic_show_error_message("GOSUB target line not found: " + string(target));
+        global.interpreter_running = false;
+    }
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_cmd_goto\basic_cmd_goto.gml" 
+/// @function basic_cmd_goto(arg)
+/// @description Sets the program counter to a new line number if it exists.
+function basic_cmd_goto(arg) {
+    show_debug_message("GOTO START — Raw arg: '" + arg + "'");
+
+    var trimmed_arg = string_trim(arg);
+    var target_line = real(trimmed_arg);
+
+    show_debug_message("GOTO: Parsed target line number: " + string(target_line));
+
+    // Find the index in your line_list
+    var index = -1;
+	for (var i = 0; i < ds_list_size(global.line_list); i++) {
+	    if (real(ds_list_find_value(global.line_list, i)) == target_line) {
+	        index = i;
+	        break;
+	    }
+	}
+
+	
+    if (index >= 0) {
+        interpreter_next_line = index;
+        show_debug_message("GOTO SUCCESS → Jumping to line " + string(target_line) + " (list index " + string(index) + ")");
+    } else {
+        show_debug_message("?GOTO ERROR: Line number " + string(target_line) + " not found in global.line_list");
+    }
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_cmd_if\basic_cmd_if.gml" 
+function basic_cmd_if(arg) {
+    show_debug_message("IF START — Raw arg: '" + arg + "'");
+
+    var cond_str = string_trim(arg);
+    var then_pos = string_pos("THEN", string_upper(cond_str));
+    if (then_pos <= 0) {
+        show_debug_message("?IF ERROR: Missing THEN in '" + cond_str + "'");
+        return;
+    }
+
+    var else_pos = string_pos("ELSE", string_upper(cond_str));
+
+    var condition = string_trim(string_copy(cond_str, 1, then_pos - 1));
+    var then_action, else_action;
+
+    if (else_pos > 0 && else_pos > then_pos) {
+        then_action = string_trim(string_copy(cond_str, then_pos + 4, else_pos - then_pos - 4));
+        else_action = string_trim(string_copy(cond_str, else_pos + 4, string_length(cond_str)));
+    } else {
+        then_action = string_trim(string_copy(cond_str, then_pos + 4, string_length(cond_str)));
+        else_action = "";
+    }
+
+    show_debug_message("Parsed condition: '" + condition + "'");
+    show_debug_message("Parsed THEN: '" + then_action + "'");
+    show_debug_message("Parsed ELSE: '" + else_action + "'");
+
+    // Detect and evaluate compound conditions
+    var logic_op = "";
+    var result = false;
+    var upper_cond = string_upper(condition);
+
+    if (string_pos("AND", upper_cond) > 0) logic_op = "AND";
+    else if (string_pos("OR", upper_cond) > 0) logic_op = "OR";
+
+    if (logic_op != "") {
+        var cond_parts = string_split(condition, logic_op);
+        if (array_length(cond_parts) != 2) {
+            show_debug_message("?IF ERROR: Malformed " + logic_op + " condition: '" + condition + "'");
+            return;
+        }
+
+        var res1 = basic_evaluate_condition(string_trim(cond_parts[0]));
+        var res2 = basic_evaluate_condition(string_trim(cond_parts[1]));
+        result = (logic_op == "AND") ? (res1 && res2) : (res1 || res2);
+
+        show_debug_message("Combined condition (" + logic_op + "): " + string(res1) + " " + logic_op + " " + string(res2) + " = " + string(result));
+    } else {
+        result = basic_evaluate_condition(condition);
+        show_debug_message("Single condition result: " + string(result));
+    }
+
+    var final_action = result ? then_action : else_action;
+    if (final_action == "") {
+        show_debug_message("No action to execute for this branch.");
+        return;
+    }
+
+    show_debug_message((result ? "THEN" : "ELSE") + " executing: '" + final_action + "'");
+
+    // Parse the action into command and arguments
+    var sp = string_pos(" ", final_action);
+    var cmd = (sp > 0) ? string_upper(string_copy(final_action, 1, sp - 1)) : string_upper(final_action);
+    var action_arg = (sp > 0) ? string_trim(string_copy(final_action, sp + 1, string_length(final_action))) : "";
+
+    show_debug_message("Parsed - cmd: '" + cmd + "', arg: '" + action_arg + "'");
+
+    if (cmd == "GOTO") {
+        var line_target = real(action_arg);
+        var index = ds_list_find_index(global.line_list, line_target);
+        if (index >= 0) {
+            interpreter_next_line = index;
+            show_debug_message("GOTO from IF → line " + string(line_target) + " (index " + string(index) + ")");
+        } else {
+            show_debug_message("?IF ERROR: GOTO target line not found: " + string(line_target));
+        }
+    } else {
+        handle_basic_command(cmd, action_arg);
+    }
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_cmd_input\basic_cmd_input.gml" 
+function basic_cmd_input(arg) {
+    var varname = string_upper(string_trim(arg));
+    
+    show_debug_message("INPUT START — DRAW COLOR: " + string(global.current_draw_color));
+    show_debug_message("INPUT: Awaiting input for variable: '" + varname + "'");
+
+    global.awaiting_input = true;
+    global.input_target_var = varname;
+	global.input_expected = true;
+
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_cmd_let\basic_cmd_let.gml" 
+function basic_cmd_let(arg) {
+    show_debug_message("LET: Raw input: '" + arg + "'");
+
+    var eq_pos = string_pos("=", arg);
+    if (eq_pos <= 0) {
+        show_debug_message("LET ERROR: No '=' found in input: " + arg);
+        return;
+    }
+
+    var varname = string_upper(string_trim(string_copy(arg, 1, eq_pos - 1)));
+    var expr = string_trim(string_copy(arg, eq_pos + 1, string_length(arg)));
+
+    show_debug_message("LET: Parsed variable name: '" + varname + "'");
+    show_debug_message("LET: Parsed expression: '" + expr + "'");
+
+    // Check for empty variable name or expression
+    if (string_length(varname) == 0) {
+        show_debug_message("LET ERROR: Variable name is empty.");
+        return;
+    }
+    if (string_length(expr) == 0) {
+        show_debug_message("LET ERROR: Expression is empty.");
+        return;
+    }
+
+    // Handle string literal assignment
+    if (string_length(expr) >= 2 && string_char_at(expr, 1) == "\"" && string_char_at(expr, string_length(expr)) == "\"") {
+        var str_val = string_copy(expr, 2, string_length(expr) - 2);
+        global.basic_variables[? varname] = str_val;
+        show_debug_message("LET: Assigned string value: '" + str_val + "' to '" + varname + "'");
+        return;
+    }
+
+	// Evaluate numeric or expression assignment
+	var result = basic_evaluate_expression_v2(expr);
+
+	// Type-check before storing
+	if (is_string(result)) {
+	    global.basic_variables[? varname] = result;
+	    show_debug_message("LET: Assigned string value: '" + result + "' to '" + varname + "'");
+	} else {
+	    global.basic_variables[? varname] = result;
+	    show_debug_message("LET: Assigned numeric value: " + string(result) + " to '" + varname + "'");
+	}
+
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_cmd_mode\basic_cmd_mode.gml" 
+/// @function basic_cmd_mode(arg)
+/// @description Sets the mode and switches to the appropriate room
+function basic_cmd_mode(arg) {
+    var mode = real(string_trim(arg));
+    if (!ds_map_exists(global.mode_rooms, mode)) {
+        basic_show_message("Invalid MODE: " + string(mode));
+        return;
+    }
+
+    if (mode == global.current_mode) {
+        show_debug_message("MODE already set to " + string(mode) + "; no room switch needed.");
+        return;
+    }
+
+    global.current_mode = mode;
+    show_debug_message("Switching to MODE " + string(mode) + " → room: " + string(global.mode_rooms[? mode]));
+    room_goto(global.mode_rooms[? mode]);
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_cmd_next\basic_cmd_next.gml" 
+/// @function basic_cmd_next(arg)
+/// @description Handles BASIC NEXT loop continuation
+
+function basic_cmd_next(arg) {
+    show_debug_message("NEXT: Entering handler");
+
+    if (ds_stack_empty(global.for_stack)) {
+        show_debug_message("NEXT: ERROR — NEXT without matching FOR");
+        basic_show_message("NEXT without FOR");
+        global.interpreter_running = false;
+        return;
+    }
+
+    var frame = ds_stack_top(global.for_stack);
+
+    var varname = frame.varname;
+    var to_val = frame.to;
+    var step = frame.step;
+    var return_line = frame.return_line;
+
+    var current = global.basic_variables[? varname];
+    show_debug_message("NEXT: Current value of " + varname + " = " + string(current));
+
+    current += step;
+    global.basic_variables[? varname] = current;
+    show_debug_message("NEXT: Updated value of " + varname + " = " + string(current));
+
+    var continue_loop = (step > 0) ? (current <= to_val) : (current >= to_val);
+    show_debug_message("NEXT: Loop check — continue = " + string(continue_loop));
+
+    if (continue_loop) {
+        interpreter_next_line = return_line + 1;
+        show_debug_message("NEXT: Looping back to line index: " + string(interpreter_next_line));
+    } else {
+        ds_stack_pop(global.for_stack);
+        show_debug_message("NEXT: Loop complete — popped FOR frame");
+    }
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_cmd_pause\basic_cmd_pause.gml" 
+function basic_cmd_pause() {
+    show_debug_message("PAUSE: Execution paused. Waiting for user to press ENTER...");
+
+	global.pause_in_effect = true;
+    global.awaiting_input = true;
+    global.input_target_var = ""; // No variable to store
+    global.pause_mode = true;     // Optional flag if you want to treat it differently in draw
+	global.input_expected = false;
+
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_cmd_print\basic_cmd_print.gml" 
+function basic_cmd_print(arg, line_number) {
+    var suppress_newline = false;
+
+    // Check for and remove trailing semicolon
+    if (string_length(arg) > 0 && string_char_at(arg, string_length(arg)) == ";") {
+        suppress_newline = true;
+        arg = string_copy(arg, 1, string_length(arg) - 1);
+        show_debug_message("PRINT: Trailing semicolon detected; suppressing newline");
+    }
+
+    arg = string_trim(arg);
+    var output = "";
+
+    // Split into parts by semicolon for multi-part print
+   var parts = split_on_unquoted_semicolons(arg);
+
+
+    for (var i = 0; i < array_length(parts); i++) {
+        var part = string_trim(parts[i]);
+
+        if (part == "") continue;
+
+        var treat_as_literal = false;
+
+        if (is_quoted_string(part)) {
+            var inner = string_copy(part, 2, string_length(part) - 2);
+            if (!string_pos("+", inner) && !string_pos("-", inner) && !string_pos("*", inner) && !string_pos("/", inner)) {
+                treat_as_literal = true;
+            }
+        }
+
+        if (treat_as_literal) {
+            output += string_copy(part, 2, string_length(part) - 2);
+            show_debug_message("PRINT: Part " + string(i) + " is string literal → " + string_copy(part, 2, string_length(part) - 2));
+        } else {
+            show_debug_message("PRINT: Part " + string(i) + " is expression → " + part);
+            var tokens = basic_tokenize_expression_v2(part);
+            show_debug_message("PRINT: Tokens = " + string(tokens));
+
+            var postfix = infix_to_postfix(tokens);
+            show_debug_message("PRINT: Postfix = " + string(postfix));
+
+            var result = evaluate_postfix(postfix);
+            show_debug_message("PRINT: Evaluated result = " + string(result));
+
+		if (is_real(result)) {
+		    if (frac(result) == 0) {
+		        output += string(round(result)); // whole number → no decimal
+		    } else {
+		        output += string_format(result, 12, 8); // retain full format for decimals
+		    }
+		} else {
+		    output += string(result);
+		}
+
+        }
+    }
+
+    // Append to line buffer with wrap
+    var wrap_width = 40;
+    var full_line = global.print_line_buffer + output;
+
+    while (string_length(full_line) > wrap_width) {
+        var line = string_copy(full_line, 1, wrap_width);
+        ds_list_add(global.output_lines, line);
+        ds_list_add(global.output_colors, global.current_draw_color);
+        full_line = string_copy(full_line, wrap_width + 1, string_length(full_line) - wrap_width);
+    }
+
+    global.print_line_buffer = full_line;
+
+    if (!suppress_newline) {
+        ds_list_add(global.output_lines, global.print_line_buffer);
+        ds_list_add(global.output_colors, global.current_draw_color);
+        show_debug_message("PRINT: Line committed → " + global.print_line_buffer);
+        global.print_line_buffer = "";
+    } else {
+        show_debug_message("PRINT: Output buffered without newline → " + global.print_line_buffer);
+    }
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_cmd_printat\basic_cmd_printat.gml" 
+function basic_cmd_printat(arg) {
+    // arg: x,y,"string",fgcolor,bgcolor
+    var args = basic_parse_csv_args(arg);
+    if (array_length(args) < 3) {
+        show_debug_message("PRINTAT ERROR: Not enough arguments.");
+        return;
+    }
+
+    var _x = basic_evaluate_expression_v2(args[0]);
+    var _y = basic_evaluate_expression_v2(args[1]);
+    var str = string(args[2]); // keep quotes if present
+    var fg = (array_length(args) > 3) ? basic_parse_color(args[3]) : c_white;
+    var bg = (array_length(args) > 4) ? basic_parse_color(args[4]) : c_black;
+
+    // Remove quotes from string if present
+    if (string_length(str) >= 2 && string_char_at(str, 1) == "\"" && string_char_at(str, string_length(str)) == "\"") {
+        str = string_copy(str, 2, string_length(str) - 2);
+    }
+
+    for (var i = 0; i < string_length(str); i++) {
+        var ch = ord(string_char_at(str, i + 1));
+        mode1_grid_set(_x + i, _y, ch, fg, bg);
+    }
+
+    show_debug_message("PRINTAT → (" + string(_x) + "," + string(_y) + ") = '" + str + "'");
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_cmd_pset\basic_cmd_pset.gml" 
+function basic_cmd_pset(arg) {
+    var args = string_split(arg, ",");
+    if (array_length(args) < 5) {
+        show_debug_message("PSET requires 5 arguments: x, y, char, fg, bg");
+        return;
+    }
+    
+    // Evaluate expressions for x, y, and char (they might be variables or expressions)
+    var x_val = real(basic_evaluate_expression_v2(string_trim(args[0])));
+    var y_val = real(basic_evaluate_expression_v2(string_trim(args[1])));
+    var char_index = real(basic_evaluate_expression_v2(string_trim(args[2])));
+    
+    var fg_str = string_upper(string_trim(args[3]));
+    var bg_str = string_upper(string_trim(args[4]));
+    
+    var fg_color = ds_map_exists(global.colors, fg_str) ? global.colors[? fg_str] : c_white;
+    var bg_color = ds_map_exists(global.colors, bg_str) ? global.colors[? bg_str] : c_black;
+    
+    var grid_obj = instance_find(obj_mode1_grid, 0);
+    if (instance_exists(grid_obj)) {
+        var cols = 40;
+        var rows = 25;
+        if (x_val >= 0 && x_val < cols && y_val >= 0 && y_val < rows) {
+            var index = x_val + y_val * cols;
+            grid_obj.grid[index].char = char_index;
+            grid_obj.grid[index].fg = fg_color;
+            grid_obj.grid[index].bg = bg_color;
+            show_debug_message("PSET: Set tile at (" + string(x_val) + "," + string(y_val) + ") to char=" + string(char_index));
+        } else {
+            show_debug_message("PSET: coordinates out of bounds: (" + string(x_val) + "," + string(y_val) + ")");
+        }
+    } else {
+        show_debug_message("PSET: No grid object found");
+    }
+}
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_cmd_rem\basic_cmd_rem.gml" 
+function basic_cmd_rem() {
+    // Do nothing — comment line
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_cmd_return\basic_cmd_return.gml" 
+function basic_cmd_return() {
+    if (ds_stack_empty(global.gosub_stack)) {
+        show_debug_message("RETURN: ERROR — gosub_stack is empty");
+        basic_show_error_message("RETURN called with empty stack.");
+        global.interpreter_running = false;
+        return;
+    }
+
+    var return_index = ds_stack_pop(global.gosub_stack);
+    interpreter_next_line = return_index;
+    show_debug_message("RETURN: Popped return index from gosub_stack: " + string(return_index));
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_cmd_wend\basic_cmd_wend.gml" 
+function basic_cmd_wend() {
+    show_debug_message("WEND: Entering handler...");
+
+    if (!ds_exists(global.while_stack, ds_type_stack)) {
+        show_debug_message("WEND: ERROR — while_stack does not exist");
+        basic_show_message("WEND without matching WHILE");
+        return;
+    }
+
+    if (ds_stack_empty(global.while_stack)) {
+        show_debug_message("WEND: ERROR — while_stack is empty");
+        basic_show_message("WEND without matching WHILE");
+        return;
+    }
+
+    var while_line_index = ds_stack_top(global.while_stack); // Peek, do not pop yet
+    show_debug_message("WEND: Top of while_stack is line index: " + string(while_line_index));
+
+    var while_line_number = ds_list_find_value(global.line_list, while_line_index);
+    var while_code = ds_map_find_value(global.program_map, while_line_number);
+    show_debug_message("WEND: WHILE line " + string(while_line_number) + " code: '" + while_code + "'");
+
+    var condition_str = string_trim(string_delete(while_code, 1, string_pos(" ", while_code)));
+    show_debug_message("WEND: Extracted condition for re-evaluation: '" + condition_str + "'");
+
+    var condition_value = basic_evaluate_condition(string_upper(condition_str));
+    show_debug_message("WEND: Re-evaluated condition result: " + string(condition_value));
+
+    if (condition_value) {
+        show_debug_message("WEND: Condition is TRUE — setting line_index = " + string(while_line_index - 1));
+        line_index = while_line_index - 1; // So next Step brings us back to WHILE
+    } else {
+        show_debug_message("WEND: Condition is FALSE — popping WHILE from stack");
+        ds_stack_pop(global.while_stack);
+    }
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_cmd_while\basic_cmd_while.gml" 
+function basic_cmd_while(arg) {
+    var condition = string_upper(arg);
+    show_debug_message("WHILE: Raw condition string: '" + condition + "'");
+
+    var value = basic_evaluate_condition(condition);
+
+    show_debug_message("WHILE: Evaluated result of '" + condition + "' → " + string(value));
+
+    if (!value) {
+        show_debug_message("WHILE: Condition is FALSE — skipping ahead to matching WEND");
+        var _depth = 1;
+
+        for (var i = line_index + 1; i < ds_list_size(global.line_list); i++) {
+            var _ln = ds_list_find_value(global.line_list, i);
+            var code = ds_map_find_value(global.program_map, _ln);
+            var cmd = string_upper(string_trim(string_copy(code, 1, string_pos(" ", code + " ") - 1)));
+
+            show_debug_message("WHILE: Inspecting line " + string(_ln) + " → Command: " + cmd);
+
+            if (cmd == "WHILE") _depth++;
+            if (cmd == "WEND") _depth--;
+
+            if (_depth == 0) {
+                show_debug_message("WHILE: Found matching WEND at line index " + string(i) + ", line " + string(_ln));
+                interpreter_next_line = i;
+                return;
+            }
+        }
+
+        show_debug_message("?WHILE ERROR: No matching WEND found — control flow may break");
+    } else {
+        show_debug_message("WHILE: Condition is TRUE — evaluating stack push logic");
+
+        // Ensure stack exists
+        if (!ds_exists(global.while_stack, ds_type_stack)) {
+            global.while_stack = ds_stack_create();
+            show_debug_message("WHILE: Created new while_stack");
+        }
+
+        // Only push if not already at top
+        if (ds_stack_empty(global.while_stack) || ds_stack_top(global.while_stack) != line_index) {
+            ds_stack_push(global.while_stack, line_index);
+            show_debug_message("WHILE: Pushed line_index " + string(line_index) + " onto while_stack");
+        } else {
+            show_debug_message("WHILE: Stack already contains this line_index at top — skipping push");
+        }
+
+        // Ensure interpreter continues to next line
+        interpreter_next_line = -1;
+    }
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_evaluate_condition\basic_evaluate_condition.gml" 
+function basic_evaluate_condition(expr) {
+    var tokens = string_split(expr, " ");
+	
+	
+	
+    if (array_length(tokens) == 3) {
+        var lhs = string_trim(tokens[0]);
+        var op  = string_trim(tokens[1]);
+        var rhs = string_trim(tokens[2]);
+
+		lhs = string_upper(lhs);
+		rhs = string_upper(rhs);
+
+		if (ds_map_exists(global.basic_variables, lhs)) lhs = string(global.basic_variables[? lhs]);
+		if (ds_map_exists(global.basic_variables, rhs)) rhs = string(global.basic_variables[? rhs]);
+
+		// Evaluate math functions if present
+		lhs = string(basic_evaluate_expression_v2(lhs));
+		rhs = string(basic_evaluate_expression_v2(rhs));
+
+		lhs = real(lhs);
+		rhs = real(rhs);
+
+
+        switch (op) {
+            case "=": return lhs == rhs;
+            case "<": return lhs < rhs;
+            case ">": return lhs > rhs;
+            case "<=": return lhs <= rhs;
+            case ">=": return lhs >= rhs;
+            case "<>": return lhs != rhs;
+			case "MOD": return lhs % rhs;
+        }
+    }
+	
+	// Support for unary functions: ABS(x), RND(x)
+if (array_length(tokens) == 1) {
+    var single = string_upper(string_trim(tokens[0]));
+
+    if (string_pos("ABS(", single) == 1) {
+        var inside = string_copy(single, 5, string_length(single) - 5); // strip ABS(
+        inside = string_delete(inside, string_length(inside), 1); // remove closing )
+        var val = real(inside);
+        return abs(val);
+    }
+
+    if (string_pos("RND(", single) == 1) {
+        var inside = string_copy(single, 5, string_length(single) - 5); // strip RND(
+        inside = string_delete(inside, string_length(inside), 1); // remove closing )
+        var val = real(inside);
+        return irandom(val);
+    }
+}
+
+
+    return false;
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_evaluate_expression\basic_evaluate_expression.gml" 
+function basic_evaluate_expression(expr) {
+    expr = string_trim(expr);
+
+    // Variable lookup
+    if (ds_map_exists(global.basic_variables, string_upper(expr))) {
+        return global.basic_variables[? string_upper(expr)];
+    }
+
+    // Handle MOD
+    if (string_pos("MOD", string_upper(expr)) > 0) {
+        var parts = string_split(string_upper(expr), "MOD");
+        if (array_length(parts) == 2) {
+            var a = real(basic_evaluate_expression_v2(parts[0]));
+            var b = real(basic_evaluate_expression_v2(parts[1]));
+            return a mod b;
+        }
+    }
+
+    // Handle RND(n)
+    if (string_upper(string_copy(expr, 1, 4)) == "RND(" && string_char_at(expr, string_length(expr)) == ")") {
+        var inner = string_copy(expr, 5, string_length(expr) - 5);
+        return irandom(real(basic_evaluate_expression_v2(inner)));
+    }
+
+    // Handle ABS(x)
+    if (string_upper(string_copy(expr, 1, 4)) == "ABS(" && string_char_at(expr, string_length(expr)) == ")") {
+        var inner = string_copy(expr, 5, string_length(expr) - 5);
+        return abs(real(basic_evaluate_expression_v2(inner)));
+    }
+
+    // Fallback to real()
+    return real(expr);
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_evaluate_expression_v2\basic_evaluate_expression_v2.gml" 
+function basic_evaluate_expression_v2(expr) {
+    var tokens = basic_tokenize_expression_v2(expr);
+    show_debug_message("Tokens: " + string(tokens)); // for debug
+    var postfix = infix_to_postfix(tokens);
+    return evaluate_postfix(postfix);
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_parse_color\basic_parse_color.gml" 
+function basic_parse_color(colstr) {
+    colstr = string_upper(string_trim(colstr));
+
+    if (ds_map_exists(global.colors, colstr)) {
+        return global.colors[? colstr];
+    }
+
+    // Try as direct numeric value
+    var val = real(colstr);
+    if (!is_nan(val)) {
+        return val;
+    }
+
+    return c_white; // Fallback
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_parse_csv_args\basic_parse_csv_args.gml" 
+function basic_parse_csv_args(str) {
+    var args = [];
+    var current = "";
+    var in_quotes = false;
+    var i = 1;
+    var len = string_length(str);
+
+    while (i <= len) {
+        var c = string_char_at(str, i);
+
+        if (c == "\"") {
+            in_quotes = !in_quotes;
+            current += c; // Preserve quote so later commands can detect strings
+        }
+        else if (c == "," && !in_quotes) {
+            array_push(args, string_trim(current));
+            current = "";
+        }
+        else {
+            current += c;
+        }
+
+        i += 1;
+    }
+
+    if (string_length(current) > 0) {
+        array_push(args, string_trim(current));
+    }
+
+    return args;
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_run_to_console\basic_run_to_console.gml" 
+/// @function basic_run_to_console()
+/// @description Executes the BASIC program in memory and prints the output to the console instead of the screen.
+
+function basic_run_to_console() {
+    show_debug_message("==== BEGIN PROGRAM CONSOLE OUTPUT ====");
+
+    // Safety check
+    if (!ds_exists(global.program_lines, ds_type_map) || !ds_exists(global.line_numbers, ds_type_list)) {
+        show_debug_message("No program loaded.");
+        return;
+    }
+
+    // Local context for LET variable storage
+    var local_vars = ds_map_create();
+
+    // Run through each line in order
+    for (var i = 0; i < ds_list_size(global.line_numbers); i++) {
+        var line_num = ds_list_find_value(global.line_numbers, i);
+        var code = ds_map_find_value(global.program_lines, line_num);
+        var trimmed = string_trim(code);
+
+        var sp = string_pos(" ", trimmed);
+        var cmd = (sp > 0) ? string_upper(string_copy(trimmed, 1, sp - 1)) : string_upper(trimmed);
+        var arg = (sp > 0) ? string_trim(string_copy(trimmed, sp + 1, string_length(trimmed))) : "";
+
+        switch (cmd) {
+            case "LET":
+                var eq_pos = string_pos("=", arg);
+                if (eq_pos > 0) {
+                    var varname = string_trim(string_copy(arg, 1, eq_pos - 1));
+                    var value = string_trim(string_copy(arg, eq_pos + 1, string_length(arg)));
+                    var value_num = real(value);
+                    ds_map_replace(local_vars, varname, value_num);
+                }
+                break;
+
+            case "PRINT":
+                // Check if last character is semicolon
+                var ends_with_semicolon = (string_char_at(arg, string_length(arg)) == ";");
+                if (ends_with_semicolon) {
+                    arg = string_copy(arg, 1, string_length(arg) - 1);
+                }
+
+                var segments = string_split(arg, "+");
+                var output = "";
+                for (var j = 0; j < array_length(segments); j++) {
+                    var segment = string_trim(segments[j]);
+                    if (string_length(segment) >= 2 && string_char_at(segment, 1) == "\"" && string_char_at(segment, string_length(segment)) == "\"") {
+                        output += string_copy(segment, 2, string_length(segment) - 2);
+                    } else if (ds_map_exists(local_vars, segment)) {
+                        output += string(ds_map_find_value(local_vars, segment));
+                    } else {
+                        output += segment;
+                    }
+                }
+
+                if (ends_with_semicolon) {
+                    // no newline
+                    show_debug_message(">> " + output);
+                } else {
+                    show_debug_message(">> " + output + "\n");
+                }
+                break;
+
+            default:
+                show_debug_message("Unknown command on line " + string(line_num) + ": " + cmd);
+        }
+    }
+
+    ds_map_destroy(local_vars);
+	basic_run_to_console_flag = false;
+    show_debug_message("==== END PROGRAM CONSOLE OUTPUT ====");
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_show_error_message\basic_show_error_message.gml" 
+
+// Optional helper for errors: prefix message with a "?" as classic BASIC did.
+function basic_show_error_message(err) {
+    basic_show_message("?" + err);
+}
+
+
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_show_message\basic_show_message.gml" 
+// Call this to display a message for roughly 2 seconds (120 frames at 60 fps).
+function basic_show_message(msg) {
+    message_text  = msg;
+    global.message_timer = 120;
+}
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_stop_execution\basic_stop_execution.gml" 
+// SCRIPT: basic_stop_execution
+function basic_stop_execution() {
+    show_debug_message("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+    show_debug_message("BASIC_STOP_EXECUTION CALLED!");
+    show_debug_message("Call Stack:");
+    show_debug_message(debug_get_callstack()); // THIS IS THE KEY!
+    show_debug_message("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+
+    global.interpreter_running = false;
+    global.awaiting_input = false;
+    global.program_has_ended = true;
+
+    // Clear input buffer if input was pending
+    if (global.input_buffer != undefined && ds_list_exists(global.input_buffer, ds_type_list)) {
+        ds_list_clear(global.input_buffer);
+    }
+}
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_tokenize_expression_v2\basic_tokenize_expression_v2.gml" 
+function basic_tokenize_expression_v2(expr) {
+    show_debug_message("TOKENIZER: Starting expression: '" + expr + "'");
+
+    var tokens = [];
+    var i = 1;
+    var len = string_length(expr);
+    var current = "";
+
+    var function_names = ["RND", "ABS", "EXP", "LOG", "LOG10", "SGN", "INT", "SIN", "COS", "TAN", "STR$", "CHR$", "REPEAT$"];
+
+    while (i <= len) {
+        var c = string_char_at(expr, i);
+        show_debug_message("TOKENIZER: Char[" + string(i) + "] = '" + c + "'");
+
+        // --- STRING LITERAL SUPPORT (preserve exact quoted content) ---
+        if (c == "\"") {
+            var str = "\"";
+            i++;
+            while (i <= len) {
+                var ch = string_char_at(expr, i);
+                str += ch;
+                if (ch == "\"") break;
+                i++;
+            }
+            array_push(tokens, str);
+            show_debug_message("TOKENIZER: Token added (quoted string): " + str);
+            i++;
+            continue;
+        }
+
+        if (c == " ") {
+            if (current != "") {
+                show_debug_message("TOKENIZER: Finalizing token from space: '" + current + "'");
+                array_push(tokens, string_upper(current) == "MOD" ? "MOD" : current);
+                show_debug_message("TOKENIZER: Token added: " + current);
+                current = "";
+            }
+        }
+        else if (c == "+" || c == "*" || c == "/" || c == "(" || c == ")" || c == "%") {
+            if (current != "") {
+                show_debug_message("TOKENIZER: Finalizing token before operator: '" + current + "'");
+                array_push(tokens, string_upper(current) == "MOD" ? "MOD" : current);
+                show_debug_message("TOKENIZER: Token added: " + current);
+                current = "";
+            }
+
+            if (c == "(" && array_length(tokens) > 0) {
+                var last = string_upper(tokens[array_length(tokens) - 1]);
+                if (array_contains(function_names, last)) {
+                    array_push(tokens, "(");
+                    show_debug_message("TOKENIZER: Function call detected: " + last + "(");
+                } else {
+                    array_push(tokens, "(");
+                    show_debug_message("TOKENIZER: Operator token added: " + c);
+                }
+            } else {
+                array_push(tokens, c);
+                show_debug_message("TOKENIZER: Operator token added: " + c);
+            }
+        }
+        else if (c == ",") {
+            if (current != "") {
+                show_debug_message("TOKENIZER: Finalizing token before comma: '" + current + "'");
+                array_push(tokens, string_upper(current) == "MOD" ? "MOD" : current);
+                show_debug_message("TOKENIZER: Token added: " + current);
+                current = "";
+            }
+            array_push(tokens, ",");
+            show_debug_message("TOKENIZER: Comma token added");
+        }
+        else if (c == "-") {
+            var is_negative_number = false;
+            if (array_length(tokens) == 0) {
+                is_negative_number = true;
+            } else {
+                var last_token = tokens[array_length(tokens) - 1];
+                if (last_token == "+" || last_token == "-" || last_token == "*" || 
+                    last_token == "/" || last_token == "(" || last_token == "%" || 
+                    string_upper(last_token) == "MOD") {
+                    is_negative_number = true;
+                }
+            }
+
+            if (is_negative_number) {
+                show_debug_message("TOKENIZER: Beginning negative number with '-'");
+                current += "-";
+            } else {
+                if (current != "") {
+                    show_debug_message("TOKENIZER: Finalizing token before subtraction: '" + current + "'");
+                    array_push(tokens, string_upper(current) == "MOD" ? "MOD" : current);
+                    show_debug_message("TOKENIZER: Token added: " + current);
+                    current = "";
+                }
+                array_push(tokens, "-");
+                show_debug_message("TOKENIZER: Subtraction operator token added: -");
+            }
+        }
+        else {
+            current += c;
+        }
+
+        i += 1;
+    }
+
+    if (current != "") {
+        show_debug_message("TOKENIZER: Finalizing last token: '" + current + "'");
+        array_push(tokens, string_upper(current) == "MOD" ? "MOD" : current);
+        show_debug_message("TOKENIZER: Token added: " + current);
+    }
+
+    show_debug_message("TOKENIZER: Final token list = " + string(tokens));
+    return tokens;
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\delete_program_line\delete_program_line.gml" 
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+function delete_program_line(line_num) {
+    ds_map_delete(global.program_lines, line_num);
+    var pos = ds_list_find_index(global.line_numbers, line_num);
+    if (pos != -1) {
+        ds_list_delete(global.line_numbers, pos);
+    }
+ }
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\dump_program_to_console\dump_program_to_console.gml" 
+function dump_program_to_console() {
+    show_debug_message("==== BASIC PROGRAM DUMP ====");
+
+    var lines = global.line_numbers; // numeric line numbers
+    var prog = global.program_lines;
+
+    for (var i = 0; i < ds_list_size(lines); i++) {
+        var linenum = ds_list_find_value(lines, i); // numeric
+        if (ds_map_exists(prog, linenum)) {
+            var code = ds_map_find_value(prog, linenum);
+            show_debug_message(string(linenum) + " " + code);
+        } else {
+            show_debug_message("Missing entry for key: " + string(linenum));
+        }
+    }
+
+    show_debug_message("==== END OF DUMP ====");
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\editor_handle_paste_command\editor_handle_paste_command.gml" 
+function editor_handle_paste_command() {
+    var raw_clip = clipboard_get_text();
+    if (string_length(raw_clip) <= 0) {
+        show_message("Clipboard is empty.");
+        return;
+    }
+
+    var lines = string_split(raw_clip, "\n");
+
+    for (var i = 0; i < array_length(lines); i++) {
+        var line = string_trim(lines[i]);
+
+        if (string_length(line) == 0) continue;
+
+        // Expect format: line_number followed by space and code
+        var space_pos = string_pos(" ", line);
+        if (space_pos > 0) {
+            var line_num_str = string_copy(line, 1, space_pos - 1);
+            var code_str = string_copy(line, space_pos + 1, string_length(line) - space_pos);
+
+            // ✅ Only proceed if line_num_str is a valid number
+            if (string_digits(line_num_str) == line_num_str) {
+                var line_num = real(line_num_str);
+
+                if (line_num > 0 && string_length(code_str) > 0) {
+                    ds_map_replace(global.program_lines, line_num, code_str);
+
+                    if (!ds_list_find_index(global.line_numbers, line_num)) {
+                        ds_list_add(global.line_numbers, line_num);
+                        ds_list_sort(global.line_numbers, true);
+                    }
+                }
+            }
+        }
+    }
+
+    basic_show_message("Program pasted successfully.");
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\evaluate_postfix\evaluate_postfix.gml" 
+function evaluate_postfix(postfix) {
+    var stack = [];
+
+    for (var i = 0; i < array_length(postfix); i++) {
+        var token = postfix[i];
+        var token_upper = string_upper(token);
+
+      //  show_debug_message("POSTFIX: Processing token -> " + token);
+
+        // ✅ Numeric literal
+        if (is_numeric_string(token)) {
+            var num = real(token);
+            array_push(stack, num);
+            show_debug_message("POSTFIX: Pushed number → " + string(num));
+        }
+
+        // ✅ Quoted string literal
+        else if (string_length(token) >= 2 && string_char_at(token, 1) == "\"" && string_char_at(token, string_length(token)) == "\"") {
+			var str = string_copy(token, 2, string_length(token) - 2); // safer
+			array_push(stack, str);
+
+            show_debug_message("POSTFIX: Pushed quoted string literal → " + str);
+        }
+
+        // ✅ Operator
+        else if (is_operator(token_upper)) {
+            if (array_length(stack) < 2) {
+                show_debug_message("? POSTFIX ERROR: Not enough operands for operator " + token_upper);
+                return 0;
+            }
+
+            var b = array_pop(stack);
+            var a = array_pop(stack);
+            var result = 0;
+
+            switch (token_upper) {
+                case "+":
+				    if (is_string(a) || is_string(b)) {
+				        result = string(a) + string(b);
+				    } else if (is_real(a) && is_real(b)) {
+				        result = a + b;
+				    } else {
+				        show_debug_message("? POSTFIX ERROR: Invalid types for +: " + string(a) + " + " + string(b));
+				        result = string(a) + string(b); // fallback to string concat
+				    }
+				    break;
+
+                case "-": result = a - b; break;
+                case "*": result = a * b; break;
+                case "/": result = (b != 0) ? a / b : 0; break;
+                case "%":
+                case "MOD": result = a mod b; break;
+                case "^": result = power(a, b); break;
+            }
+
+            array_push(stack, result);
+            show_debug_message("POSTFIX: Operator result (" + token_upper + ") = " + string(result));
+        }
+
+        // ✅ Multi-arg string functions
+        else if (token_upper == "REPEAT$") {
+            if (array_length(stack) < 2) {
+                show_debug_message("? POSTFIX ERROR: REPEAT$ needs 2 arguments");
+                array_push(stack, "");
+                continue;
+            }
+
+            var repeat_count_raw = array_pop(stack);
+            var repeat_text = string(array_pop(stack));
+            var repeat_count = is_string(repeat_count_raw)
+                ? real(string_trim(repeat_count_raw))
+                : real(repeat_count_raw);
+
+            if (!is_real(repeat_count) || repeat_count <= 0) {
+                show_debug_message("? POSTFIX ERROR: Invalid repeat count (" + string(repeat_count_raw) + ")");
+                array_push(stack, "");
+                continue;
+            }
+
+            var result = "";
+            for (var j = 0; j < repeat_count; j++) {
+                result += repeat_text;
+            }
+
+            array_push(stack, result);
+            show_debug_message("POSTFIX: REPEAT$(" + repeat_text + "," + string(repeat_count) + ") = " + result);
+        }
+
+        else if (token_upper == "LEFT$") {
+            if (array_length(stack) < 2) {
+                show_debug_message("? POSTFIX ERROR: LEFT$ needs 2 arguments");
+                array_push(stack, "");
+                continue;
+            }
+
+            var count = real(array_pop(stack));
+            var str = string(array_pop(stack));
+            var result = string_copy(str, 1, count);
+            array_push(stack, result);
+            show_debug_message("POSTFIX: LEFT$(" + str + "," + string(count) + ") = " + result);
+        }
+
+        else if (token_upper == "RIGHT$") {
+            if (array_length(stack) < 2) {
+                show_debug_message("? POSTFIX ERROR: RIGHT$ needs 2 arguments");
+                array_push(stack, "");
+                continue;
+            }
+
+            var count = real(array_pop(stack));
+            var str = string(array_pop(stack));
+            var start = max(1, string_length(str) - count + 1);
+            var result = string_copy(str, start, count);
+            array_push(stack, result);
+            show_debug_message("POSTFIX: RIGHT$(" + str + "," + string(count) + ") = " + result);
+        }
+
+        else if (token_upper == "MID$") {
+            if (array_length(stack) < 3) {
+                show_debug_message("? POSTFIX ERROR: MID$ needs 3 arguments");
+                array_push(stack, "");
+                continue;
+            }
+
+            var count = real(array_pop(stack));
+            var start = real(array_pop(stack));
+            var str = string(array_pop(stack));
+            var result = string_copy(str, start, count);
+            array_push(stack, result);
+            show_debug_message("POSTFIX: MID$(" + str + "," + string(start) + "," + string(count) + ") = " + result);
+        }
+
+        // ✅ Single-arg functions
+		else if (is_function(token_upper)) {
+		    var val = safe_real_pop(stack);
+
+		switch (token_upper) {
+			case "RND1": {
+		    var val = safe_real_pop(stack);
+		    if (val <= 0) val = 1;
+		    var result = irandom(val - 1) + 1;
+		    array_push(stack, result);
+		    show_debug_message("POSTFIX: RND(" + string(val) + ") → " + string(result));
+		    break;
+		}
+
+		case "RND2": {
+		    var max_val = safe_real_pop(stack);
+		    var min_val = safe_real_pop(stack);
+		    var result = irandom_range(min_val, max_val);
+		    array_push(stack, result);
+		    show_debug_message("POSTFIX: RND(" + string(min_val) + "," + string(max_val) + ") → " + string(result));
+		    break;
+		}
+
+
+		        case "ABS": array_push(stack, abs(val)); break;
+		        case "EXP": array_push(stack, exp(val)); break;
+		        case "LOG":
+		        case "LOG10": array_push(stack, ln(val) / ln(10)); break;
+		        case "SGN": array_push(stack, (val > 0) - (val < 0)); break;
+		        case "INT": array_push(stack, floor(val)); break;
+		        case "SIN": array_push(stack, sin(val)); break;
+		        case "COS": array_push(stack, cos(val)); break;
+		        case "TAN": array_push(stack, tan(val)); break;
+
+		        case "STR$":
+		            var strval = string(val);
+		            array_push(stack, strval);
+		            show_debug_message("POSTFIX: STR$ → " + strval);
+		            break;
+
+		        case "CHR$":
+		            var ch = chr(val);
+		            array_push(stack, ch);
+		            show_debug_message("POSTFIX: CHR$ → " + ch);
+		            break;
+
+		        default:
+		            show_debug_message("? POSTFIX WARNING: Unknown function token_upper = " + token_upper);
+		            array_push(stack, val);
+		            break;
+		    }
+}
+
+
+        // ✅ Variable fallback
+        else if (ds_map_exists(global.basic_variables, token_upper)) {
+            var val = global.basic_variables[? token_upper];
+            array_push(stack, val);
+            show_debug_message("POSTFIX: Loaded variable " + token_upper + " = " + string(val));
+        }
+
+        // ✅ Fallback string literal
+        else if (!is_operator(token_upper) && !is_function(token_upper)) {
+            array_push(stack, token);
+            show_debug_message("POSTFIX: Pushed fallback string → " + token);
+        }
+
+        // ❌ Unknown token
+        else {
+            show_debug_message("? POSTFIX ERROR: Unknown token '" + token + "'");
+            array_push(stack, 0);
+        }
+    }
+
+    return (array_length(stack) > 0) ? stack[0] : 0;
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\get_precedence\get_precedence.gml" 
+function get_precedence(op) {
+    switch (op) {
+        case "+": return 1;
+        case "-": return 1;
+        case "*": return 2;
+        case "/": return 2;
+        case "^": return 3;
+        default: return 0;
+    }
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\handle_basic_command\handle_basic_command.gml" 
+/// @function handle_basic_command(cmd, arg)
+/// @description Routes BASIC commands to the correct function
+function handle_basic_command(cmd, arg) {
+    show_debug_message("COMMAND DISPATCH: " + cmd + " | ARG: " + arg);
+
+	// Clean up the argument string by removing BASIC-style remarks
+	arg = strip_basic_remark(arg);
+
+
+    switch (cmd) {
+        case "PRINT":
+            show_debug_message("Dispatching to PRINT");
+            basic_cmd_print(arg, global.current_line_number);
+            break;
+
+        case "LET":
+            show_debug_message("Dispatching to LET");
+            basic_cmd_let(arg);
+            break;
+
+        case "GOTO":
+            show_debug_message("Dispatching to GOTO");
+            basic_cmd_goto(arg);
+            break;
+
+        case "INPUT":
+            show_debug_message("Dispatching to INPUT");
+            basic_cmd_input(arg);
+            break;
+
+        case "COLOR":
+            show_debug_message("Dispatching to COLOR");
+            basic_cmd_color(arg);
+            break;
+
+        case "CLS":
+            show_debug_message("Dispatching to CLS");
+            basic_cmd_cls();
+            break;
+
+        case "IF":
+            show_debug_message("Dispatching to IF");
+            basic_cmd_if(arg);
+            break;
+
+        case "END":
+            show_debug_message("Dispatching to END");
+            basic_cmd_end();
+            break;
+
+        case "REM":
+            show_debug_message("REM encountered – skipping (no operation)");
+            // REM is a no-op
+            break;
+
+        case "GOSUB":
+            show_debug_message("Dispatching to GOSUB");
+            basic_cmd_gosub(arg);
+            break;
+
+        case "RETURN":
+            show_debug_message("Dispatching to RETURN");
+            basic_cmd_return();
+            break;
+
+        case "FOR":
+            show_debug_message("Dispatching to FOR");
+            basic_cmd_for(arg);
+            break;
+
+        case "NEXT":
+            show_debug_message("Dispatching to NEXT");
+            basic_cmd_next(arg);
+            break;
+
+        case "WHILE":
+            show_debug_message("Dispatching to WHILE");
+            basic_cmd_while(arg);
+            break;
+
+        case "WEND":
+            show_debug_message("Dispatching to WEND");
+            basic_cmd_wend();
+            break;
+
+        case "BGCOLOR":
+            show_debug_message("Dispatching to BGCOLOR");
+            basic_cmd_bgcolor(arg);
+            break;
+
+		case "PAUSE":
+            show_debug_message("Dispatching to PAUSE");
+			basic_cmd_pause();
+			break;
+
+        case "MODE":
+            show_debug_message("Dispatching to MODE");
+            basic_cmd_mode(arg);
+            break;
+
+		case "CLSCHAR":
+		    show_debug_message("Dispatching to CLSCHAR");
+		    basic_cmd_clschar(arg);
+		    break;
+
+	    case "PSET":
+	        basic_cmd_pset(arg);
+	        break;
+
+	    case "CHARAT":
+	        basic_cmd_charat(arg);
+	        break;
+
+		case "PRINTAT":
+		    basic_cmd_printat(arg);
+		    break;
+
+		case "FONT":
+			basic_cmd_font(arg);
+			break
+
+        default:
+            // Check for implicit LET (e.g. "X = 5")
+            if (string_pos("=", cmd + " " + arg) > 0) {
+                var full = cmd + " " + arg;
+                show_debug_message("IMPLICIT LET detected. Treating as LET: " + full);
+                basic_cmd_let(full);
+                break;
+            }
+
+            show_debug_message("UNKNOWN COMMAND: " + cmd);
+            basic_show_message("UNKNOWN COMMAND: " + cmd);
+    }
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\handle_character_input\handle_character_input.gml" 
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+ // Functions for input handling
+ function handle_character_input() {
+    var key_string = keyboard_string;
+    
+    // Robust keyboard handling with fallback
+    if (key_string != last_keyboard_string) {
+        var new_chars = string_copy(key_string, string_length(last_keyboard_string) + 1, 
+                                   string_length(key_string) - string_length(last_keyboard_string));
+        
+        // Filter out control characters and validate input
+        var filtered_chars = "";
+        for (var i = 1; i <= string_length(new_chars); i++) {
+            var char = string_char_at(new_chars, i);
+            var char_code = ord(char);
+            // Accept printable ASCII characters (32-126)
+            if (char_code >= 32 && char_code <= 126) {
+                filtered_chars += char;
+            }
+        }
+        
+        if (filtered_chars != "") {
+            current_input = string_insert(filtered_chars, current_input, cursor_pos + 1);
+            cursor_pos += string_length(filtered_chars);
+        }
+        
+        last_keyboard_string = key_string;
+    }
+    
+    // Fallback: Direct key detection for special cases
+  //  if (keyboard_check_pressed(vk_space)) {
+        // Ensure space is captured even if keyboard_string fails
+  //      if (string_char_at(current_input, cursor_pos + 1) != " ") {
+   //         current_input = string_insert(" ", current_input, cursor_pos + 1);
+   //         cursor_pos++;
+   //     }
+   // }
+ }
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\handle_command\handle_command.gml" 
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+function handle_command(command) {
+	
+var original_command = string_trim(command);
+    command = string_upper(original_command);
+    
+    // Split command from parameters to preserve case in filenames
+    var space_pos = string_pos(" ", command);
+    var cmd_word = "";
+    var cmd_params = "";
+    
+    if (space_pos > 0) {
+        cmd_word = string_copy(command, 1, space_pos - 1);
+        cmd_params = string_trim(string_copy(original_command, space_pos + 1, string_length(original_command)));
+    } else {
+        cmd_word = command;
+    }
+    
+    switch (cmd_word) {
+        case "LIST":
+            if (cmd_params == "") {
+                list_program();
+            } else {
+                list_program_range(cmd_params);
+            }
+            break;
+            
+        case "RUN":
+            run_program();
+            break;
+            
+        case "NEW":
+            new_program();
+            break;
+            
+        case "SAVE":
+            if (cmd_params == "") {
+                save_program();
+            } else {
+                save_program_as(cmd_params);
+            }
+            break;
+            
+        case "LOAD":
+            if (cmd_params == "") {
+                show_error_message("FILENAME REQUIRED");
+            } else {
+                load_program_from(cmd_params);
+            }
+            break;
+			
+		case "DIR":
+        list_saved_programs();
+        break;
+
+		case ":PASTE":
+		editor_handle_paste_command();
+		break;
+
+		case "QUIT":
+		quit_program()
+		break;
+			
+        default:
+            show_error_message("SYNTAX ERROR");
+            break;
+    }
+ }
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\handle_interpreter_character_input\handle_interpreter_character_input.gml" 
+function handle_interpreter_character_input(key) {
+    // Printable ASCII characters
+    if (key >= 32 && key <= 126) {
+        var ch = keyboard_lastchar;
+
+        global.interpreter_input = string_insert(ch, global.interpreter_input, global.interpreter_cursor_pos + 1);
+        global.interpreter_cursor_pos += 1;
+        return;
+    }
+
+    // BACKSPACE
+    if (key == vk_backspace) {
+        if (global.interpreter_cursor_pos > 0) {
+            global.interpreter_input = string_delete(global.interpreter_input, global.interpreter_cursor_pos, 1);
+            global.interpreter_cursor_pos -= 1;
+        }
+        return;
+    }
+
+    // SPACE
+    if (key == vk_space) {
+        global.interpreter_input = string_insert(" ", global.interpreter_input, global.interpreter_cursor_pos + 1);
+        global.interpreter_cursor_pos += 1;
+        return;
+    }
+
+    // LEFT arrow
+    if (key == vk_left) {
+        if (global.interpreter_cursor_pos > 0) {
+            global.interpreter_cursor_pos -= 1;
+        }
+        return;
+    }
+
+    // RIGHT arrow
+    if (key == vk_right) {
+        if (global.interpreter_cursor_pos < string_length(global.interpreter_input)) {
+            global.interpreter_cursor_pos += 1;
+        }
+        return;
+    }
+
+    // ENTER — finalize the input and resume execution
+    if (key == vk_enter) {
+        var val = global.interpreter_input;
+        var varname = string_upper(global.input_target_var);
+
+        // Store in variable map
+        global.basic_variables[? varname] = val;
+
+        // Echo to output
+       // ds_list_add(output_lines, val);
+       // ds_list_add(global.output_colors, global.current_draw_color);
+
+        // Reset input state
+        global.interpreter_input = "";
+        global.awaiting_input = false;
+        global.input_target_var = "";
+        global.interpreter_cursor_pos = 0;
+    }
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\handle_program_line\handle_program_line.gml" 
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+function handle_program_line(input_text) {
+    var space_pos = string_pos(" ", input_text);
+    var line_num = real(string_copy(input_text, 1, space_pos - 1));
+    var code_content = string_copy(input_text, space_pos + 1, string_length(input_text));
+    
+    // If no code content, delete the line
+    if (string_trim(code_content) == "") {
+        delete_program_line(line_num);
+    } else {
+        add_or_update_program_line(line_num, code_content);
+    }
+    
+    update_display();
+ }
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\infix_to_postfix\infix_to_postfix.gml" 
+function infix_to_postfix(tokens) {
+    show_debug_message("Converting to postfix: " + string(tokens));
+    var output = [];
+    var stack = [];
+
+    for (var i = 0; i < array_length(tokens); i++) {
+        var t = tokens[i];
+        show_debug_message("Processing token: '" + t + "'");
+		if (t == ",") {
+	    show_debug_message("Skipping comma token");
+	    continue;
+	}
+        // Handle numbers
+        if (is_numeric_string(t)) {
+            array_push(output, t);
+            show_debug_message("Added number to output: " + t);
+        }
+
+        // Handle known variable names
+        else if (ds_map_exists(global.basic_variables, string_upper(t))) {
+            array_push(output, string_upper(t));
+            show_debug_message("Added variable name to output: " + string_upper(t));
+        }
+
+        // Handle opening parenthesis
+        else if (t == "(") {
+            array_push(stack, t);
+        }
+
+        // Handle closing parenthesis
+        else if (t == ")") {
+            while (array_length(stack) > 0 && stack[array_length(stack) - 1] != "(") {
+                array_push(output, array_pop(stack));
+            }
+            if (array_length(stack) > 0) {
+                array_pop(stack); // Pop the "("
+            }
+        }
+
+        // Handle operators
+        else if (is_operator(t)) {
+            show_debug_message("Found operator: " + t);
+            while (array_length(stack) > 0) {
+                var top = stack[array_length(stack) - 1];
+                if (is_operator(top) && (
+                        get_precedence(top) > get_precedence(t) || 
+                        (get_precedence(top) == get_precedence(t) && !is_right_associative(t))
+                    )) {
+                    array_push(output, array_pop(stack));
+                } else {
+                    break;
+                }
+            }
+            array_push(stack, t);
+        }
+
+		// Handle functions
+		else if (is_function(t)) {
+		    var fn_name = string_upper(t);
+
+		    // Fallback for function name without parentheses
+		    if (i + 1 >= array_length(tokens) || tokens[i+1] != "(") {
+		        show_debug_message("? Function '" + t + "' used without parentheses. Defaulting to " + fn_name + "(1) behavior.");
+		        array_push(output, "1");
+		        array_push(output, fn_name);
+		        continue;
+		    }
+
+		    // Handle functions with empty parentheses like RND()
+		    if (i + 2 < array_length(tokens) && tokens[i+1] == "(" && tokens[i+2] == ")") {
+		        if (fn_name == "RND") {
+		            array_push(output, "1");  // Default argument
+		            array_push(output, fn_name);
+		            show_debug_message("Processed empty " + fn_name + "() - defaulting to " + fn_name + "(1)");
+		            i += 2;
+		            continue;
+		        }
+		    }
+
+
+            // Special case: REPEAT$ expects 2 arguments
+            if (fn_name == "REPEAT$") {
+                show_debug_message("REPEAT$ DEBUG: i=" + string(i) + ", array_length=" + string(array_length(tokens)));
+                show_debug_message("REPEAT$ DEBUG: Checking bounds: " + string(i + 5) + " < " + string(array_length(tokens)) + " = " + string(i + 5 < array_length(tokens)));
+                if (i + 1 < array_length(tokens)) show_debug_message("tokens[i+1] = " + tokens[i+1]);
+                if (i + 3 < array_length(tokens)) show_debug_message("tokens[i+3] = " + tokens[i+3]);
+                if (i + 5 < array_length(tokens)) show_debug_message("tokens[i+5] = " + tokens[i+5]);
+
+                if (i + 5 < array_length(tokens) &&
+                    tokens[i+1] == "(" &&
+                    tokens[i+3] == "," &&
+                    tokens[i+5] == ")")  {
+
+                    var arg1 = tokens[i+2];
+                    var arg2 = tokens[i+4];
+
+                    array_push(output, arg1);
+                    array_push(output, arg2);
+                    array_push(output, fn_name);
+                    show_debug_message("Processed REPEAT$ function: args = " + arg1 + ", " + arg2);
+                    i += 5;
+                } else {
+                    show_debug_message("Malformed REPEAT$ function call: " + t);
+                    array_push(output, t);
+                }
+            }
+
+			// RND(min,max) = 2 args
+			else if (fn_name == "RND" &&
+			         i + 5 < array_length(tokens) &&
+			         tokens[i+1] == "(" &&
+			         tokens[i+3] == "," &&
+			         tokens[i+5] == ")") {
+
+			    var arg1 = tokens[i+2];
+			    var arg2 = tokens[i+4];
+
+			    array_push(output, arg1);
+			    array_push(output, arg2);
+			    array_push(output, "RND2");  // <<< CHANGED HERE
+			    show_debug_message("Processed RND(min,max): args = " + arg1 + ", " + arg2);
+			    i += 5;
+			}
+
+		// RND(n) = 1 arg
+		else if (i + 3 < array_length(tokens) && tokens[i+1] == "(" && tokens[i+3] == ")") {
+			var arg_token = tokens[i+2];
+			array_push(output, arg_token);
+			if (fn_name == "RND") {
+			    array_push(output, "RND1"); // <<< CHANGED HERE
+			    show_debug_message("Processed RND(n): " + arg_token);
+			} else {
+			    array_push(output, fn_name);
+			}
+			i += 3;
+		}
+
+			// Handle empty RND() → treat as RND(1)
+			else if (fn_name == "RND" &&
+			         i + 2 < array_length(tokens) &&
+			         tokens[i+1] == "(" &&
+			         tokens[i+2] == ")") {
+			    array_push(output, "1");
+			    array_push(output, "RND:1");
+			    show_debug_message("Processed empty RND() - defaulting to RND(1)");
+			    i += 2;
+			}
+
+
+            // LEFT$ and RIGHT$ (2 args)
+            else if ((fn_name == "LEFT$" || fn_name == "RIGHT$") &&
+                     i + 5 < array_length(tokens) &&
+                     tokens[i+1] == "(" &&
+                     tokens[i+3] == "," &&
+                     tokens[i+5] == ")") {
+
+                var arg1 = tokens[i+2];
+                var arg2 = tokens[i+4];
+
+                array_push(output, arg1);
+                array_push(output, arg2);
+                array_push(output, fn_name);
+                show_debug_message("Processed " + fn_name + " function: args = " + arg1 + ", " + arg2);
+                i += 5;
+            }
+
+
+			 // MID$ (3 args)
+			else if (fn_name == "MID$") {
+			    show_debug_message("MID$ DEBUG: i=" + string(i) + ", total tokens=" + string(array_length(tokens)));
+			    if (i + 1 < array_length(tokens)) show_debug_message("tokens[i+1] = " + tokens[i+1]);
+			    if (i + 3 < array_length(tokens)) show_debug_message("tokens[i+3] = " + tokens[i+3]);
+			    if (i + 5 < array_length(tokens)) show_debug_message("tokens[i+5] = " + tokens[i+5]);
+			    if (i + 7 < array_length(tokens)) show_debug_message("tokens[i+7] = " + tokens[i+7]);
+
+			    if (i + 7 < array_length(tokens) &&
+			        tokens[i+1] == "(" &&
+			        tokens[i+3] == "," &&
+			        tokens[i+5] == "," &&
+			        tokens[i+7] == ")") {
+
+			        var arg1 = tokens[i+2];
+			        var arg2 = tokens[i+4];
+			        var arg3 = tokens[i+6];
+
+			        array_push(output, arg1);
+			        array_push(output, arg2);
+			        array_push(output, arg3);
+			        array_push(output, fn_name);
+			        show_debug_message("Processed MID$ function: args = " + arg1 + ", " + arg2 + ", " + arg3);
+			        i += 7;
+			    } else {
+			        show_debug_message("Malformed MID$ function call: " + t);
+			        array_push(output, t);
+			    }
+			}
+
+			// Handle functions with empty parentheses like RND()
+			else if (i + 2 < array_length(tokens) && tokens[i+1] == "(" && tokens[i+2] == ")") {
+			    // For RND(), default to RND(1)
+			    if (fn_name == "RND") {
+			        array_push(output, "1");  // Default argument
+			        array_push(output, fn_name);
+			        show_debug_message("Processed empty " + fn_name + "() - defaulting to " + fn_name + "(1)");
+			        i += 2;
+			    }
+			    else {
+			        show_debug_message("Function " + fn_name + "() with no arguments not supported");
+			        array_push(output, t);
+			    }
+			}
+
+
+            // Generic 1-arg functions
+            else if (i + 3 < array_length(tokens) && tokens[i+1] == "(" && tokens[i+3] == ")") {
+                var arg_token = tokens[i+2];
+                array_push(output, arg_token);
+                array_push(output, fn_name);
+                show_debug_message("Processed 1-arg function call: " + fn_name + "(" + arg_token + ")");
+                i += 3;
+            }
+
+            // Fallback: malformed
+            else {
+                show_debug_message("Malformed function call: " + t);
+                array_push(output, t);
+            }
+        }
+
+        // Unknown token
+        else {
+            show_debug_message("Unknown token, adding to output: " + t);
+            array_push(output, t);
+        }
+    }
+
+    while (array_length(stack) > 0) {
+        array_push(output, array_pop(stack));
+    }
+
+    show_debug_message("Final postfix: " + string(output));
+    return output;
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\insert_line_number_ordered\insert_line_number_ordered.gml" 
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+ function insert_line_number_ordered(new_line_num) {
+    var size = ds_list_size(global.line_numbers);
+    var inserted = false;
+    
+    for (var i = 0; i < size; i++) {
+        if (ds_list_find_value(global.line_numbers, i) > new_line_num) {
+            ds_list_insert(global.line_numbers, i, new_line_num);
+            inserted = true;
+            break;
+      }
+    }
+    
+    if (!inserted) {
+        ds_list_add(global.line_numbers, new_line_num);
+    }
+ }
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\interpreter_cmd_print\interpreter_cmd_print.gml" 
+/// @function interpreter_cmd_print(argument)
+/// @description Handles the BASIC PRINT command.
+/// @param arg - The string argument from the BASIC code
+
+function interpreter_cmd_print(arg) {
+    // Remove surrounding double quotes if present
+    if (string_length(arg) >= 2 &&
+        string_char_at(arg, 1) == "\"" &&
+        string_char_at(arg, string_length(arg)) == "\"") {
+        arg = string_copy(arg, 2, string_length(arg) - 2);
+    }
+
+    ds_list_add(output_lines, arg);
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\is_function\is_function.gml" 
+function is_function(t) {
+    var fn = string_upper(t);
+    return fn == "RND" || fn == "STR$" || fn == "CHR$" || fn == "LEFT$" || fn == "RIGHT$" || fn == "MID$" || fn == "ABS" || fn == "CHR$" || fn == "INT" || fn == "EXP" || fn == "LOG" || fn == "LOG10" || fn == "SGN" || fn == "SIN" || fn == "COS" || fn == "TAN" || fn == "REPEAT$";
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\is_function_token\is_function_token.gml" 
+/// @function is_function_token(token)
+/// @description Checks if a given token is a recognized BASIC function.
+/// @param {string} token The token to check.
+/// @returns {boolean} True if it's a function, false otherwise.
+function is_function_token(token) {
+    var upper_token = string_upper(token);
+    // Add more functions here as you implement them in evaluate_postfix
+    return upper_token == "RND" || upper_token == "ABS";
+}
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\is_letter\is_letter.gml" 
+function is_letter(ch) {
+    var o = ord(string_upper(ch));
+    return (o >= 65 && o <= 90);
+}
+
+
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\is_letter_or_digit\is_letter_or_digit.gml" 
+function is_letter_or_digit(ch) {
+    return is_letter(ch) || (ord(ch) >= 48 && ord(ch) <= 57);
+}
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\is_line_number\is_line_number.gml" 
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+ function is_line_number(str) {
+    // Check if string contains only digits
+    if (string_length(str) == 0) return false;
+    
+    for (var i = 1; i <= string_length(str); i++) {
+        var char = string_char_at(str, i);
+        if (char < "0" || char > "9") return false;
+    }
+    
+    // Convert to number and validate range
+    var line_num = real(str);
+    return (line_num >= 1 && line_num <= 65535);
+ }
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\is_numeric_string\is_numeric_string.gml" 
+function is_numeric_string(str) {
+    if (string_length(str) == 0) return false;
+
+    // Allow negative sign
+    if (string_char_at(str, 1) == "-") {
+        str = string_copy(str, 2, string_length(str));
+        if (string_length(str) == 0) return false; // <- Add this
+    }
+
+    var dot_count = 0;
+    for (var i = 1; i <= string_length(str); i++) {
+        var c = string_char_at(str, i);
+        if (c == ".") {
+            dot_count++;
+            if (dot_count > 1) return false;
+        }
+        else if (ord(c) < ord("0") || ord(c) > ord("9")) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\is_operator\is_operator.gml" 
+function is_operator(op) {
+    return (op == "+" || op == "-" || op == "*" || op == "/" || op == "^" || 
+            op == "%" || string_upper(op) == "MOD");
+}
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\is_quoted_string\is_quoted_string.gml" 
+function is_quoted_string(str) {
+    return (string_length(str) >= 2 &&
+            string_char_at(str, 1) == "\"" &&
+            string_char_at(str, string_length(str)) == "\"");
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\is_right_associative\is_right_associative.gml" 
+function is_right_associative(op) {
+    return (op == "^");
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\is_valid_line_number\is_valid_line_number.gml" 
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+ function is_valid_line_number(line_num) {
+    return (line_num >= 1 && line_num <= 65535);
+ }
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\list_program\list_program.gml" 
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+function list_program() {
+    display_start_line = 0;
+    update_display();
+ }
+ function list_program_range(range) {
+    // Parse range like "10-50" or single number "10"
+    var dash_pos = string_pos("-", range);
+    if (dash_pos > 0) {
+        var start_line = real(string_copy(range, 1, dash_pos - 1));
+        var end_line = real(string_copy(range, dash_pos + 1, string_length(range)));
+        list_between_lines(start_line, end_line);
+    } else {
+        var single_line = real(range);
+        list_single_line(single_line);
+    }
+ }
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\list_saved_programs\list_saved_programs.gml" 
+function list_saved_programs() {
+    if (!variable_instance_exists(obj_editor, "dir_listing")) return;
+
+    obj_editor.dir_listing = [];
+    var fname = file_find_first(working_directory + "*.bas", 0); // 0 = file
+    while (fname != "") {
+        array_push(obj_editor.dir_listing, fname);
+        fname = file_find_next();
+    }
+    file_find_close();
+
+    obj_editor.showing_dir_overlay = true;
+
+    if (array_length(obj_editor.dir_listing) == 0) {
+        array_push(obj_editor.dir_listing, "No .bas files found.");
+    }
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\load_program_from\load_program_from.gml" 
+function load_program_from(filename) {
+    var file_path = working_directory + filename + ".bas";
+    if (!file_exists(file_path)) {
+        basic_show_error_message("FILE NOT FOUND: " + filename);
+        return;
+    }
+
+    // clear current program
+    new_program(); // use your existing clear function
+
+    var file = file_text_open_read(file_path);
+    if (file == -1) {
+        basic_show_error_message("COULD NOT OPEN FILE: " + filename);
+        return;
+    }
+
+    while (!file_text_eof(file)) {
+        var line = file_text_read_string(file);
+        file_text_readln(file);
+
+        line = string_trim(line);
+        if (line != "") {
+            var space_pos = string_pos(" ", line);
+            if (space_pos > 0) {
+                var line_num_str = string_copy(line, 1, space_pos - 1);
+                var code_content = string_copy(line, space_pos + 1, string_length(line));
+                var line_num = real(line_num_str);
+
+                if (is_line_number(line_num_str)) {
+                    ds_map_set(global.program_lines, line_num, code_content);
+                    insert_line_number_ordered(line_num);
+                }
+            }
+        }
+    }
+    file_text_close(file);
+    current_filename = filename;
+    basic_show_message("LOADED: " + filename);
+    update_display();
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\load_program_from_path\load_program_from_path.gml" 
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+function load_program_from_path(file_path, filename) {
+    if (!file_exists(file_path)) {
+        show_error_message("DRAG FILE NOT FOUND");
+        return;
+    }
+    
+    try {
+        save_undo_state();
+        new_program_without_undo();
+        
+        var file = file_text_open_read(file_path);
+        while (!file_text_eof(file)) {
+            var line = file_text_read_string(file);
+            file_text_readln(file);
+            
+            if (string_trim(line) != "") {
+                var space_pos = string_pos(" ", line);
+                if (space_pos > 0) {
+                    var line_num_str = string_copy(line, 1, space_pos - 1);
+					                    var line_num = real(line_num_str);
+                    var code_content = string_copy(line, space_pos + 1, string_length(line));
+                    
+                    if (is_line_number(line_num_str) && is_valid_line_number(line_num)) {
+                        ds_map_set(global.program_lines, line_num, code_content);
+                        insert_line_number_ordered(line_num);
+                    }
+                }
+            }
+        }
+        file_text_close(file);
+        current_filename = filename;
+        basic_show_message("LOADED via DRAG: " + filename);
+        update_display();
+    } catch (e) {
+        show_error_message("DRAG LOAD ERROR");
+    }
+ }
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\load_program_json\load_program_json.gml" 
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+function load_program_json(filename) {
+    var file_path = working_directory + filename + ".json";
+    
+    if (!file_exists(file_path)) {
+        show_error_message("JSON FILE NOT FOUND");
+        return;
+    }
+    
+    try {
+        var file = file_text_open_read(file_path);
+        var json_string = file_text_read_string(file);
+        file_text_close(file);
+        
+        var loaded_map = json_decode(json_string);
+        
+        new_program();
+        ds_map_copy(global.program_lines, loaded_map);
+        
+        // Rebuild line numbers list
+        var key = ds_map_find_first(global.program_lines);
+        while (!is_undefined(key)) {
+            insert_line_number_ordered(real(key));
+            key = ds_map_find_next(global.program_lines, key);
+        }
+        
+        ds_map_destroy(loaded_map);
+        basic_show_message("LOADED JSON: " + filename);
+        update_display();
+    } catch (e) {
+        show_error_message("JSON LOAD ERROR");
+    }
+ }
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\mode1_grid_clear\mode1_grid_clear.gml" 
+
+/// @param char_index
+function mode1_grid_clear(char_index) {
+    var grid_cols = 15;
+    var grid_rows = 18;
+
+    for (var row = 0; row < grid_rows; row++) {
+        for (var col = 0; col < grid_cols; col++) {
+            var i = row * grid_cols + col;
+            grid[i].char = char_index;
+            grid[i].fg = c_white;
+            grid[i].bg = c_black;
+        }
+    }
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\mode1_grid_fill\mode1_grid_fill.gml" 
+
+/// @param char_index
+/// @param fg_color
+/// @param bg_color
+function mode1_grid_fill(char_index, fg_color, bg_color) {
+    for (var i = 0; i < array_length(grid); i++) {
+        grid[i].char = char_index;
+        grid[i].fg = fg_color;
+        grid[i].bg = bg_color;
+    }
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\mode1_grid_set\mode1_grid_set.gml" 
+function mode1_grid_set(col, row, char_index, fg, bg) {
+    var grid_obj = instance_find(obj_mode1_grid, 0);
+    if (!instance_exists(grid_obj)) {
+        show_debug_message("mode1_grid_set: No grid object found.");
+        return;
+    }
+
+    var cols = 40;
+    var rows = 25;
+
+    if (col >= 0 && col < cols && row >= 0 && row < rows) {
+        var index = col + row * cols;
+        grid_obj.grid[index].char = char_index;
+        grid_obj.grid[index].fg = fg;
+        grid_obj.grid[index].bg = bg;
+        show_debug_message("mode1_grid_set: Set (" + string(col) + "," + string(row) + ") = " + string(char_index));
+    } else {
+        show_debug_message("mode1_grid_set: Coordinates out of bounds (" + string(col) + "," + string(row) + ")");
+    }
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\navigate_history_down\navigate_history_down.gml" 
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+ function navigate_history_down() {
+	 if (global.justreturned == 1) return; // 🛑 Block history on return
+	 
+    if (global.history_index != -1) {
+        global.history_index++;
+        if (global.history_index >= ds_list_size(global.input_history)) {
+            global.history_index = -1;
+            current_input = "";
+        } else {
+            current_input = ds_list_find_value(global.input_history, global.history_index);
+        }
+        cursor_pos = string_length(current_input);
+    }
+ }
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\navigate_history_up\navigate_history_up.gml" 
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+function navigate_history_up() {
+	
+	if (global.justreturned == 1) return; // 🛑 Block history on return
+	
+    if (ds_list_size(global.input_history) > 0) {
+        if (global.history_index == -1) {
+            global.history_index = ds_list_size(global.input_history) - 1;
+        } else {
+            global.history_index = max(0, global.history_index - 1);
+        }
+        current_input = ds_list_find_value(global.input_history, global.history_index);
+        cursor_pos = string_length(current_input);
+    }
+ }
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\new_program\new_program.gml" 
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+ function new_program() {
+    // Save state for undo before clearing
+    if (ds_list_size(global.line_numbers) > 0) {
+        save_undo_state();
+    }
+    
+    ds_map_clear(global.program_lines);
+    ds_list_clear(global.line_numbers);
+    current_filename = "";
+    display_start_line = 0;
+    update_display();
+    basic_show_message("NEW PROGRAM");
+ }
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\new_program_without_undo\new_program_without_undo.gml" 
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+ function new_program_without_undo() {
+    ds_map_clear(global.program_lines);
+    ds_list_clear(global.line_numbers);
+    current_filename = "";
+    display_start_line = 0;
+ }
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\process_input_line\process_input_line.gml" 
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+function process_input_line(input_text) {
+    // Trim whitespace
+    input_text = string_trim(input_text);
+    
+    if (input_text == "") return;
+    
+    // Check if line starts with a number
+    var first_space = string_pos(" ", input_text);
+    var potential_line_num = "";
+    
+    if (first_space > 0) {
+        potential_line_num = string_copy(input_text, 1, first_space - 1);
+    } else {
+        potential_line_num = input_text;
+    }
+    
+    // Check if it's a valid line number
+    if (is_line_number(potential_line_num)) {
+        handle_program_line(input_text);
+    } else {
+        handle_command(input_text);
+    }
+ }
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\quit_program\quit_program.gml" 
+function quit_program()
+{
+	game_end();
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\reset_interpreter_state\reset_interpreter_state.gml" 
+function reset_interpreter_state() {
+    global.interpreter_running = false;
+    global.program_has_ended = false;
+    global.awaiting_input = false;
+    global.pause_in_effect = false;
+    global.pause_mode = false;
+    global.input_expected = false;
+    global.interpreter_input = "";
+    global.interpreter_cursor_pos = 0;
+    global.last_interpreter_string = "";
+    
+    // Reset mode if needed
+    if (global.current_mode != 0) {
+        global.current_mode = 0;
+        room_goto(rm_basic_interpreter);
+    }
+    
+    // Clear any program execution state
+    ds_stack_clear(global.gosub_stack);
+    ds_stack_clear(global.for_stack);
+    ds_stack_clear(global.while_stack);
+}
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\resolve_basic_value\resolve_basic_value.gml" 
+function resolve_basic_value(key) {
+    return ds_map_exists(global.basic_variables, key) ? global.basic_variables[? key] : real(key);
+}
+
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\run_program\run_program.gml" 
+function run_program() {
+	  show_debug_message("RUN_PROGRAM START - color is: " + string(global.current_draw_color));
+    if (ds_list_size(global.line_numbers) == 0) {
+        show_error_message("NO PROGRAM");
+        return;
+    }
+
+    // Deep copy program data to prevent interpreter from modifying editor data
+    ds_map_copy(global.basic_program, global.program_lines);
+
+    global.basic_line_numbers = ds_list_create();
+    ds_list_copy(global.basic_line_numbers, global.line_numbers);
+
+    // ✅ Clear previous output
+    if (ds_exists(global.output_lines, ds_type_list)) {
+        ds_list_clear(global.output_lines);
+    } else {
+        global.output_lines = ds_list_create();
+    }
+
+    if (ds_exists(global.output_colors, ds_type_list)) {
+        ds_list_clear(global.output_colors);
+    } else {
+        global.output_colors = ds_list_create();
+    }
+
+    // ✅ Reset interpreter state
+    global.interpreter_input = "";
+    global.awaiting_input = false;
+    global.input_target_var = "";
+    global.interpreter_running = true;
+
+    global.current_draw_color = make_color_rgb(255, 191, 64); // Amber //c_green;// global.basic_text_color;
+   // show_debug_message("RUN_PROGRAM AFTER RESET - color is: " + string(global.current_draw_color));
+    
+    interpreter_current_line_index = 0;
+    interpreter_next_line = -1;
+
+    // Store editor state to return to
+    global.editor_return_room = room;
+
+    // Switch to interpreter room
+    room_goto(rm_basic_interpreter);
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\safe_real_pop\safe_real_pop.gml" 
+function safe_real_pop(stack) {
+    if (array_length(stack) < 1) return 1;
+
+    var raw = array_pop(stack);
+
+    // Pass through real values
+    if (is_real(raw)) return raw;
+
+    // Try to convert string safely
+    var str = string(raw);
+    var tryval = real(str);
+
+    if (is_nan(tryval)) {
+        show_debug_message("? safe_real_pop: Cannot convert '" + string(raw) + "' to number. Returning 0.");
+        return 0;
+    }
+
+    // Handle invalid conversions like real("RND:")
+    if (!is_numeric_string(str)) {
+        show_debug_message("? POSTFIX ERROR: Cannot convert to number: '" + str + "'");
+        return 1; // or return 0 if you prefer a neutral fallback
+    }
+
+    return tryval;
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\save_program\save_program.gml" 
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+function save_program() {
+    if (current_filename == "") {
+        show_error_message("NO FILENAME");
+        return;
+    }
+    save_program_as(current_filename);
+ }
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\save_program_as\save_program_as.gml" 
+/// @desc Saves the current program to a .bas file
+/// @param filename The filename to save as (without extension)
+function save_program_as(filename) {
+    // Trim spaces
+    filename = string_trim(filename);
+
+    // Remove surrounding quotes if present
+    if (string_length(filename) >= 2) {
+        var first = string_char_at(filename, 1);
+        var last  = string_char_at(filename, string_length(filename));
+        if ((first == "\"" || first == "'") && first == last) {
+            filename = string_copy(filename, 2, string_length(filename) - 2);
+        }
+    }
+
+    var file_path = working_directory + filename + ".bas";
+    var file = file_text_open_write(file_path);
+    if (file == -1) {
+        show_error_message("COULD NOT OPEN FILE: " + filename);
+        return;
+    }
+
+    var count = ds_list_size(global.line_numbers);
+    for (var i = 0; i < count; i++) {
+        var line_num = ds_list_find_value(global.line_numbers, i);
+        var code     = ds_map_find_value(global.program_lines, line_num);
+        file_text_write_string(file, string(line_num) + " " + code);
+        file_text_writeln(file);
+    }
+
+    file_text_close(file);
+    current_filename = filename;
+    basic_show_message("SAVED: " + filename + " (working_directory)");
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\save_program_json\save_program_json.gml" 
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+ function save_program_json(filename) {
+    try {
+        var save_data = ds_map_create();
+        ds_map_copy(save_data, global.program_lines);
+        
+        var json_string = json_encode(save_data);
+        var file_path = working_directory + filename + ".json";
+        var file = file_text_open_write(file_path);
+        file_text_write_string(file, json_string);
+        file_text_close(file);
+        
+        ds_map_destroy(save_data);
+        basic_show_message("SAVED: " + filename + " (JSON)");
+    } catch (e) {
+        show_error_message("JSON SAVE ERROR");
+    }
+ }
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\save_undo_state\save_undo_state.gml" 
+function save_undo_state() {
+    // Placeholder for undo system
+    // Eventually, you could push a copy of global.program_lines to a stack
+	/// TODO: Implement undo functionality for BASIC editor
+/// --------------------------------------------------
+/// This function should snapshot the current program state so it can be restored later via an "UNDO" command.
+/// A stack-based approach is recommended, where each saved state is pushed onto a list (e.g., global.undo_stack).
+///
+/// Suggested structure per snapshot:
+/// - A ds_map with keys like "global.program_lines", "global.line_numbers", and optionally "cursor_pos"
+/// - Each key maps to a *copy* (not a reference) of the original ds_map or ds_list
+///
+/// Pseudocode for future implementation:
+/// ```gml
+/// var snapshot = ds_map_create();
+/// ds_map_add_list(snapshot, "global.line_numbers", ds_list_copy(global.line_numbers));
+/// ds_map_add_map(snapshot, "global.program_lines", ds_map_copy(global.program_lines));
+/// ds_stack_push(global.undo_stack, snapshot);
+/// ```
+///
+/// Don't forget to:
+/// - Create `global.undo_stack` once during initialization (e.g., in obj_globals)
+/// - Clean up with `ds_map_destroy()` and `ds_list_destroy()` when popping or discarding states
+///
+/// For now, this is a placeholder to suppress runtime errors.
+
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\set_color_scheme\set_color_scheme.gml" 
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+function set_color_scheme(scheme) {
+    scheme = string_upper(scheme);
+    switch (scheme) {
+        case "GREEN":
+            keyword_color = c_lime;
+            text_color = c_green;
+            number_color = c_yellow;
+            break;
+        case "BLUE":
+            keyword_color = c_cyan;
+            text_color = c_blue;
+            number_color = c_white;
+            break;
+        case "AMBER":
+            keyword_color = c_orange;
+            text_color = c_yellow;
+            number_color = c_white;
+            break;
+        default:
+            show_error_message("UNKNOWN COLOR SCHEME");
+            return;
+    }
+    basic_show_message("COLOR SCHEME: " + scheme);
+    update_display();
+ }
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\show_current_colors\show_current_colors.gml" 
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+ function show_current_colors() {
+    basic_show_message("CURRENT SCHEME - USE: COLOR GREEN/BLUE/AMBER");
+ }
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\show_error_message\show_error_message.gml" 
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+ function show_error_message(error) {
+    basic_show_message("?" + error);
+ }
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\show_stat_message\show_stat_message.gml" 
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+ function show_stat_message(msg) {
+    message_text = msg;
+    message_timer = 120; // Show for 2 seconds at 60 FPS
+ }
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\split_on_unquoted_semicolons\split_on_unquoted_semicolons.gml" 
+function split_on_unquoted_semicolons(s) {
+    var result = [];
+    var current = "";
+    var in_string = false;
+    for (var i = 1; i <= string_length(s); i++) {
+        var c = string_char_at(s, i);
+        if (c == "\"") in_string = !in_string;
+        if (c == ";" && !in_string) {
+            array_push(result, string_trim(current));
+            current = "";
+        } else {
+            current += c;
+        }
+    }
+    if (string_length(current) > 0) array_push(result, string_trim(current));
+    return result;
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\string_is_number\string_is_number.gml" 
+/// @function string_is_number(str)
+/// @desc Returns true if the input string can be safely converted to a number.
+/// @param {string} str - The string to check
+function string_is_number(str) {
+    if (is_real(str)) return true; // Already a number
+    var trimmed = string_trim(str);
+    if (trimmed == "") return false;
+
+    var dot_found = false;
+    var start = 1;
+
+    // Allow for optional leading minus sign
+    if (string_char_at(trimmed, 1) == "-") {
+        if (string_length(trimmed) == 1) return false;
+        start = 2;
+    }
+
+    for (var i = start; i <= string_length(trimmed); i++) {
+        var ch = string_char_at(trimmed, i);
+        if (ch >= "0" && ch <= "9") continue;
+        else if (ch == ".") {
+            if (dot_found) return false; // only one dot allowed
+            dot_found = true;
+        } else {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\strip_basic_remark\strip_basic_remark.gml" 
+/// Remove single quote comments, unless inside double quotes
+function strip_basic_remark(arg) {
+    var len = string_length(arg);
+    var inside_string = false;
+
+    for (var i = 1; i <= len; i++) {
+        var c = string_char_at(arg, i);
+
+        if (c == "\"") {
+            inside_string = !inside_string;
+        }
+        else if (c == "'" && !inside_string) {
+            // Found unquoted remark start – strip everything after
+            return string_trim(string_copy(arg, 1, i - 1));
+        }
+    }
+
+    // No unquoted remark found – return original
+    return arg;
+}
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\toggle_syntax_highlighting\toggle_syntax_highlighting.gml" 
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+function toggle_syntax_highlighting() {
+    syntax_highlighting = !syntax_highlighting;
+    basic_show_message("SYNTAX HIGHLIGHTING: " + (syntax_highlighting ? "ON" : "OFF"));
+    update_display();
+ }
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\tokenize_expression\tokenize_expression.gml" 
+function tokenize_expression(expr) {
+    var tokens = [];
+    var i = 1;
+    while (i <= string_length(expr)) {
+        var ch = string_char_at(expr, i);
+
+        if (ch == " " || ch == "\t") {
+            i++;
+            continue;
+        }
+
+        if (ch == "+" || ch == "-" || ch == "*" || ch == "/" || ch == "^" || ch == "(" || ch == ")") {
+            array_push(tokens, ch);
+            i++;
+        }
+        else if (ord(ch) >= 48 && ord(ch) <= 57) {
+            var num = "";
+            while (i <= string_length(expr) && (ord(string_char_at(expr, i)) >= 48 && ord(string_char_at(expr, i)) <= 57)) {
+                num += string_char_at(expr, i);
+                i++;
+            }
+            array_push(tokens, num);
+        }
+        else if (is_letter(ch)) {
+            var ident = "";
+            while (i <= string_length(expr) && (is_letter_or_digit(string_char_at(expr, i)))) {
+                ident += string_char_at(expr, i);
+                i++;
+            }
+            if (string_char_at(expr, i) == "(") {
+                array_push(tokens, ident); // Function name
+            } else {
+                array_push(tokens, ident); // Variable
+            }
+        }
+        else if (ch == ",") {
+            array_push(tokens, ",");
+            i++;
+        }
+        else {
+            show_debug_message("Unknown character in expression: " + ch);
+            i++;
+        }
+    }
+
+    return tokens;
+}
+
+
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3>type "C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\update_display\update_display.gml" 
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+ function update_display() {
+    // This will be called in the Draw event
+ }
+ 

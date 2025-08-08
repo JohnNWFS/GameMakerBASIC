@@ -1,15 +1,27 @@
+/// @script basic_cmd_gosub
+/// @description Handle GOSUB line-number jumps, stripping inline comments
 function basic_cmd_gosub(arg) {
-    var target = real(arg);
+    // 1) Strip off anything after a ':' (inline comment or extra code)
+    var raw = string_trim(arg);
+    var colonPos = string_pos(":", raw);
+    if (colonPos > 0) {
+        raw = string_trim(string_copy(raw, 1, colonPos - 1));
+        show_debug_message("GOSUB: Stripped argument to '" + raw + "'");
+    }
+
+    // 2) Parse the target line number
+    var target = real(raw);
     show_debug_message("GOSUB: Target line requested: " + string(target));
 
-    // Push return point (next line index) onto stack
+    // 3) Push return point (the *next* line index) onto the gosub stack
     var return_index = line_index + 1;
     ds_stack_push(global.gosub_stack, return_index);
     show_debug_message("GOSUB: Pushed return index: " + string(return_index));
 
-    // Search for the target line in the program
+    // 4) Find the target in the sorted line_list
     global.interpreter_next_line = -1;
-    for (var i = 0; i < ds_list_size(global.line_list); i++) {
+    var listSize = ds_list_size(global.line_list);
+    for (var i = 0; i < listSize; i++) {
         if (ds_list_find_value(global.line_list, i) == target) {
             global.interpreter_next_line = i;
             show_debug_message("GOSUB: Found target line at index " + string(i));
@@ -17,6 +29,7 @@ function basic_cmd_gosub(arg) {
         }
     }
 
+    // 5) Error if not found
     if (global.interpreter_next_line == -1) {
         show_debug_message("GOSUB: ERROR — Target line " + string(target) + " not found");
         basic_show_error_message("GOSUB target line not found: " + string(target));

@@ -9,6 +9,23 @@ if (ds_exists(global.basic_program, ds_type_map)) ds_map_destroy(global.basic_pr
 if (ds_exists(global.program_map, ds_type_map)) ds_map_destroy(global.program_map);
 if (ds_exists(global.colors, ds_type_map)) ds_map_destroy(global.colors);
 
+
+// ─────────────────────────────
+// ARRAYS
+// ─────────────────────────────
+if (ds_exists(global.basic_arrays, ds_type_map)) {
+    // Destroy each backing list…
+    var _key = ds_map_find_first(global.basic_arrays);
+    while (!is_undefined(_key)) {
+        var _lst = global.basic_arrays[? _key];
+        ds_list_destroy(_lst);
+        _key = ds_map_find_next(global.basic_arrays, _key);
+    }
+    // Then destroy the map itself
+    ds_map_destroy(global.basic_arrays);
+}
+
+
 // ─────────────────────────────
 // LISTS
 // ─────────────────────────────
