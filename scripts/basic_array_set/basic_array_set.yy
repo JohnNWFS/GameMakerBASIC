@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"basic_array_set",
   "parent":{
-    "name":"BASIC COMMANDS HELPERS",
-    "path":"folders/Scripts/BASIC_COMMANDS/BASIC COMMANDS HELPERS.yy",
+    "name":"Arrays",
+    "path":"folders/Scripts/BASIC_COMMANDS/BASIC COMMANDS HELPERS/Arrays.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

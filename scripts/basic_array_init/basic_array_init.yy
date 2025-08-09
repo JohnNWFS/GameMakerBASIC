@@ -1,9 +1,9 @@
 {
   "$GMScript":"v1",
-  "%Name":"basic_array_get",
+  "%Name":"basic_array_init",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"basic_array_get",
+  "name":"basic_array_init",
   "parent":{
     "name":"Arrays",
     "path":"folders/Scripts/BASIC_COMMANDS/BASIC COMMANDS HELPERS/Arrays.yy",

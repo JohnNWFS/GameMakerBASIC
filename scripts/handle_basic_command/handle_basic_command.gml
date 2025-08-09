@@ -104,6 +104,10 @@ function handle_basic_command(cmd, arg) {
             case "FONT":
                 basic_cmd_font(rest);
                 break;
+            case "DIM":
+                // Preallocate zero-filled 1-D arrays; inclusive upper bound (0..N)
+                basic_cmd_dim(rest);
+                break;
             case "END":
                 basic_cmd_end();
                 break;
@@ -121,3 +125,4 @@ function handle_basic_command(cmd, arg) {
         }
     }
 }
+

@@ -28,6 +28,7 @@ function basic_tokenize_expression_v2(expr) {
             continue;
         }
 
+        // --- Handle whitespace ---
         if (c == " ") {
             if (current != "") {
                 show_debug_message("TOKENIZER: Finalizing token from space: '" + current + "'");
@@ -35,15 +36,18 @@ function basic_tokenize_expression_v2(expr) {
                 show_debug_message("TOKENIZER: Token added: " + current);
                 current = "";
             }
+            i++;
+            continue;
         }
-        else if (c == "+" || c == "*" || c == "/" || c == "(" || c == ")" || c == "%") {
+
+        // --- Handle operators ---
+        if (c == "+" || c == "*" || c == "/" || c == "(" || c == ")" || c == "%") {
             if (current != "") {
                 show_debug_message("TOKENIZER: Finalizing token before operator: '" + current + "'");
                 array_push(tokens, string_upper(current) == "MOD" ? "MOD" : current);
                 show_debug_message("TOKENIZER: Token added: " + current);
                 current = "";
             }
-
             if (c == "(" && array_length(tokens) > 0) {
                 var last = string_upper(tokens[array_length(tokens) - 1]);
                 if (array_contains(function_names, last)) {
@@ -57,8 +61,12 @@ function basic_tokenize_expression_v2(expr) {
                 array_push(tokens, c);
                 show_debug_message("TOKENIZER: Operator token added: " + c);
             }
+            i++;
+            continue;
         }
-        else if (c == ",") {
+
+        // --- Handle commas ---
+        if (c == ",") {
             if (current != "") {
                 show_debug_message("TOKENIZER: Finalizing token before comma: '" + current + "'");
                 array_push(tokens, string_upper(current) == "MOD" ? "MOD" : current);
@@ -67,24 +75,36 @@ function basic_tokenize_expression_v2(expr) {
             }
             array_push(tokens, ",");
             show_debug_message("TOKENIZER: Comma token added");
+            i++;
+            continue;
         }
-        else if (c == "-") {
-            var is_negative_number = false;
-            if (array_length(tokens) == 0) {
-                is_negative_number = true;
-            } else {
-                var last_token = tokens[array_length(tokens) - 1];
-                if (last_token == "+" || last_token == "-" || last_token == "*" || 
-                    last_token == "/" || last_token == "(" || last_token == "%" || 
-                    string_upper(last_token) == "MOD") {
-                    is_negative_number = true;
-                }
-            }
 
-            if (is_negative_number) {
-                show_debug_message("TOKENIZER: Beginning negative number with '-'");
-                current += "-";
+        // --- Handle subtraction/negative numbers ---
+        if (c == "-") {
+            var is_negative_number = false;
+            if (i < len && (ord(string_char_at(expr, i + 1)) >= 48 && ord(string_char_at(expr, i + 1)) <= 57)) {
+                // Check if - is followed by a digit
+                if (array_length(tokens) == 0 || current != "") {
+                    // If no tokens yet or current is non-empty (e.g., after a variable), treat as subtraction
+                    if (current != "") {
+                        show_debug_message("TOKENIZER: Finalizing token before subtraction: '" + current + "'");
+                        array_push(tokens, string_upper(current) == "MOD" ? "MOD" : current);
+                        show_debug_message("TOKENIZER: Token added: " + current);
+                        current = "";
+                    }
+                    array_push(tokens, "-");
+                    show_debug_message("TOKENIZER: Subtraction operator token added: -");
+                } else {
+                    // After an operator or parenthesis, treat as negative number
+                    var last_token = tokens[array_length(tokens) - 1];
+                    if (last_token == "+" || last_token == "-" || last_token == "*" || 
+                        last_token == "/" || last_token == "(" || last_token == "%" || 
+                        string_upper(last_token) == "MOD") {
+                        is_negative_number = true;
+                    }
+                }
             } else {
+                // Lone - or followed by non-digit is always subtraction
                 if (current != "") {
                     show_debug_message("TOKENIZER: Finalizing token before subtraction: '" + current + "'");
                     array_push(tokens, string_upper(current) == "MOD" ? "MOD" : current);
@@ -94,14 +114,21 @@ function basic_tokenize_expression_v2(expr) {
                 array_push(tokens, "-");
                 show_debug_message("TOKENIZER: Subtraction operator token added: -");
             }
-        }
-        else {
-            current += c;
+
+            if (is_negative_number) {
+                show_debug_message("TOKENIZER: Beginning negative number with '-'");
+                current += "-";
+            }
+            i++;
+            continue;
         }
 
-        i += 1;
+        // --- Accumulate characters for identifiers or numbers ---
+        current += c;
+        i++;
     }
 
+    // --- Finalize any remaining token ---
     if (current != "") {
         show_debug_message("TOKENIZER: Finalizing last token: '" + current + "'");
         array_push(tokens, string_upper(current) == "MOD" ? "MOD" : current);

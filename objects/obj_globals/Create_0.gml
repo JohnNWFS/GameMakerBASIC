@@ -106,6 +106,8 @@ global.interpreter_resume_stmt_index = 0;
 
 global.interpreter_current_stmt_index = 0;
 
-
+global.config = ds_map_create();
+global.config[? "max_line_number"] = 65535;
+global.config[? "max_history_size"] = 50;
 
 

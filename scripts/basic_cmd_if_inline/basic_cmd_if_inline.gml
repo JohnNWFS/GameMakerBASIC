@@ -1,82 +1,115 @@
 /// @script basic_cmd_if_inline
-/// @description Legacy single-line IF…THEN…ELSE handler
+/// @description Legacy single-line IF…THEN…ELSE handler (tightened & quote-safe)
 function basic_cmd_if_inline(arg) {
-    show_debug_message("INLINE IF — Raw arg: '" + arg + "'");
+    // Safe check: don't read a global that doesn't exist
+    var silent = (variable_global_exists("if_scan_mode") && global.if_scan_mode);
 
-    var cond_str = string_trim(arg);
-    var then_pos = string_pos("THEN", string_upper(cond_str));
+    var s  = string_trim(arg);
+    var up = string_upper(s);
+    if (!silent) show_debug_message("INLINE IF — Raw arg: '" + s + "'");
+
+    // Local helper to find a top-level keyword with word boundaries (space/colon/EOL), quote-aware
+    var _find_kw = function(_src, _up, _kw) {
+        var L = string_length(_src), K = string_length(_kw);
+        var in_q = false;
+        for (var i = 1; i <= L - K + 1; i++) {
+            var ch = string_char_at(_src, i);
+            if (ch == "\"") { in_q = !in_q; continue; }
+            if (in_q) continue;
+            if (string_copy(_up, i, K) == _kw) {
+                var prev = (i == 1) ? " " : string_char_at(_up, i - 1);
+                var next = (i + K <= L) ? string_char_at(_up, i + K) : " ";
+                var ok_prev = (prev == " " || prev == ":");
+                var ok_next = (next == " " || next == ":" || (i + K - 1 == L));
+                if (ok_prev && ok_next) return i;
+            }
+        }
+        return 0;
+    };
+
+    var then_pos = _find_kw(s, up, "THEN");
     if (then_pos <= 0) {
-        show_debug_message("?IF ERROR: Missing THEN in '" + cond_str + "'");
+        if (!silent) show_debug_message("?IF ERROR: Missing THEN in '" + s + "'");
         return;
     }
+    var else_pos = _find_kw(s, up, "ELSE");
 
-    var else_pos = string_pos("ELSE", string_upper(cond_str));
-
-    var condition = string_trim(string_copy(cond_str, 1, then_pos - 1));
+    // Slice parts (length parameter is explicit)
+    var condition  = string_trim(string_copy(s, 1, then_pos - 1));
     var then_action, else_action;
-
-    if (else_pos > 0 && else_pos > then_pos) {
-        then_action = string_trim(string_copy(cond_str, then_pos + 4, else_pos - then_pos - 4));
-        else_action = string_trim(string_copy(cond_str, else_pos + 4, string_length(cond_str)));
+    if (else_pos > then_pos) {
+        var then_len = max(0, else_pos - (then_pos + 4));
+        then_action  = string_trim(string_copy(s, then_pos + 4, then_len));
+        var else_len = max(0, string_length(s) - (else_pos + 3));
+        else_action  = string_trim(string_copy(s, else_pos + 4, else_len));
     } else {
-        then_action = string_trim(string_copy(cond_str, then_pos + 4, string_length(cond_str)));
+        var tlen = max(0, string_length(s) - (then_pos + 3));
+        then_action = string_trim(string_copy(s, then_pos + 4, tlen));
         else_action = "";
     }
 
-    show_debug_message("Parsed condition: '" + condition + "'");
-    show_debug_message("Parsed THEN: '" + then_action + "'");
-    show_debug_message("Parsed ELSE: '" + else_action + "'");
-
-    // Detect and evaluate compound conditions
-    var logic_op = "";
-    var result = false;
-    var upper_cond = string_upper(condition);
-
-    if (string_pos("AND", upper_cond) > 0) logic_op = "AND";
-    else if (string_pos("OR", upper_cond) > 0) logic_op = "OR";
-
-    if (logic_op != "") {
-        var cond_parts = string_split(condition, logic_op);
-        if (array_length(cond_parts) != 2) {
-            show_debug_message("?IF ERROR: Malformed " + logic_op + " condition: '" + condition + "'");
-            return;
-        }
-
-        var res1 = basic_evaluate_condition(string_trim(cond_parts[0]));
-        var res2 = basic_evaluate_condition(string_trim(cond_parts[1]));
-        result = (logic_op == "AND") ? (res1 && res2) : (res1 || res2);
-
-        show_debug_message("Combined condition (" + logic_op + "): " + string(res1) + " " + logic_op + " " + string(res2) + " = " + string(result));
-    } else {
-        result = basic_evaluate_condition(condition);
-        show_debug_message("Single condition result: " + string(result));
+    if (!silent) {
+        show_debug_message("Parsed condition: '" + condition + "'");
+        show_debug_message("Parsed THEN: '" + then_action + "'");
+        show_debug_message("Parsed ELSE: '" + else_action + "'");
     }
 
-    var final_action = result ? then_action : else_action;
+    // Evaluate condition (AND/OR handled inside)
+    var result = basic_evaluate_condition(condition);
+    if (!silent) show_debug_message("Single/combined condition result: " + string(result));
+
+    // Pick branch; strip trailing REM before executing
+    var final_action = strip_basic_remark(string_trim(result ? then_action : else_action));
     if (final_action == "") {
-        show_debug_message("No action to execute for this branch.");
+        if (!silent) show_debug_message("No action to execute for this branch.");
         return;
     }
 
-    show_debug_message((result ? "THEN" : "ELSE") + " executing: '" + final_action + "'");
+    // Promote bare assignment to LET (only if not already a known command)
+    {
+        var _sp   = string_pos(" ", final_action);
+        var _head = (_sp > 0) ? string_upper(string_copy(final_action, 1, _sp - 1)) : string_upper(final_action);
 
-    // Parse the action into command and arguments
+        var _is_cmd =
+              (_head == "PRINT")   || (_head == "LET")     || (_head == "INPUT")   || (_head == "CLS")
+           || (_head == "COLOR")   || (_head == "BGCOLOR") || (_head == "IF")      || (_head == "FOR")
+           || (_head == "NEXT")    || (_head == "WHILE")   || (_head == "WEND")    || (_head == "GOTO")
+           || (_head == "GOSUB")   || (_head == "RETURN")  || (_head == "DIM")     || (_head == "END")
+           || (_head == "MODE")    || (_head == "PSET")    || (_head == "CHARAT")  || (_head == "PRINTAT")
+           || (_head == "FONT")    || (_head == "CLSCHAR");
+
+        if (!_is_cmd) {
+            var _depth2 = 0, eqpos = 0, Lfa = string_length(final_action);
+            for (var i2 = 1; i2 <= Lfa; i2++) {
+                var ch2 = string_char_at(final_action, i2);
+                if (ch2 == "(") _depth2++;
+                else if (ch2 == ")") _depth2 = max(0, _depth2 - 1);
+                else if (ch2 == "=" && _depth2 == 0) { eqpos = i2; break; }
+            }
+            if (eqpos > 0) {
+                final_action = "LET " + final_action;
+                if (!silent) show_debug_message("INLINE IF: Promoted bare assignment to: '" + final_action + "'");
+            }
+        }
+    }
+
+    if (!silent) show_debug_message((result ? "THEN" : "ELSE") + " executing: '" + final_action + "'");
+
+    // Execute action (fast-path GOTO sets the line jump)
     var sp = string_pos(" ", final_action);
     var cmd = (sp > 0) ? string_upper(string_copy(final_action, 1, sp - 1)) : string_upper(final_action);
     var action_arg = (sp > 0) ? string_trim(string_copy(final_action, sp + 1, string_length(final_action))) : "";
-
-    show_debug_message("Parsed - cmd: '" + cmd + "', arg: '" + action_arg + "'");
 
     if (cmd == "GOTO") {
         var line_target = real(action_arg);
         var index = ds_list_find_index(global.line_list, line_target);
         if (index >= 0) {
-            interpreter_next_line = index;
-            show_debug_message("GOTO from IF → line " + string(line_target) + " (index " + string(index) + ")");
+            global.interpreter_next_line = index; // honored by step loop
+            if (!silent) show_debug_message("GOTO from IF → line " + string(line_target) + " (index " + string(index) + ")");
         } else {
-            show_debug_message("?IF ERROR: GOTO target line not found: " + string(line_target));
+            if (!silent) show_debug_message("?IF ERROR: GOTO target line not found: " + string(line_target));
         }
     } else {
         handle_basic_command(cmd, action_arg);
     }
-} 
+}

@@ -99,9 +99,8 @@ function basic_cmd_for(arg) {
     var to_postfix    = infix_to_postfix(to_tokens);
     var to_val        = evaluate_postfix(to_postfix);
 
-    var step_tokens   = basic_tokenize_expression_v2(step_expr);
-    var step_postfix  = infix_to_postfix(step_tokens);
-    var step_val      = evaluate_postfix(step_postfix);
+	var step_val = basic_evaluate_expression_v2(step_expr);
+
 
     show_debug_message("FOR: Evaluated values → start=" + string(start_val) + " | to=" + string(to_val) + " | step=" + string(step_val));
 

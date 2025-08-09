@@ -18,7 +18,7 @@ function basic_cmd_next(arg) {
     // --------------------------
     if (!ds_exists(global.for_stack, ds_type_stack) || ds_stack_empty(global.for_stack)) {
         show_debug_message("NEXT: ERROR — NEXT without matching FOR");
-        basic_show_message("NEXT without FOR");
+        basic_system_message("NEXT without FOR");
         global.interpreter_running = false;
         return;
     }
@@ -33,7 +33,7 @@ function basic_cmd_next(arg) {
     if (user_var != "") {
         if (is_struct(frame) && variable_struct_exists(frame, "varname")) {
             if (string_upper(frame.varname) != user_var) {
-                // Do NOT alter control flow; just warn for now (no stack search to avoid side effects).
+                // Do NOT alter control flow; just warn (no stack search to avoid side effects).
                 show_debug_message("NEXT: WARNING — NEXT " + user_var + " does not match active FOR var " + string(frame.varname));
             }
         }
@@ -47,37 +47,43 @@ function basic_cmd_next(arg) {
     var step_val    = frame.step;
     var return_line = frame.return_line;
 
-    // Placeholders for inline-colon support (may be -1 until you wire FOR to fill them)
+    // Placeholders for inline-colon support (may be -1 until wired in FOR)
     var loop_line   = (variable_struct_exists(frame, "loop_line")) ? frame.loop_line : -1;
     var loop_stmt   = (variable_struct_exists(frame, "loop_stmt")) ? frame.loop_stmt : -1;
 
     // --------------------------
-    // 3) Update loop variable
+    // 3) Validate variable store
     // --------------------------
     if (is_undefined(global.basic_variables)) {
         show_debug_message("NEXT: ERROR — global.basic_variables is undefined.");
-        basic_show_message("RUNTIME ERROR: variable store not initialized");
+        basic_system_message("RUNTIME ERROR: variable store not initialized");
         global.interpreter_running = false;
         return;
     }
 
+    // Fetch current value
     var current = global.basic_variables[? varname];
     show_debug_message("NEXT: Current value of " + string(varname) + " = " + string(current));
 
+    // --------------------------
+    // 3a) Sanitize to_val / step_val BEFORE applying the step
+    // --------------------------
+    if (is_string(to_val))   to_val   = basic_evaluate_expression_v2(to_val);
+    if (is_string(step_val)) step_val = basic_evaluate_expression_v2(step_val);
+
+    // Guard against STEP=0 to avoid infinite loop when parser fed 0 (e.g., unary minus mishap)
+    if (step_val == 0) {
+        var inferred = (to_val >= current) ? 1 : -1;
+        show_debug_message("NEXT: STEP evaluated to 0; defaulting to " + string(inferred));
+        step_val = inferred;
+    }
+
+    // --------------------------
+    // 3b) NOW apply the step and persist the loop var
+    // --------------------------
     current += step_val;
     global.basic_variables[? varname] = current;
     show_debug_message("NEXT: Updated value of " + string(varname) + " = " + string(current));
-
-		// Belt-and-suspenders: evaluate string to_val/step_val just in case
-		if (is_string(to_val)) {
-		    to_val = basic_evaluate_expression_v2(to_val);
-		}
-		if (is_string(step_val)) {
-		    step_val = basic_evaluate_expression_v2(step_val);
-		}
-
-
-
 
     // --------------------------
     // 4) Continuation test
@@ -97,10 +103,8 @@ function basic_cmd_next(arg) {
             variable_global_exists("interpreter_target_stmt");
 
         if (have_stmt_jump && loop_line >= 0 && loop_stmt >= 0) {
-            // This path only activates when you later wire FOR to capture (line, stmt)
             global.interpreter_target_line = loop_line;
             global.interpreter_target_stmt = loop_stmt;
-            // Optional: a flag your dispatcher can check to prioritize stmt-jumps
             if (variable_global_exists("interpreter_use_stmt_jump")) {
                 global.interpreter_use_stmt_jump = true;
             }

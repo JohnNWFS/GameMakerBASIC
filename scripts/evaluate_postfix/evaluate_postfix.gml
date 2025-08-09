@@ -94,28 +94,33 @@ function evaluate_postfix(postfix) {
 
             switch (token_upper) {
                 case "+":  result = (is_string(a) || is_string(b)) ? string(a) + string(b) : a + b; break;
-
+                case "-":
+                    if (is_string(a)) a = real(a);
+                    if (is_string(b)) b = real(b);
+                    result = a - b; break;
+				case "=":
+				    // Equality comparison: BASIC IF x=5 then ...
+				    if (is_string(a)) a = real(a);
+				    if (is_string(b)) b = real(b);
+				    result = (a == b) ? 1 : 0;
+				    break;
                 case "*":
                     if (is_string(a)) a = real(a);
                     if (is_string(b)) b = real(b);
                     result = a * b; break;
-
                 case "/":
                     if (is_string(a)) a = real(a);
                     if (is_string(b)) b = real(b);
                     result = (b != 0) ? a / b : 0; break;
-
                 case "%":
                 case "MOD":
                     if (is_string(a)) a = real(a);
                     if (is_string(b)) b = real(b);
                     result = a mod b; break;
-
                 case "^":
                     if (is_string(a)) a = real(a);
                     if (is_string(b)) b = real(b);
                     result = power(a, b); break;
-
                 default:
                     show_debug_message("? POSTFIX WARNING: Unknown operator = " + token_upper + " → 0");
                     result = 0; break;
@@ -141,48 +146,48 @@ function evaluate_postfix(postfix) {
                     if (n <= 0) n = 1;
                     var r1 = irandom(n - 1) + 1;
                     array_push(stack, r1);
-                    show_debug_message("POSTFIX: RND(" + string(n) + ") → " + string(r1));
+                    show_debug_message("POSTFIX: RND1(" + string(n) + ") → " + string(r1));
                     break;
                 }
-				case "RND2": {
-				    var max_val_raw = array_pop(stack);
-				    var min_val_raw = array_pop(stack);
+                case "RND2": {
+                    var max_val_raw = array_pop(stack);
+                    var min_val_raw = array_pop(stack);
 
-				    var min_val, max_val;
+                    var min_val, max_val;
 
-				    // --- Resolve min value ---
-				    if (is_real(min_val_raw)) {
-				        min_val = min_val_raw;
-				    } else if (ds_map_exists(global.basic_variables, min_val_raw) && is_real(global.basic_variables[? min_val_raw])) {
-				        min_val = global.basic_variables[? min_val_raw];
-				    } else {
-				        min_val = undefined;
-				    }
+                    // --- Resolve min value ---
+                    if (is_real(min_val_raw)) {
+                        min_val = min_val_raw;
+                    } else if (ds_map_exists(global.basic_variables, min_val_raw) && is_real(global.basic_variables[? min_val_raw])) {
+                        min_val = global.basic_variables[? min_val_raw];
+                    } else {
+                        min_val = undefined;
+                    }
 
-				    // --- Resolve max value ---
-				    if (is_real(max_val_raw)) {
-				        max_val = max_val_raw;
-				    } else if (ds_map_exists(global.basic_variables, max_val_raw) && is_real(global.basic_variables[? max_val_raw])) {
-				        max_val = global.basic_variables[? max_val_raw];
-				    } else {
-				        max_val = undefined;
-				    }
+                    // --- Resolve max value ---
+                    if (is_real(max_val_raw)) {
+                        max_val = max_val_raw;
+                    } else if (ds_map_exists(global.basic_variables, max_val_raw) && is_real(global.basic_variables[? max_val_raw])) {
+                        max_val = global.basic_variables[? max_val_raw];
+                    } else {
+                        max_val = undefined;
+                    }
 
-				    // --- Validate ---
-				    if (!is_real(min_val) || !is_real(max_val)) {
-				        // Show on screen without triggering tokenization
-				        basic_system_message(
-				            "ERROR: RND(min,max) requires numeric arguments — got '" 
-				            + string(min_val_raw) + "', '" + string(max_val_raw) + "'"
-				        );
-				        array_push(stack, 0); // keep evaluation alive
-				    } else {
-				        array_push(stack, irandom_range(min_val, max_val));
-				    }
-				    break;
-				}
-
-
+                    // --- Validate ---
+                    if (!is_real(min_val) || !is_real(max_val)) {
+                        // Show on screen without triggering tokenization
+                        basic_system_message(
+                            "ERROR: RND(min,max) requires numeric arguments — got '" 
+                            + string(min_val_raw) + "', '" + string(max_val_raw) + "'"
+                        );
+                        array_push(stack, 0); // keep evaluation alive
+                    } else {
+                        var result = irandom_range(min_val, max_val);
+                        array_push(stack, result);
+                        show_debug_message("POSTFIX: RND2(" + string(min_val) + "," + string(max_val) + ") → " + string(result));
+                    }
+                    break;
+                }
 
                 // ---- Math
                 case "ABS": array_push(stack, abs(safe_real_pop(stack))); break;

@@ -16,11 +16,11 @@ function infix_to_postfix(tokens) {
 
     for (var i = 0; i < array_length(tokens); i++) {
         var t  = tokens[i];        // raw token
-		// Ignore commas as separators — functions handle arg order explicitly
-		if (t == ",") {
-		    show_debug_message("INFIX: Skipping comma token");
-		    continue;
-		}
+        // Ignore commas as separators — functions handle arg order explicitly
+        if (t == ",") {
+            show_debug_message("INFIX: Skipping comma token");
+            continue;
+        }
 
         var tu = _TOKU(t);         // uppercased string form
 
@@ -184,13 +184,84 @@ function infix_to_postfix(tokens) {
                     i = jB; // consume up to ')'
                     continue;
                 }
-                // If we didn't match, fall through to your existing logic below
+                // If we didn't match, fall through to existing logic below
             }
 
             // ------------------------------------------------------
-            // 7b) Your existing special cases and fallbacks
+            // 7b) RND(min, max) handling for complex arguments
             // ------------------------------------------------------
+            if (fn_name == "RND") {
+                if (i + 1 < array_length(tokens) && tokens[i + 1] == "(") {
+                    var _depth = 0;
+                    var j = i + 1;
+                    var matched = false;
+                    var arg_tokens = [[]]; // Array of token lists for each argument
+                    var arg_index = 0;
 
+                    // Collect tokens until matching ')'
+                    while (j < array_length(tokens)) {
+                        var tk = tokens[j];
+                        if (tk == "(") {
+                            _depth++;
+                            if (_depth > 1) array_push(arg_tokens[arg_index], tk);
+                        } else if (tk == ")") {
+                            _depth--;
+                            if (_depth == 0) { matched = true; break; }
+                            array_push(arg_tokens[arg_index], tk);
+                        } else if (tk == "," && _depth == 1) {
+                            arg_index++;
+                            array_push(arg_tokens, []);
+                        } else {
+                            array_push(arg_tokens[arg_index], tk);
+                        }
+                        j++;
+                    }
+
+                    if (matched) {
+                        if (array_length(arg_tokens) == 1 && array_length(arg_tokens[0]) == 0) {
+                            // Empty parens: RND()
+                            array_push(output, "1");
+                            array_push(output, "RND1");
+                            show_debug_message("Processed empty RND() → default to RND(1)");
+                            i = j;
+                            continue;
+                        } else if (array_length(arg_tokens) == 1) {
+                            // One arg: RND(n)
+                            var inner_post = infix_to_postfix(arg_tokens[0]);
+                            _push_all(output, inner_post);
+                            array_push(output, "RND1");
+                            show_debug_message("Processed RND(n): " + string(arg_tokens[0]));
+                            i = j;
+                            continue;
+                        } else if (array_length(arg_tokens) == 2) {
+                            // Two args: RND(min, max)
+                            var min_post = infix_to_postfix(arg_tokens[0]);
+                            var max_post = infix_to_postfix(arg_tokens[1]);
+                            _push_all(output, min_post);
+                            _push_all(output, max_post);
+                            array_push(output, "RND2");
+                            show_debug_message("Processed RND(min,max): " + string(arg_tokens[0]) + ", " + string(arg_tokens[1]));
+                            i = j;
+                            continue;
+                        }
+                    }
+                    // Malformed RND call
+                    show_debug_message("Malformed RND call at token '" + string(t) + "' — passing through");
+                    array_push(output, t);
+                    i = j;
+                    continue;
+                } else {
+                    // RND without parentheses
+                    show_debug_message("? Function 'RND' used without parentheses. Defaulting to RND(1) behavior.");
+                    array_push(output, "1");
+                    array_push(output, "RND1");
+                    continue;
+                }
+            }
+
+            // ------------------------------------------------------
+            // 7c) Existing special cases for other functions
+            // ------------------------------------------------------
             // Function used WITHOUT parentheses → fallback behavior (fn(1))
             if (i + 1 >= array_length(tokens) || tokens[i + 1] != "(") {
                 show_debug_message("? Function '" + string(t) + "' used without parentheses. Defaulting to " + fn_name + "(1) behavior.");
@@ -199,22 +270,13 @@ function infix_to_postfix(tokens) {
                 continue;
             }
 
-			// Empty parens like RND()
-			if (i + 2 < array_length(tokens) && tokens[i + 1] == "(" && tokens[i + 2] == ")") {
-			    if (fn_name == "RND") {
-			        array_push(output, "1");
-			        array_push(output, "RND1"); // <-- emit RND1 so evaluate_postfix handles it
-			        show_debug_message("Processed empty RND() → default to RND(1)");
-			        i += 2;
-			        continue;
-			    } else {
-			        show_debug_message("Function " + fn_name + "() with no args not supported (non-RND) — passing token through");
-			        array_push(output, t);
-			        i += 2;
-			        continue;
-			    }
-			}
-
+            // Empty parens like REPEAT$()
+            if (i + 2 < array_length(tokens) && tokens[i + 1] == "(" && tokens[i + 2] == ")") {
+                show_debug_message("Function " + fn_name + "() with no args not supported (non-RND) — passing token through");
+                array_push(output, t);
+                i += 2;
+                continue;
+            }
 
             // REPEAT$(s, n) — exactly 2 args (simple positional form)
             if (fn_name == "REPEAT$") {
@@ -238,51 +300,6 @@ function infix_to_postfix(tokens) {
                 continue;
             }
 
-			// --- RND() / RND(n) / RND(min,max) unified handling ---
-			if (fn_name == "RND") {
-
-			    // Empty parens: RND() → default to RND(1)
-			    if (i + 2 < array_length(tokens) && tokens[i + 1] == "(" && tokens[i + 2] == ")") {
-			        array_push(output, "1");
-			        array_push(output, "RND1");
-			        show_debug_message("Processed empty RND() → default to RND(1)");
-			        i += 2;
-			        continue;
-			    }
-
-			    // Two args: RND(min,max)
-			    if (i + 5 < array_length(tokens)
-			    &&  tokens[i + 1] == "("
-			    &&  tokens[i + 3] == ","
-			    &&  tokens[i + 5] == ")")
-			    {
-			        var r1 = tokens[i + 2];
-			        var r2 = tokens[i + 4];
-			        array_push(output, r1);
-			        array_push(output, r2);
-			        array_push(output, "RND2");
-			        show_debug_message("Processed RND(min,max): " + string(r1) + ", " + string(r2));
-			        i += 5;
-			        continue;
-			    }
-
-			    // One arg: RND(n)
-			    if (i + 3 < array_length(tokens) && tokens[i + 1] == "(" && tokens[i + 3] == ")") {
-			        var g_arg = tokens[i + 2];
-			        array_push(output, g_arg);
-			        array_push(output, "RND1");
-			        show_debug_message("Processed RND(n): " + string(g_arg));
-			        i += 3;
-			        continue;
-			    }
-
-			    // Malformed RND call
-			    show_debug_message("Malformed RND call at token '" + string(t) + "' — passing through");
-			    array_push(output, t);
-			    continue;
-			}
-
-
             // MID$(s, start, len) — 3 args
             if (fn_name == "MID$") {
                 show_debug_message("MID$ DEBUG: i=" + string(i) + ", total tokens=" + string(array_length(tokens)));
@@ -299,7 +316,7 @@ function infix_to_postfix(tokens) {
                     array_push(output, ma2);
                     array_push(output, ma3);
                     array_push(output, fn_name);
-                    show_debug_message("Processed MID$(s,start,len): " + string(ma1) + ", " + string(ma2) + ", " + string(ma3));
+                    show_debug_message("Processed MID$(s,start,len): " + string(ma1) + ", " + string(ma3));
                     i += 7;
                 } else {
                     show_debug_message("Malformed MID$ call starting at token '" + string(t) + "'");
