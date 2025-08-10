@@ -1,115 +1,131 @@
 /// @script basic_cmd_if_inline
-/// @description Legacy single-line IF…THEN…ELSE handler (tightened & quote-safe)
+/// @description Single-line IF…THEN…ELSE. Executes THEN here and tells Step which colon slot to resume at.
 function basic_cmd_if_inline(arg) {
-    // Safe check: don't read a global that doesn't exist
-    var silent = (variable_global_exists("if_scan_mode") && global.if_scan_mode);
-
     var s  = string_trim(arg);
     var up = string_upper(s);
-    if (!silent) show_debug_message("INLINE IF — Raw arg: '" + s + "'");
+    if (dbg_on(DBG_FLOW)) show_debug_message("INLINE IF — Raw arg: '" + s + "'");
 
-    // Local helper to find a top-level keyword with word boundaries (space/colon/EOL), quote-aware
-    var _find_kw = function(_src, _up, _kw) {
-        var L = string_length(_src), K = string_length(_kw);
-        var in_q = false;
+    // --- find THEN / ELSE at top-level (quote-safe) ---
+    var find_kw = function(_src, _up, _kw) {
+        var L = string_length(_src), K = string_length(_kw), inq = false;
         for (var i = 1; i <= L - K + 1; i++) {
             var ch = string_char_at(_src, i);
-            if (ch == "\"") { in_q = !in_q; continue; }
-            if (in_q) continue;
+            if (ch == "\"") { inq = !inq; continue; }
+            if (inq) continue;
             if (string_copy(_up, i, K) == _kw) {
                 var prev = (i == 1) ? " " : string_char_at(_up, i - 1);
                 var next = (i + K <= L) ? string_char_at(_up, i + K) : " ";
-                var ok_prev = (prev == " " || prev == ":");
-                var ok_next = (next == " " || next == ":" || (i + K - 1 == L));
-                if (ok_prev && ok_next) return i;
+                if ((prev == " " || prev == ":") && (next == " " || next == ":" || i + K - 1 == L)) return i;
             }
         }
         return 0;
     };
 
-    var then_pos = _find_kw(s, up, "THEN");
-    if (then_pos <= 0) {
-        if (!silent) show_debug_message("?IF ERROR: Missing THEN in '" + s + "'");
-        return;
-    }
-    var else_pos = _find_kw(s, up, "ELSE");
+    var then_pos = find_kw(s, up, "THEN");
+    if (then_pos <= 0) { if (dbg_on(DBG_FLOW)) show_debug_message("?IF ERROR: Missing THEN"); return; }
+    var else_pos = find_kw(s, up, "ELSE");
 
-    // Slice parts (length parameter is explicit)
+    // --- slice condition / then / else ---
     var condition  = string_trim(string_copy(s, 1, then_pos - 1));
     var then_action, else_action;
     if (else_pos > then_pos) {
-        var then_len = max(0, else_pos - (then_pos + 4));
-        then_action  = string_trim(string_copy(s, then_pos + 4, then_len));
-        var else_len = max(0, string_length(s) - (else_pos + 3));
-        else_action  = string_trim(string_copy(s, else_pos + 4, else_len));
+        then_action = string_trim(string_copy(s, then_pos + 4, else_pos - (then_pos + 4)));
+        else_action = string_trim(string_copy(s, else_pos + 4, string_length(s) - (else_pos + 3)));
     } else {
-        var tlen = max(0, string_length(s) - (then_pos + 3));
-        then_action = string_trim(string_copy(s, then_pos + 4, tlen));
+        then_action = string_trim(string_copy(s, then_pos + 4, string_length(s) - (then_pos + 3)));
         else_action = "";
     }
 
-    if (!silent) {
+    if (dbg_on(DBG_FLOW)) {
         show_debug_message("Parsed condition: '" + condition + "'");
         show_debug_message("Parsed THEN: '" + then_action + "'");
         show_debug_message("Parsed ELSE: '" + else_action + "'");
     }
 
-    // Evaluate condition (AND/OR handled inside)
-    var result = basic_evaluate_condition(condition);
-    if (!silent) show_debug_message("Single/combined condition result: " + string(result));
+    // --- evaluate condition ---
+    var cond = basic_evaluate_condition(condition);
+    if (dbg_on(DBG_FLOW)) show_debug_message("Single/combined condition result: " + string(cond));
 
-    // Pick branch; strip trailing REM before executing
-    var final_action = strip_basic_remark(string_trim(result ? then_action : else_action));
-    if (final_action == "") {
-        if (!silent) show_debug_message("No action to execute for this branch.");
-        return;
-    }
+    // --- split branches into colon segments (quote/paren-safe) ---
+    var then_parts = (then_action != "") ? split_on_unquoted_colons(then_action) : [];
+    var else_parts = (else_action != "") ? split_on_unquoted_colons(else_action) : [];
 
-    // Promote bare assignment to LET (only if not already a known command)
-    {
-        var _sp   = string_pos(" ", final_action);
-        var _head = (_sp > 0) ? string_upper(string_copy(final_action, 1, _sp - 1)) : string_upper(final_action);
+    // We're currently executing colon slot `p` of this BASIC line.
+    var p          = global.interpreter_current_stmt_index;
+    var line_idx   = global.interpreter_current_line_index;
 
-        var _is_cmd =
-              (_head == "PRINT")   || (_head == "LET")     || (_head == "INPUT")   || (_head == "CLS")
-           || (_head == "COLOR")   || (_head == "BGCOLOR") || (_head == "IF")      || (_head == "FOR")
-           || (_head == "NEXT")    || (_head == "WHILE")   || (_head == "WEND")    || (_head == "GOTO")
-           || (_head == "GOSUB")   || (_head == "RETURN")  || (_head == "DIM")     || (_head == "END")
-           || (_head == "MODE")    || (_head == "PSET")    || (_head == "CHARAT")  || (_head == "PRINTAT")
-           || (_head == "FONT")    || (_head == "CLSCHAR");
+    // Helper: run one segment with your promotion whitelist intact
+    var run_seg = function(seg) {
+        seg = strip_basic_remark(string_trim(seg)); if (seg == "") return;
 
-        if (!_is_cmd) {
-            var _depth2 = 0, eqpos = 0, Lfa = string_length(final_action);
-            for (var i2 = 1; i2 <= Lfa; i2++) {
-                var ch2 = string_char_at(final_action, i2);
-                if (ch2 == "(") _depth2++;
-                else if (ch2 == ")") _depth2 = max(0, _depth2 - 1);
-                else if (ch2 == "=" && _depth2 == 0) { eqpos = i2; break; }
+        var sp = string_pos(" ", seg);
+        var head = (sp > 0) ? string_upper(string_copy(seg, 1, sp - 1)) : string_upper(seg);
+        var is_cmd =
+              (head == "PRINT") || (head == "LET")   || (head == "INPUT") || (head == "CLS")
+           || (head == "COLOR") || (head == "BGCOLOR") || (head == "IF")    || (head == "FOR")
+           || (head == "NEXT")  || (head == "WHILE")   || (head == "WEND")  || (head == "GOTO")
+           || (head == "GOSUB") || (head == "RETURN")  || (head == "DIM")   || (head == "END")
+           || (head == "MODE")  || (head == "PSET")    || (head == "CHARAT")|| (head == "PRINTAT")
+           || (head == "FONT")  || (head == "CLSCHAR") || (head == "PAUSE");
+
+        if (!is_cmd) {
+            var d = 0, eq = 0, L = string_length(seg);
+            for (var i = 1; i <= L; i++) {
+                var ch = string_char_at(seg, i);
+                if (ch == "(") d++;
+                else if (ch == ")") d = max(0, d - 1);
+                else if (ch == "=" && d == 0) { eq = i; break; }
             }
-            if (eqpos > 0) {
-                final_action = "LET " + final_action;
-                if (!silent) show_debug_message("INLINE IF: Promoted bare assignment to: '" + final_action + "'");
+            if (eq > 0) {
+                seg = "LET " + seg;
+                if (dbg_on(DBG_FLOW)) show_debug_message("INLINE IF: Promoted → '" + seg + "'");
             }
         }
-    }
 
-    if (!silent) show_debug_message((result ? "THEN" : "ELSE") + " executing: '" + final_action + "'");
+        var sp2 = string_pos(" ", seg);
+        var cmd = (sp2 > 0) ? string_upper(string_copy(seg, 1, sp2 - 1)) : string_upper(seg);
+        var arg = (sp2 > 0) ? string_trim(string_copy(seg, sp2 + 1, string_length(seg))) : "";
 
-    // Execute action (fast-path GOTO sets the line jump)
-    var sp = string_pos(" ", final_action);
-    var cmd = (sp > 0) ? string_upper(string_copy(final_action, 1, sp - 1)) : string_upper(final_action);
-    var action_arg = (sp > 0) ? string_trim(string_copy(final_action, sp + 1, string_length(final_action))) : "";
-
-    if (cmd == "GOTO") {
-        var line_target = real(action_arg);
-        var index = ds_list_find_index(global.line_list, line_target);
-        if (index >= 0) {
-            global.interpreter_next_line = index; // honored by step loop
-            if (!silent) show_debug_message("GOTO from IF → line " + string(line_target) + " (index " + string(index) + ")");
+        if (dbg_on(DBG_FLOW)) show_debug_message("INLINE IF seg → " + cmd + " '" + arg + "'");
+        if (cmd == "GOTO") {
+            var line_target = real(arg);
+            var idx = ds_list_find_index(global.line_list, line_target);
+            if (idx >= 0) {
+                global.interpreter_next_line = idx;
+                if (dbg_on(DBG_FLOW)) show_debug_message("INLINE IF: GOTO → line " + string(line_target) + " (index " + string(idx) + ")");
+            } else if (dbg_on(DBG_FLOW)) show_debug_message("?IF ERROR: GOTO target not found: " + string(line_target));
         } else {
-            if (!silent) show_debug_message("?IF ERROR: GOTO target line not found: " + string(line_target));
+            handle_basic_command(cmd, arg);
         }
+    };
+
+    if (cond) {
+        // Execute the THEN branch here (all of it)
+        if (dbg_on(DBG_FLOW)) show_debug_message("INLINE IF: executing THEN with " + string(array_length(then_parts)) + " segment(s).");
+        for (var k = 0; k < array_length(then_parts); k++) run_seg(then_parts[k]);
+
+        // Resume at the next colon slot after this IF statement
+        global.interpreter_use_stmt_jump = true;
+        global.interpreter_target_line   = line_idx;
+        global.interpreter_target_stmt   = p + 1;
+        if (dbg_on(DBG_FLOW)) show_debug_message("INLINE IF: resume at stmt index " + string(global.interpreter_target_stmt));
+ } else {
+    // Condition FALSE
+    if (else_action != "") {
+        // Execute the ELSE branch here (ELSE lives in the *same* inline statement)
+        if (dbg_on(DBG_FLOW)) show_debug_message("INLINE IF: executing ELSE with " + string(array_length(else_parts)) + " segment(s).");
+        for (var k = 0; k < array_length(else_parts); k++) run_seg(else_parts[k]);
+
+        // Resume at the next colon slot after this IF
+        global.interpreter_use_stmt_jump = true;
+        global.interpreter_target_line   = line_idx;
+        global.interpreter_target_stmt   = p + 1;
     } else {
-        handle_basic_command(cmd, action_arg);
+        // No ELSE: skip to next statement after the IF
+        global.interpreter_use_stmt_jump = true;
+        global.interpreter_target_line   = line_idx;
+        global.interpreter_target_stmt   = p + 1;
     }
+}
+
 }

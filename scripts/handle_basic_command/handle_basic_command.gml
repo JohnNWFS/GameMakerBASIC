@@ -29,6 +29,45 @@ function handle_basic_command(cmd, arg) {
             rest = "";
         }
 
+	    // === INLINE IF COLLAPSE (prevents unconditional colon-tail execution) ===
+	    // If this colon slot starts with IF and contains THEN, rebuild the full IF payload
+	    // from the ORIGINAL physical line starting at the current colon slot.
+	    if (verb == "IF" && string_pos("THEN", string_upper(rest)) > 0) {
+	        // 1) Get the full physical line and split it the same way Step did
+	        var line_idx     = global.interpreter_current_line_index;           // set by Step
+	        var line_no      = global.line_list[| line_idx];
+	        var src_line     = ds_map_find_value(global.program_map, line_no);
+	        var parts_full   = split_on_unquoted_colons(string_trim(src_line));
+
+	        // 2) Build the remainder of the line starting at THIS colon slot
+	        var p            = global.interpreter_current_stmt_index;           // set by Step
+	        var remainder    = parts_full[p];
+	        for (var t = p + 1; t < array_length(parts_full); t++) {
+	            remainder += ":" + parts_full[t];
+	        }
+
+	        // 3) Form the arg for inline-IF handler (strip leading "IF")
+	        var arg_full = remainder;
+	        var up_rem   = string_upper(string_trim(remainder));
+	        if (string_copy(up_rem, 1, 2) == "IF") {
+	            arg_full = string_trim(string_copy(remainder, 3, string_length(remainder) - 2));
+	        }
+
+	        show_debug_message("COMMAND DISPATCH (collapsed IF): IF | ARG: " + arg_full);
+
+	        // 4) Execute the whole inline IF here (THEN/ELSE bodies and their colon tails)
+	        basic_cmd_if_inline(arg_full);
+
+	        // 5) Consume the rest of this PHYSICAL line so Step does not run the tail again
+	        global.interpreter_use_stmt_jump = true;
+	        global.interpreter_target_line   = line_idx;
+	        global.interpreter_target_stmt   = array_length(parts_full); // end-of-line slot
+
+	        break; // leave this local 'parts' loop; Step will honor the stmt-jump
+	    }
+
+
+
         show_debug_message("COMMAND DISPATCH: " + verb + " | ARG: " + rest);
 
         switch (verb) {

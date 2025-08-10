@@ -6,7 +6,7 @@
   "name":"basic_array_set",
   "parent":{
     "name":"Arrays",
-    "path":"folders/Scripts/BASIC COMMANDS HELPERS/Arrays.yy",
+    "path":"folders/Scripts/Arrays.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

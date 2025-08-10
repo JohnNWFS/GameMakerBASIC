@@ -303,11 +303,24 @@ function evaluate_postfix(postfix) {
         }
 
         // -------------------------------------------------------
-        // Scalar variable fallback
+        // Scalar variable load (string vars keep "", numeric vars coerce)
         // -------------------------------------------------------
         if (ds_map_exists(global.basic_variables, token_upper)) {
             var vv = global.basic_variables[? token_upper];
-            if (is_string(vv) && string_length(vv) == 0) vv = 0;
+
+            // String variables end with '$' → default "", never coerce "" to 0
+            if (string_char_at(token_upper, string_length(token_upper)) == "$") {
+                if (is_undefined(vv)) vv = "";
+                if (!is_string(vv))  vv = string(vv); // normalize to string
+            } else {
+                // Numeric variable: coerce numeric strings; otherwise default to 0
+                if (is_string(vv)) {
+                    vv = is_numeric_string(vv) ? real(vv) : 0;
+                } else if (!is_real(vv)) {
+                    vv = 0;
+                }
+            }
+
             array_push(stack, vv);
             show_debug_message("POSTFIX: Loaded variable " + token_upper + " = " + string(vv));
             continue;

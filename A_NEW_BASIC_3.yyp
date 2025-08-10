@@ -21,7 +21,7 @@
     {"$GMFolder":"","%Name":"Scripts","folderPath":"folders/Scripts.yy","name":"Scripts","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"BASIC_COMMANDS","folderPath":"folders/Scripts/BASIC_COMMANDS.yy","name":"BASIC_COMMANDS","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"BASIC COMMANDS HELPERS","folderPath":"folders/Scripts/BASIC COMMANDS HELPERS.yy","name":"BASIC COMMANDS HELPERS","resourceType":"GMFolder","resourceVersion":"2.0",},
-    {"$GMFolder":"","%Name":"Arrays","folderPath":"folders/Scripts/BASIC COMMANDS HELPERS/Arrays.yy","name":"Arrays","resourceType":"GMFolder","resourceVersion":"2.0",},
+    {"$GMFolder":"","%Name":"Arrays","folderPath":"folders/Scripts/Arrays.yy","name":"Arrays","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"EDITOR_SCRIPTS","folderPath":"folders/Scripts/EDITOR_SCRIPTS.yy","name":"EDITOR_SCRIPTS","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"DEBUG","folderPath":"folders/Scripts/DEBUG.yy","name":"DEBUG","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"MODE_1_COMMANDS","folderPath":"folders/Scripts/MODE_1_COMMANDS.yy","name":"MODE_1_COMMANDS","resourceType":"GMFolder","resourceVersion":"2.0",},
