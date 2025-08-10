@@ -6,7 +6,7 @@
   "name":"infix_to_postfix",
   "parent":{
     "name":"BASIC COMMANDS HELPERS",
-    "path":"folders/Scripts/BASIC_COMMANDS/BASIC COMMANDS HELPERS.yy",
+    "path":"folders/Scripts/BASIC COMMANDS HELPERS.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

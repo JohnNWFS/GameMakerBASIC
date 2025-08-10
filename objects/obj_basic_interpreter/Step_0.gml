@@ -1,4 +1,9 @@
 // obj_basic_interpreter → Step Event
+global.dbg_frame_count = 0;
+if (global.dbg_dropped_count > 0) {
+    show_debug_message("DBG: dropped " + string(global.dbg_dropped_count) + " lines this frame");
+    global.dbg_dropped_count = 0;
+}
 
 // WATCHDOG: are output buffers DS lists this frame?
 /*var _ol = global.output_lines;

@@ -1,12 +1,12 @@
 {
   "$GMScript":"v1",
-  "%Name":"basic_array_set",
+  "%Name":"dbg_macros",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"basic_array_set",
+  "name":"dbg_macros",
   "parent":{
-    "name":"Arrays",
-    "path":"folders/Scripts/BASIC COMMANDS HELPERS/Arrays.yy",
+    "name":"DEBUG",
+    "path":"folders/Scripts/DEBUG.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

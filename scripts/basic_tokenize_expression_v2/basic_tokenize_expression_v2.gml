@@ -1,5 +1,5 @@
 function basic_tokenize_expression_v2(expr) {
-    show_debug_message("TOKENIZER: Starting expression: '" + expr + "'");
+    if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Starting expression: '" + expr + "'");
 
     var tokens = [];
     var i = 1;
@@ -10,7 +10,9 @@ function basic_tokenize_expression_v2(expr) {
 
     while (i <= len) {
         var c = string_char_at(expr, i);
-        show_debug_message("TOKENIZER: Char[" + string(i) + "] = '" + c + "'");
+//        show_debug_message("TOKENIZER: Char[" + string(i) + "] = '" + c + "'");
+		if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Char[" + string(i) + "] = '" + c + "'");
+		
 
         // --- STRING LITERAL SUPPORT (preserve exact quoted content) ---
         if (c == "\"") {
@@ -23,7 +25,7 @@ function basic_tokenize_expression_v2(expr) {
                 i++;
             }
             array_push(tokens, str);
-            show_debug_message("TOKENIZER: Token added (quoted string): " + str);
+            if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Token added (quoted string): " + str);
             i++;
             continue;
         }
@@ -31,9 +33,9 @@ function basic_tokenize_expression_v2(expr) {
         // --- Handle whitespace ---
         if (c == " ") {
             if (current != "") {
-                show_debug_message("TOKENIZER: Finalizing token from space: '" + current + "'");
+                if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Finalizing token from space: '" + current + "'");
                 array_push(tokens, string_upper(current) == "MOD" ? "MOD" : current);
-                show_debug_message("TOKENIZER: Token added: " + current);
+                if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Token added: " + current);
                 current = "";
             }
             i++;
@@ -43,23 +45,23 @@ function basic_tokenize_expression_v2(expr) {
         // --- Handle operators ---
         if (c == "+" || c == "*" || c == "/" || c == "(" || c == ")" || c == "%") {
             if (current != "") {
-                show_debug_message("TOKENIZER: Finalizing token before operator: '" + current + "'");
+                if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Finalizing token before operator: '" + current + "'");
                 array_push(tokens, string_upper(current) == "MOD" ? "MOD" : current);
-                show_debug_message("TOKENIZER: Token added: " + current);
+                if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Token added: " + current);
                 current = "";
             }
             if (c == "(" && array_length(tokens) > 0) {
                 var last = string_upper(tokens[array_length(tokens) - 1]);
                 if (array_contains(function_names, last)) {
                     array_push(tokens, "(");
-                    show_debug_message("TOKENIZER: Function call detected: " + last + "(");
+                    if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Function call detected: " + last + "(");
                 } else {
                     array_push(tokens, "(");
-                    show_debug_message("TOKENIZER: Operator token added: " + c);
+                    if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Operator token added: " + c);
                 }
             } else {
                 array_push(tokens, c);
-                show_debug_message("TOKENIZER: Operator token added: " + c);
+                if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Operator token added: " + c);
             }
             i++;
             continue;
@@ -68,13 +70,13 @@ function basic_tokenize_expression_v2(expr) {
         // --- Handle commas ---
         if (c == ",") {
             if (current != "") {
-                show_debug_message("TOKENIZER: Finalizing token before comma: '" + current + "'");
+                if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Finalizing token before comma: '" + current + "'");
                 array_push(tokens, string_upper(current) == "MOD" ? "MOD" : current);
-                show_debug_message("TOKENIZER: Token added: " + current);
+                if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Token added: " + current);
                 current = "";
             }
             array_push(tokens, ",");
-            show_debug_message("TOKENIZER: Comma token added");
+            if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Comma token added");
             i++;
             continue;
         }
@@ -87,13 +89,13 @@ function basic_tokenize_expression_v2(expr) {
                 if (array_length(tokens) == 0 || current != "") {
                     // If no tokens yet or current is non-empty (e.g., after a variable), treat as subtraction
                     if (current != "") {
-                        show_debug_message("TOKENIZER: Finalizing token before subtraction: '" + current + "'");
+                        if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Finalizing token before subtraction: '" + current + "'");
                         array_push(tokens, string_upper(current) == "MOD" ? "MOD" : current);
-                        show_debug_message("TOKENIZER: Token added: " + current);
+                        if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Token added: " + current);
                         current = "";
                     }
                     array_push(tokens, "-");
-                    show_debug_message("TOKENIZER: Subtraction operator token added: -");
+                    if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Subtraction operator token added: -");
                 } else {
                     // After an operator or parenthesis, treat as negative number
                     var last_token = tokens[array_length(tokens) - 1];
@@ -106,17 +108,17 @@ function basic_tokenize_expression_v2(expr) {
             } else {
                 // Lone - or followed by non-digit is always subtraction
                 if (current != "") {
-                    show_debug_message("TOKENIZER: Finalizing token before subtraction: '" + current + "'");
+                    if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Finalizing token before subtraction: '" + current + "'");
                     array_push(tokens, string_upper(current) == "MOD" ? "MOD" : current);
-                    show_debug_message("TOKENIZER: Token added: " + current);
+                    if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Token added: " + current);
                     current = "";
                 }
                 array_push(tokens, "-");
-                show_debug_message("TOKENIZER: Subtraction operator token added: -");
+                if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Subtraction operator token added: -");
             }
 
             if (is_negative_number) {
-                show_debug_message("TOKENIZER: Beginning negative number with '-'");
+                if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Beginning negative number with '-'");
                 current += "-";
             }
             i++;
@@ -130,11 +132,11 @@ function basic_tokenize_expression_v2(expr) {
 
     // --- Finalize any remaining token ---
     if (current != "") {
-        show_debug_message("TOKENIZER: Finalizing last token: '" + current + "'");
+        if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Finalizing last token: '" + current + "'");
         array_push(tokens, string_upper(current) == "MOD" ? "MOD" : current);
-        show_debug_message("TOKENIZER: Token added: " + current);
+        if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Token added: " + current);
     }
 
-    show_debug_message("TOKENIZER: Final token list = " + string(tokens));
+    if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Final token list = " + string(tokens));
     return tokens;
 }

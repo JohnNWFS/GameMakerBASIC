@@ -6,7 +6,7 @@
   "name":"is_letter_or_digit",
   "parent":{
     "name":"BASIC COMMANDS HELPERS",
-    "path":"folders/Scripts/BASIC_COMMANDS/BASIC COMMANDS HELPERS.yy",
+    "path":"folders/Scripts/BASIC COMMANDS HELPERS.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",
