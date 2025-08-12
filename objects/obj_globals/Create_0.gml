@@ -1,5 +1,7 @@
 /// @description All Global Variables
 // obj_globals → Create Event
+global.debug_mask = 0;
+global.dbg_dropped_count = 0;
 
 global.justreturned = 0;
 global.program_filename = "";
@@ -110,4 +112,11 @@ global.config = ds_map_create();
 global.config[? "max_line_number"] = 65535;
 global.config[? "max_history_size"] = 50;
 
+
+// === DATA/READ globals ===
+// Create once; the builder will clear/reuse it each run.
+if (!variable_global_exists("data_streams") || !ds_exists(global.data_streams, ds_type_map)) {
+    global.data_streams = ds_map_create();
+    if (dbg_on(DBG_FLOW)) show_debug_message("globals: created global.data_streams");
+}
 

@@ -16,7 +16,6 @@ show_debug_message(
     " is_real=" + string(is_real(_oc)) +
     " exists=" + string(is_real(_oc) && ds_exists(_oc, ds_type_list))
 );
-
 */
 
 // ==============================
@@ -144,38 +143,48 @@ if (line_index < ds_list_size(global.line_list)) {
         global.interpreter_resume_stmt_index = 0;
     }
 
-	for (var p = _start_stmt; p < array_length(parts); p++) {
-	    var stmt = string_trim(parts[p]);
-	    if (stmt == "") continue;
+    for (var p = _start_stmt; p < array_length(parts); p++) {
+        var stmt = string_trim(parts[p]);
+        if (stmt == "") continue;
 
-	    // Strip BASIC-style REM
-	    stmt = strip_basic_remark(stmt);
+        // *** CHANGE: derive verb/rest BEFORE comment checks
+        var sp2  = string_pos(" ", stmt);
+        var cmd2 = (sp2 > 0) ? string_upper(string_copy(stmt, 1, sp2 - 1)) : string_upper(stmt);
+        var arg2 = (sp2 > 0) ? string_trim(string_copy(stmt, sp2 + 1, string_length(stmt))) : "";
 
-	    // Pull off the verb vs. its argument
-	    var sp2  = string_pos(" ", stmt);
-	    var cmd2 = (sp2 > 0)
-	                 ? string_upper(string_copy(stmt, 1, sp2 - 1))
-	                 : string_upper(stmt);
-	    var arg2 = (sp2 > 0)
-	                 ? string_trim(string_copy(stmt, sp2 + 1, string_length(stmt)))
-	                 : "";
+        // *** CHANGE: if REM or apostrophe comment, stop parsing the remainder of THIS physical line
+        if (cmd2 == "REM" || string_char_at(stmt, 1) == "'") {
+            if (dbg_on(DBG_FLOW)) {
+                show_debug_message("REM/' : stop parsing remainder of line "
+                    + string(line_number) + " at part " + string(p) + "/"
+                    + string(array_length(parts) - 1));
+            }
+            break; // exit the parts[] loop for this line
+        }
 
-	    // >>> NEW: tell commands which colon-slot we're on <<<
-	    global.interpreter_current_stmt_index = p;
+        // Strip BASIC-style inline remark (kept; handles: PRINT "HI" ' comment)
+        stmt = strip_basic_remark(stmt);
 
-	    show_debug_message("Command: " + cmd2 + " | Arg: " + arg2);
-	    handle_basic_command(cmd2, arg2);
+        // Recompute verb/arg after stripping, in case it mattered (kept behavior)
+        sp2  = string_pos(" ", stmt);
+        cmd2 = (sp2 > 0) ? string_upper(string_copy(stmt, 1, sp2 - 1)) : string_upper(stmt);
+        arg2 = (sp2 > 0) ? string_trim(string_copy(stmt, sp2 + 1, string_length(stmt))) : "";
 
+        // >>> tell commands which colon-slot we're on <<<
+        global.interpreter_current_stmt_index = p;
+
+        show_debug_message("Command: " + cmd2 + " | Arg: " + arg2);
+        handle_basic_command(cmd2, arg2);
 
         // If any jump was requested, stop processing further parts on this line
 
-        // 1) Statement-level jump (inline FOR/NEXT loop body, etc.)
+        // 1) Statement-level jump (inline IF/ELSE, etc.)
         if (global.interpreter_use_stmt_jump && global.interpreter_target_line >= 0) {
             show_debug_message("Breaking line loop to honor STATEMENT-LEVEL jump request");
             break;
         }
 
-        // 2) Legacy line jump (IF/GOTO/etc.)
+        // 2) Legacy line jump (GOTO/etc.)
         if (global.interpreter_next_line >= 0) {
             show_debug_message("Breaking line loop to honor LINE jump request");
             break;

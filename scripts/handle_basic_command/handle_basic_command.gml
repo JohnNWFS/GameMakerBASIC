@@ -153,6 +153,19 @@ function handle_basic_command(cmd, arg) {
             case "REM":
                 // no-op
                 break;
+			case "DATA":
+			    // Runtime no-op (DATA was harvested at load time)
+			    if (dbg_on(DBG_FLOW)) show_debug_message("DATA (runtime): no-op");
+			    break;
+
+			case "READ":
+			    basic_cmd_read(rest);
+			    break;
+
+			case "RESTORE":
+			    basic_cmd_restore(rest);
+			    break;
+		
             default:
                 // implicit LET?  e.g.  "X = 5"
                 if (string_pos("=", verb + " " + rest) > 0) {

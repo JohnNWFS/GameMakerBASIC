@@ -60,13 +60,15 @@ function basic_cmd_if_inline(arg) {
 
         var sp = string_pos(" ", seg);
         var head = (sp > 0) ? string_upper(string_copy(seg, 1, sp - 1)) : string_upper(seg);
-        var is_cmd =
-              (head == "PRINT") || (head == "LET")   || (head == "INPUT") || (head == "CLS")
-           || (head == "COLOR") || (head == "BGCOLOR") || (head == "IF")    || (head == "FOR")
-           || (head == "NEXT")  || (head == "WHILE")   || (head == "WEND")  || (head == "GOTO")
-           || (head == "GOSUB") || (head == "RETURN")  || (head == "DIM")   || (head == "END")
-           || (head == "MODE")  || (head == "PSET")    || (head == "CHARAT")|| (head == "PRINTAT")
-           || (head == "FONT")  || (head == "CLSCHAR") || (head == "PAUSE");
+		var is_cmd =
+		      (head == "PRINT")   || (head == "LET")     || (head == "INPUT")   || (head == "CLS")
+		   || (head == "COLOR")   || (head == "BGCOLOR") || (head == "IF")      || (head == "FOR")
+		   || (head == "NEXT")    || (head == "WHILE")   || (head == "WEND")    || (head == "GOTO")
+		   || (head == "GOSUB")   || (head == "RETURN")  || (head == "DIM")     || (head == "END")
+		   || (head == "MODE")    || (head == "PSET")    || (head == "CHARAT")  || (head == "PRINTAT")
+		   || (head == "FONT")    || (head == "CLSCHAR") || (head == "PAUSE")
+		   || (head == "READ")    || (head == "RESTORE") || (head == "DATA");   // ← added
+
 
         if (!is_cmd) {
             var d = 0, eq = 0, L = string_length(seg);

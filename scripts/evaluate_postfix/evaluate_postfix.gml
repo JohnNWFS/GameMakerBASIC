@@ -68,17 +68,20 @@ function evaluate_postfix(postfix) {
             continue;
         }
 
-        // -------------------------------------------------------
-        // Quoted string literal
-        // -------------------------------------------------------
-        if (string_length(trimmed) >= 2
-        &&  string_char_at(trimmed, 1) == "\""
-        &&  string_char_at(trimmed, string_length(trimmed)) == "\"") {
-            var str = string_copy(trimmed, 2, string_length(trimmed) - 2);
-            array_push(stack, str);
-            show_debug_message("POSTFIX: Pushed quoted string literal → " + str);
-            continue;
-        }
+		// -------------------------------------------------------
+		// Quoted string literal
+		// -------------------------------------------------------
+		if (string_length(trimmed) >= 2
+		&&  string_char_at(trimmed, 1) == "\""
+		&&  string_char_at(trimmed, string_length(trimmed)) == "\"")
+		{
+		    var str = string_copy(trimmed, 2, string_length(trimmed) - 2);
+		    str = string_replace_all(str, "\"\"", "\"");  // <-- NEW: unescape "" -> "
+		    array_push(stack, str);
+		    if (dbg_on(DBG_FLOW)) show_debug_message("POSTFIX: Pushed quoted string literal → " + str);
+		    continue;
+		}
+
 
         // -------------------------------------------------------
         // Operators

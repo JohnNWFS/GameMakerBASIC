@@ -67,6 +67,8 @@ function run_program() {
     // Remember where to return after running
     global.editor_return_room = room;
 
+	build_data_streams(); // Harvest all DATA statements into global.data_streams
+
     // Go to interpreter room
     room_goto(rm_basic_interpreter);
 }
