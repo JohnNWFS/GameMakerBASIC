@@ -29,14 +29,11 @@ function evaluate_postfix(postfix) {
         // -------------------------------------------------------
         // ARRAY READ SUPPORT (atom form: NAME(index_expr))
         // -------------------------------------------------------
-        // Conditions:
-        //   - contains '(' and ends with ')'
-        //   - the NAME portion is NOT a known function
         var openPos = string_pos("(", token_upper);
         if (openPos > 0 && string_char_at(token_upper, string_length(token_upper)) == ")") {
-            var arrNameU = string_copy(token_upper, 1, openPos - 1);
-            var innerLen = string_length(token) - openPos - 1;    // count between '(' and ')'
-            var idxTextRaw = string_copy(token, openPos + 1, innerLen); // keep RAW (original case/spaces)
+            var arrNameU   = string_copy(token_upper, 1, openPos - 1);
+            var innerLen   = string_length(token) - openPos - 1;
+            var idxTextRaw = string_copy(token, openPos + 1, innerLen);
 
             if (!is_function(arrNameU)) {
                 var arrName = arrNameU; // arrays stored uppercase in helpers
@@ -68,20 +65,19 @@ function evaluate_postfix(postfix) {
             continue;
         }
 
-		// -------------------------------------------------------
-		// Quoted string literal
-		// -------------------------------------------------------
-		if (string_length(trimmed) >= 2
-		&&  string_char_at(trimmed, 1) == "\""
-		&&  string_char_at(trimmed, string_length(trimmed)) == "\"")
-		{
-		    var str = string_copy(trimmed, 2, string_length(trimmed) - 2);
-		    str = string_replace_all(str, "\"\"", "\"");  // <-- NEW: unescape "" -> "
-		    array_push(stack, str);
-		    if (dbg_on(DBG_FLOW)) show_debug_message("POSTFIX: Pushed quoted string literal → " + str);
-		    continue;
-		}
-
+        // -------------------------------------------------------
+        // Quoted string literal
+        // -------------------------------------------------------
+        if (string_length(trimmed) >= 2
+        &&  string_char_at(trimmed, 1) == "\""
+        &&  string_char_at(trimmed, string_length(trimmed)) == "\"")
+        {
+            var str = string_copy(trimmed, 2, string_length(trimmed) - 2);
+            str = string_replace_all(str, "\"\"", "\"");  // unescape "" -> "
+            array_push(stack, str);
+            if (dbg_on(DBG_FLOW)) show_debug_message("POSTFIX: Pushed quoted string literal → " + str);
+            continue;
+        }
 
         // -------------------------------------------------------
         // Operators
@@ -101,12 +97,11 @@ function evaluate_postfix(postfix) {
                     if (is_string(a)) a = real(a);
                     if (is_string(b)) b = real(b);
                     result = a - b; break;
-				case "=":
-				    // Equality comparison: BASIC IF x=5 then ...
-				    if (is_string(a)) a = real(a);
-				    if (is_string(b)) b = real(b);
-				    result = (a == b) ? 1 : 0;
-				    break;
+                case "=":
+                    if (is_string(a)) a = real(a);
+                    if (is_string(b)) b = real(b);
+                    result = (a == b) ? 1 : 0;
+                    break;
                 case "*":
                     if (is_string(a)) a = real(a);
                     if (is_string(b)) b = real(b);
@@ -138,7 +133,6 @@ function evaluate_postfix(postfix) {
         // Functions (numeric + string)
         // -------------------------------------------------------
         if (is_function(token_upper)) {
-            // normalize again, just in case
             token_upper = string_upper(string_trim(token));
             show_debug_message("POSTFIX: Dispatching function → '" + token_upper + "'");
 
@@ -155,10 +149,8 @@ function evaluate_postfix(postfix) {
                 case "RND2": {
                     var max_val_raw = array_pop(stack);
                     var min_val_raw = array_pop(stack);
-
                     var min_val, max_val;
 
-                    // --- Resolve min value ---
                     if (is_real(min_val_raw)) {
                         min_val = min_val_raw;
                     } else if (ds_map_exists(global.basic_variables, min_val_raw) && is_real(global.basic_variables[? min_val_raw])) {
@@ -167,7 +159,6 @@ function evaluate_postfix(postfix) {
                         min_val = undefined;
                     }
 
-                    // --- Resolve max value ---
                     if (is_real(max_val_raw)) {
                         max_val = max_val_raw;
                     } else if (ds_map_exists(global.basic_variables, max_val_raw) && is_real(global.basic_variables[? max_val_raw])) {
@@ -176,14 +167,10 @@ function evaluate_postfix(postfix) {
                         max_val = undefined;
                     }
 
-                    // --- Validate ---
                     if (!is_real(min_val) || !is_real(max_val)) {
-                        // Show on screen without triggering tokenization
-                        basic_system_message(
-                            "ERROR: RND(min,max) requires numeric arguments — got '" 
-                            + string(min_val_raw) + "', '" + string(max_val_raw) + "'"
-                        );
-                        array_push(stack, 0); // keep evaluation alive
+                        basic_system_message("ERROR: RND(min,max) requires numeric arguments — got '" 
+                            + string(min_val_raw) + "', '" + string(max_val_raw) + "'");
+                        array_push(stack, 0);
                     } else {
                         var result = irandom_range(min_val, max_val);
                         array_push(stack, result);
@@ -191,6 +178,60 @@ function evaluate_postfix(postfix) {
                     }
                     break;
                 }
+
+                // ---- NEW: Zero-arg time/keyboard functions ----
+                case "TIMER": {
+                    var secs = floor(current_time / 1000); // ms → seconds since game start
+                    array_push(stack, secs);
+                    show_debug_message("FUNC: TIMER → " + string(secs));
+                    break;
+                }
+                case "TIME$": {
+                    // Build "HH:MM:SS" from parts (no date_format_* in GML)
+                    var dt  = date_current_datetime();
+                    var hh  = date_get_hour(dt);
+                    var mm  = date_get_minute(dt);
+                    var ss  = date_get_second(dt);
+                    var hhs = (hh < 10 ? "0" : "") + string(hh);
+                    var mms = (mm < 10 ? "0" : "") + string(mm);
+                    var sss = (ss < 10 ? "0" : "") + string(ss);
+                    var out = hhs + ":" + mms + ":" + sss;
+                    array_push(stack, out);
+                    show_debug_message("FUNC: TIME$ → " + out);
+                    break;
+                }
+                case "DATE$": {
+                    // Build "YYYY-MM-DD" from parts
+                    var dt2 = date_current_datetime();
+                    var yy  = date_get_year(dt2);
+                    var mo  = date_get_month(dt2);
+                    var dd  = date_get_day(dt2);
+                    var mos = (mo < 10 ? "0" : "") + string(mo);
+                    var dds = (dd < 10 ? "0" : "") + string(dd);
+                    var out2 = string(yy) + "-" + mos + "-" + dds;
+                    array_push(stack, out2);
+                    show_debug_message("FUNC: DATE$ → " + out2);
+                    break;
+                }
+				
+				
+// === 3. Modify your INKEY$ function case to just return the stored result ===
+case "INKEY$": {
+    var result = "";
+    
+    // Check if we have a stored result from the blocking input
+    if (ds_map_exists(global.basic_variables, "__INKEY_RESULT")) {
+        result = global.basic_variables[? "__INKEY_RESULT"];
+        // Clear the result after reading it
+        ds_map_delete(global.basic_variables, "__INKEY_RESULT");
+        show_debug_message("INKEY$ function: Returning stored result '" + result + "'");
+    } else {
+        show_debug_message("INKEY$ function: No stored result, returning empty");
+    }
+    
+    array_push(stack, result);
+    break;
+}
 
                 // ---- Math
                 case "ABS": array_push(stack, abs(safe_real_pop(stack))); break;
@@ -235,7 +276,6 @@ function evaluate_postfix(postfix) {
 
                 // ---- String functions we added
                 case "REPEAT$": {
-                    // Stack top: n ; below: s$
                     var nrep = floor(safe_real_pop(stack));
                     var srep = string(array_pop(stack));
                     if (nrep < 0) nrep = 0;
@@ -252,7 +292,6 @@ function evaluate_postfix(postfix) {
                 }
 
                 case "LEFT$": {
-                    // Stack top: n ; below: s$
                     var nleft = floor(safe_real_pop(stack));
                     var sleft = string(array_pop(stack));
                     if (nleft < 0) nleft = 0;
@@ -264,7 +303,6 @@ function evaluate_postfix(postfix) {
                 }
 
                 case "RIGHT$": {
-                    // Stack top: n ; below: s$
                     var nright = floor(safe_real_pop(stack));
                     var sright = string(array_pop(stack));
                     if (nright < 0) nright = 0;
@@ -278,8 +316,6 @@ function evaluate_postfix(postfix) {
                 }
 
                 case "MID$": {
-                    // Stack top: len ; below: start ; below: s$
-                    // 1-based BASIC semantics
                     var lmid = floor(safe_real_pop(stack));
                     var smid = floor(safe_real_pop(stack));
                     var strm = string(array_pop(stack));
@@ -311,12 +347,10 @@ function evaluate_postfix(postfix) {
         if (ds_map_exists(global.basic_variables, token_upper)) {
             var vv = global.basic_variables[? token_upper];
 
-            // String variables end with '$' → default "", never coerce "" to 0
             if (string_char_at(token_upper, string_length(token_upper)) == "$") {
                 if (is_undefined(vv)) vv = "";
-                if (!is_string(vv))  vv = string(vv); // normalize to string
+                if (!is_string(vv))  vv = string(vv);
             } else {
-                // Numeric variable: coerce numeric strings; otherwise default to 0
                 if (is_string(vv)) {
                     vv = is_numeric_string(vv) ? real(vv) : 0;
                 } else if (!is_real(vv)) {
@@ -336,6 +370,5 @@ function evaluate_postfix(postfix) {
         show_debug_message("POSTFIX: Pushed fallback string → " + trimmed);
     }
 
-    // Return the TOP of the stack (final value), else 0
     return (array_length(stack) > 0) ? stack[array_length(stack) - 1] : 0;
 }

@@ -2,7 +2,33 @@
 /// @description Change text color (and optional background): COLOR fg[, bg]
 function basic_cmd_color(arg) {
     // Split into up to two parts: foreground and optional background
-    var parts = string_split(string_trim(arg), ",");
+    ///
+	// Split on commas, but not inside parentheses
+		var parts = [];
+		var current = "";
+		var paren_depth = 0;
+		var trimmed_arg = string_trim(arg);
+
+		for (var i = 1; i <= string_length(trimmed_arg); i++) {
+		    var ch = string_char_at(trimmed_arg, i);
+		    if (ch == "(") {
+		        paren_depth++;
+		        current += ch;
+		    } else if (ch == ")") {
+		        paren_depth--;
+		        current += ch;
+		    } else if (ch == "," && paren_depth == 0) {
+		        array_push(parts, string_trim(current));
+		        current = "";
+		    } else {
+		        current += ch;
+		    }
+		}
+		if (string_trim(current) != "") {
+		    array_push(parts, string_trim(current));
+		}
+	
+	///
     var fgStr = string_upper(string_trim(parts[0]));
     var bgStr = (array_length(parts) > 1)
                 ? string_upper(string_trim(parts[1]))

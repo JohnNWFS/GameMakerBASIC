@@ -42,8 +42,9 @@ function basic_tokenize_expression_v2(expr) {
             continue;
         }
 
+
         // --- Handle operators ---
-        if (c == "+" || c == "*" || c == "/" || c == "(" || c == ")" || c == "%") {
+			if (c == "+" || c == "*" || c == "/" || c == "(" || c == ")" || c == "%" || c == "^") {
             if (current != "") {
                 if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Finalizing token before operator: '" + current + "'");
                 array_push(tokens, string_upper(current) == "MOD" ? "MOD" : current);
@@ -81,49 +82,52 @@ function basic_tokenize_expression_v2(expr) {
             continue;
         }
 
-        // --- Handle subtraction/negative numbers ---
-        if (c == "-") {
-            var is_negative_number = false;
-            if (i < len && (ord(string_char_at(expr, i + 1)) >= 48 && ord(string_char_at(expr, i + 1)) <= 57)) {
-                // Check if - is followed by a digit
-                if (array_length(tokens) == 0 || current != "") {
-                    // If no tokens yet or current is non-empty (e.g., after a variable), treat as subtraction
-                    if (current != "") {
-                        if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Finalizing token before subtraction: '" + current + "'");
-                        array_push(tokens, string_upper(current) == "MOD" ? "MOD" : current);
-                        if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Token added: " + current);
-                        current = "";
-                    }
-                    array_push(tokens, "-");
-                    if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Subtraction operator token added: -");
-                } else {
-                    // After an operator or parenthesis, treat as negative number
-                    var last_token = tokens[array_length(tokens) - 1];
-                    if (last_token == "+" || last_token == "-" || last_token == "*" || 
-                        last_token == "/" || last_token == "(" || last_token == "%" || 
-                        string_upper(last_token) == "MOD") {
-                        is_negative_number = true;
-                    }
-                }
-            } else {
-                // Lone - or followed by non-digit is always subtraction
-                if (current != "") {
-                    if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Finalizing token before subtraction: '" + current + "'");
-                    array_push(tokens, string_upper(current) == "MOD" ? "MOD" : current);
-                    if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Token added: " + current);
-                    current = "";
-                }
-                array_push(tokens, "-");
-                if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Subtraction operator token added: -");
+// --- Handle subtraction/negative numbers ---
+if (c == "-") {
+    // First, finalize any pending token
+    if (current != "") {
+        if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Finalizing token before minus: '" + current + "'");
+        array_push(tokens, string_upper(current) == "MOD" ? "MOD" : current);
+        if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Token added: " + current);
+        current = "";
+    }
+    
+    // Check if this should be a negative number
+    var is_negative = false;
+    
+    // Must be followed by a digit to be a negative number
+    if (i < len && (ord(string_char_at(expr, i + 1)) >= 48 && ord(string_char_at(expr, i + 1)) <= 57)) {
+        if (array_length(tokens) == 0) {
+            // Start of expression -> negative number
+            is_negative = true;
+        } else {
+            // Check what the last token was
+            var last_token = tokens[array_length(tokens) - 1];
+            if (last_token == "+" || last_token == "-" || last_token == "*" || 
+                last_token == "/" || last_token == "(" || last_token == "%" || 
+                last_token == "^" || string_upper(last_token) == "MOD" || 
+                last_token == "=" || last_token == "<" || last_token == ">" ||
+                last_token == "<=" || last_token == ">=" || last_token == "<>") {
+                // After operator -> negative number
+                is_negative = true;
             }
-
-            if (is_negative_number) {
-                if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Beginning negative number with '-'");
-                current += "-";
-            }
-            i++;
-            continue;
         }
+    }
+    
+    if (is_negative) {
+        // Start building a negative number token
+        current = "-";
+        if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Starting negative number");
+    } else {
+        // Regular subtraction operator
+        array_push(tokens, "-");
+        if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Added subtraction operator");
+    }
+    
+    i++;
+    continue;
+}
+//END if c = -
 
         // --- Accumulate characters for identifiers or numbers ---
         current += c;

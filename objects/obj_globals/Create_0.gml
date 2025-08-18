@@ -120,3 +120,29 @@ if (!variable_global_exists("data_streams") || !ds_exists(global.data_streams, d
     if (dbg_on(DBG_FLOW)) show_debug_message("globals: created global.data_streams");
 }
 
+
+
+if (!variable_global_exists("__inkey_queue")) {
+    global.__inkey_queue = ds_queue_create();
+}
+
+global.inkey_mode = false; 
+global.pause_in_effect = false; 
+global.inkey_waiting    = false;
+global.inkey_captured   = "";
+global.inkey_target_var = "";
+global.interpreter_current_line_index = 0; 
+
+// Archival copy of line numbers used by run_program
+global.basic_line_numbers = ds_list_create();
+global._syntax_error_just_emitted = false;
+
+// optional, if you use these
+global._validator_header_emitted = false;
+global._abort_after_validation   = false;
+
+// Where to return when leaving the interpreter
+global.editor_return_room = room; // whatever room the editor lives in at startup
+
+global.config[? "show_error_hints"] = true; // show compact help lines under syntax errors
+

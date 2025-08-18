@@ -1,4 +1,5 @@
 /// @function basic_cmd_let(arg)
+// === BEGIN: basic_cmd_let ===
 /// @description BASIC LET/assignment with array support (D(I)=expr), scalars, and string literals.
 /// Notes:
 /// - Array indices are evaluated via basic_evaluate_expression_v2 and stored with basic_array_set (1-based).
@@ -30,6 +31,48 @@ function basic_cmd_let(arg) {
     if (expr == "") {
         show_debug_message("LET WARNING: Empty expression after '='; treating as empty string");
         global.basic_variables[? varname] = "";
+        return;
+    }
+
+    // ---------------------------------------------------
+    // 1.5) SPECIAL: Blocking GET-style INKEY$ on RHS
+    //      - Arms pause on first encounter, waits for key release.
+    //      - On resume, assigns captured char; string to $ vars, ASC() to numeric.
+    // ---------------------------------------------------
+    var _exprU = string_upper(string_replace_all(string_replace_all(expr, " ", ""), "\t", ""));
+    var _is_inkey = (_exprU == "INKEY$" || _exprU == "INKEY$()");
+
+    if (_is_inkey) {
+        // Ensure INKEY state globals exist
+        if (is_undefined(global.inkey_waiting))       global.inkey_waiting       = false;
+        if (is_undefined(global.inkey_captured))      global.inkey_captured      = "";
+        if (is_undefined(global.inkey_target_var))    global.inkey_target_var    = "";
+
+        // If a char was captured already (from the Step pause handler), assign now
+        if (!global.inkey_waiting && is_string(global.inkey_captured) && string_length(global.inkey_captured) > 0) {
+            var _ch = global.inkey_captured;
+            global.inkey_captured   = "";   // consume
+            global.inkey_target_var = "";   // clear
+
+            if (string_char_at(varname, string_length(varname)) == "$") {
+                global.basic_variables[? varname] = _ch;
+                show_debug_message("INKEY_WAIT: assigning captured char '" + _ch + "' to " + varname);
+            } else {
+                var _asc = ord(_ch);
+                global.basic_variables[? varname] = _asc;
+                show_debug_message("INKEY_WAIT: assigning ASC('" + _ch + "')=" + string(_asc) + " to " + varname);
+            }
+
+            // Do NOT pause; normal flow continues and Step will advance colon slot.
+            return;
+        }
+
+        // Otherwise, arm the modal wait (pause just like PAUSE) and return.
+        global.inkey_target_var = varname;
+        global.inkey_waiting    = true;
+        global.pause_in_effect  = true;   // gate used by your PAUSE
+        global.awaiting_input   = false;  // ensure INPUT gate is off
+        show_debug_message("INKEY_WAIT: armed for '" + varname + "'; pausing until key release");
         return;
     }
 
@@ -103,3 +146,4 @@ function basic_cmd_let(arg) {
         show_debug_message("LET: Assigned numeric value: " + string(result) + " to '" + varname + "'");
     }
 }
+// === END: basic_cmd_let ===

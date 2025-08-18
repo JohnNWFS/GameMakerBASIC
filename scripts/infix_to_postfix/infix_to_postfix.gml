@@ -1,3 +1,5 @@
+/// @script infix_to_postfix
+// === BEGIN: infix_to_postfix ===
 function infix_to_postfix(tokens) {
     show_debug_message("Converting to postfix: " + string(tokens));
 
@@ -12,6 +14,12 @@ function infix_to_postfix(tokens) {
         for (var __i = 0; __i < array_length(_src); __i++) {
             array_push(_dst, _src[__i]);
         }
+    };
+
+    // Local helper: which functions are truly zero-arg
+    var _is_zero_arg_fn = function(_name) {
+        var n = string_upper(_name);
+        return (n == "TIMER" || n == "TIME$" || n == "DATE$" || n == "INKEY$");
     };
 
     for (var i = 0; i < array_length(tokens); i++) {
@@ -37,7 +45,7 @@ function infix_to_postfix(tokens) {
             &&  tokens[i + 1] == "("
             && !is_function(t)) // do not collapse functions
             {
-                var _depth   = 0;
+                var _depth   = 0; // NOTE: use _depth, never 'depth'
                 var j       = i + 1;
                 var inner   = "";
                 var matched = false;
@@ -148,14 +156,33 @@ function infix_to_postfix(tokens) {
             var fn_name = tu;
 
             // ------------------------------------------------------
-            // 7a) NEW: Balanced 1-arg function handler for non-RND
-            //     Handles cases like INT( RND(1,6) ), ABS(A+B*C) etc.
-            //     We scan for the matching ')' and recursively convert
-            //     the inner tokens with THIS same function.
+            // 7Z) ZERO-ARG FUNCTIONS (TIMER/TIME$/DATE$/INKEY$)
+            // Handle BOTH forms: NAME()  and bare NAME
+            // ------------------------------------------------------
+            if (_is_zero_arg_fn(fn_name)) {
+                // NAME()
+                if (i + 2 < array_length(tokens) && tokens[i + 1] == "(" && tokens[i + 2] == ")") {
+                    array_push(output, fn_name);
+                    show_debug_message("INFIX: Zero-arg fn '" + fn_name + "()' → pushed opcode only");
+                    i += 2; // consume "()"
+                    continue;
+                }
+                // NAME without parentheses
+                if (i + 1 >= array_length(tokens) || tokens[i + 1] != "(") {
+                    array_push(output, fn_name);
+                    show_debug_message("INFIX: Zero-arg fn '" + fn_name + "' without '()' → treated as zero-arg");
+                    continue;
+                }
+                // If it has '(' but not immediately ')', fall through to generic handling
+            }
+
+            // ------------------------------------------------------
+            // 7a) Balanced 1-arg function handler for non-RND
+            //     Handles cases like INT( RND(1,6) ), ABS(A+B*C), etc.
             // ------------------------------------------------------
             if (i + 1 < array_length(tokens) && tokens[i + 1] == "(" && fn_name != "RND") {
-                var depthB  = 0;
-                var jB      = i + 1;
+                var depthB   = 0; // not 'depth'
+                var jB       = i + 1;
                 var matchedB = false;
 
                 // Find matching ')'
@@ -262,11 +289,16 @@ function infix_to_postfix(tokens) {
             // ------------------------------------------------------
             // 7c) Existing special cases for other functions
             // ------------------------------------------------------
-            // Function used WITHOUT parentheses → fallback behavior (fn(1))
+            // Function used WITHOUT parentheses → fallback behavior
             if (i + 1 >= array_length(tokens) || tokens[i + 1] != "(") {
-                show_debug_message("? Function '" + string(t) + "' used without parentheses. Defaulting to " + fn_name + "(1) behavior.");
-                array_push(output, "1");
-                array_push(output, fn_name);
+                if (_is_zero_arg_fn(fn_name)) {
+                    array_push(output, fn_name);
+                    show_debug_message("INFIX: Zero-arg fn '" + fn_name + "' used without '()' → pushed opcode");
+                } else {
+                    show_debug_message("? Function '" + string(t) + "' used without parentheses. Defaulting to " + fn_name + "(1) behavior.");
+                    array_push(output, "1");
+                    array_push(output, fn_name);
+                }
                 continue;
             }
 
@@ -367,3 +399,4 @@ function infix_to_postfix(tokens) {
     show_debug_message("Final postfix: " + string(output));
     return output;
 }
+// === END: infix_to_postfix ===

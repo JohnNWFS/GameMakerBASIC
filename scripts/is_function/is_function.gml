@@ -1,3 +1,5 @@
+/// @script is_function
+// === BEGIN: is_function ===
 function is_function(t) {
     var fn = string_upper(string_trim(t));
     return  fn == "RND"    // your original BASIC call
@@ -17,5 +19,10 @@ function is_function(t) {
          || fn == "SIN"
          || fn == "COS"
          || fn == "TAN"
-         || fn == "REPEAT$";
+         || fn == "REPEAT$"
+         || fn == "TIMER"
+         || fn == "TIME$"
+         || fn == "DATE$"
+         || fn == "INKEY$";
 }
+// === END: is_function ===

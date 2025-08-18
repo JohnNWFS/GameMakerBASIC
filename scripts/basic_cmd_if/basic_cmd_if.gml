@@ -6,6 +6,15 @@ function basic_cmd_if(arg) {
     // 1) Compute the current line‐list index (we assume global.interpreter_next_line was pre-incremented)
     var current_index = global.interpreter_current_line_index;
 
+// DEBUG: Show what's in the IF block map
+    show_debug_message("DEBUG: current_index = " + string(current_index));
+    var keys = ds_map_keys_to_array(global.if_block_map);
+    for (var i = 0; i < array_length(keys); i++) {
+        show_debug_message("DEBUG: IF block map key[" + string(i) + "] = " + string(keys[i]));
+    }
+
+
+
     // ── Legacy inline IF?  If no block metadata exists, invoke old handler ──
     if (!ds_map_exists(global.if_block_map, current_index)) {
         show_debug_message("No block metadata for line " + string(current_index) + 
