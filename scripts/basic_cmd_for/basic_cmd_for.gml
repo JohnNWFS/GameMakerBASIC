@@ -12,7 +12,7 @@
 /// - Uses only globals you already define in obj_globals Create Event.
 
 function basic_cmd_for(arg) {
-    show_debug_message("FOR: Entering handler with argument: '" + string(arg) + "'");
+    if (dbg_on(DBG_FLOW)) show_debug_message("FOR: Entering handler with argument: '" + string(arg) + "'");
 
     // --------------------------
     // 1) Normalize / find '='
@@ -20,7 +20,7 @@ function basic_cmd_for(arg) {
     var raw   = string_trim(string(arg));
     var eqpos = string_pos("=", raw);
     if (eqpos <= 0) {
-        show_debug_message("FOR: SYNTAX ERROR — missing '=' in header: '" + raw + "'");
+        if (dbg_on(DBG_FLOW)) show_debug_message("FOR: SYNTAX ERROR — missing '=' in header: '" + raw + "'");
         basic_system_message("SYNTAX ERROR IN FOR: " + raw); // CHANGED
         global.interpreter_running = false;
         return;
@@ -29,7 +29,7 @@ function basic_cmd_for(arg) {
     // Left of '=' is the loop variable name
     var varname = string_upper(string_trim(string_copy(raw, 1, eqpos - 1)));
     if (varname == "") {
-        show_debug_message("FOR: SYNTAX ERROR — empty variable name before '='");
+        if (dbg_on(DBG_FLOW)) show_debug_message("FOR: SYNTAX ERROR — empty variable name before '='");
         basic_system_message("SYNTAX ERROR IN FOR (empty variable): " + raw); // CHANGED
         global.interpreter_running = false;
         return;
@@ -51,7 +51,7 @@ function basic_cmd_for(arg) {
         }
     }
     if (to_at < 0) {
-        show_debug_message("FOR: SYNTAX ERROR — missing 'TO' in: '" + rhs + "'");
+        if (dbg_on(DBG_FLOW)) show_debug_message("FOR: SYNTAX ERROR — missing 'TO' in: '" + rhs + "'");
         basic_system_message("SYNTAX ERROR IN FOR (missing TO): " + raw); // CHANGED
         global.interpreter_running = false;
         return;
@@ -61,7 +61,7 @@ function basic_cmd_for(arg) {
     var after_to   = string_trim(string_copy(rhs, to_at + 2, string_length(rhs) - (to_at + 1)));
 
     if (start_expr == "" || after_to == "") {
-        show_debug_message("FOR: SYNTAX ERROR — start/to expressions incomplete. start='" + start_expr + "', after_to='" + after_to + "'");
+        if (dbg_on(DBG_FLOW)) show_debug_message("FOR: SYNTAX ERROR — start/to expressions incomplete. start='" + start_expr + "', after_to='" + after_to + "'");
         basic_system_message("SYNTAX ERROR IN FOR (incomplete expressions): " + raw); // CHANGED
         global.interpreter_running = false;
         return;
@@ -86,7 +86,7 @@ function basic_cmd_for(arg) {
         if (step_expr == "") step_expr = "1";
     }
 
-    show_debug_message("FOR: Header pieces → var='" + varname + "' | start='" + start_expr + "' | to='" + to_expr + "' | step='" + step_expr + "'");
+    if (dbg_on(DBG_FLOW)) show_debug_message("FOR: Header pieces → var='" + varname + "' | start='" + start_expr + "' | to='" + to_expr + "' | step='" + step_expr + "'");
 
     // --------------------------
     // 4) Evaluate expressions
@@ -102,10 +102,10 @@ function basic_cmd_for(arg) {
 	var step_val = basic_evaluate_expression_v2(step_expr);
 
 
-    show_debug_message("FOR: Evaluated values → start=" + string(start_val) + " | to=" + string(to_val) + " | step=" + string(step_val));
+    if (dbg_on(DBG_FLOW)) show_debug_message("FOR: Evaluated values → start=" + string(start_val) + " | to=" + string(to_val) + " | step=" + string(step_val));
 
     if (step_val == 0) {
-        show_debug_message("FOR: WARNING — STEP evaluated to 0; loop would never progress.");
+        if (dbg_on(DBG_FLOW)) show_debug_message("FOR: WARNING — STEP evaluated to 0; loop would never progress.");
         // Deliberately not auto-fixing to keep semantics obvious. NEXT will handle termination.
     }
 
@@ -114,9 +114,9 @@ function basic_cmd_for(arg) {
     // --------------------------
     if (!is_undefined(global.basic_variables)) {
         global.basic_variables[? varname] = start_val;
-        show_debug_message("FOR: Initialized variable " + varname + " = " + string(start_val));
+        if (dbg_on(DBG_FLOW)) show_debug_message("FOR: Initialized variable " + varname + " = " + string(start_val));
     } else {
-        show_debug_message("FOR: ERROR — global.basic_variables map is undefined.");
+        if (dbg_on(DBG_FLOW)) show_debug_message("FOR: ERROR — global.basic_variables map is undefined.");
         basic_system_message("RUNTIME ERROR: variable store not initialized"); // CHANGED
         global.interpreter_running = false;
         return;
@@ -139,13 +139,13 @@ function basic_cmd_for(arg) {
         loop_stmt_idx = global.interpreter_current_stmt_index + 1;
     }
 
-    show_debug_message("FOR: Loop entry captured → line=" + string(loop_line_idx)
+    if (dbg_on(DBG_FLOW)) show_debug_message("FOR: Loop entry captured → line=" + string(loop_line_idx)
         + ", stmt(after header)=" + string(loop_stmt_idx));
 
     // Ensure for_stack exists (safety)
     if (!ds_exists(global.for_stack, ds_type_stack)) {
         global.for_stack = ds_stack_create();
-        show_debug_message("FOR: Safety — created global.for_stack");
+        if (dbg_on(DBG_FLOW)) show_debug_message("FOR: Safety — created global.for_stack");
     }
 
     var frame = {
@@ -161,7 +161,7 @@ function basic_cmd_for(arg) {
 
     ds_stack_push(global.for_stack, frame);
 
-    show_debug_message("FOR: Pushed frame → {var=" + varname
+    if (dbg_on(DBG_FLOW)) show_debug_message("FOR: Pushed frame → {var=" + varname
         + ", to=" + string(to_val)
         + ", step=" + string(step_val)
         + ", return_line=" + string(legacy_return_line)

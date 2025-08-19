@@ -1,6 +1,6 @@
 function basic_cmd_bgcolor(arg) {
     var colstr = string_upper(string_trim(arg));
-    show_debug_message("BGCOLOR: Raw argument: '" + arg + "', Normalized: '" + colstr + "'");
+    if (dbg_on(DBG_FLOW))  show_debug_message("BGCOLOR: Raw argument: '" + arg + "', Normalized: '" + colstr + "'");
     
     var bg_color = c_black;
     var matched = false;
@@ -9,7 +9,7 @@ function basic_cmd_bgcolor(arg) {
     if (ds_map_exists(global.colors, colstr)) {
         bg_color = global.colors[? colstr];
         matched = true;
-        show_debug_message("BGCOLOR: Matched named color → " + string(bg_color));
+        if (dbg_on(DBG_FLOW))  show_debug_message("BGCOLOR: Matched named color → " + string(bg_color));
     }
     // RGB() syntax
    else if (string_pos("RGB(", colstr) == 1) {
@@ -28,15 +28,15 @@ function basic_cmd_bgcolor(arg) {
             var gV = clamp(floor(basic_evaluate_expression_v2(string_trim(parts[1]))), 0, 255);
             var bV = clamp(floor(basic_evaluate_expression_v2(string_trim(parts[2]))), 0, 255);
             bg_color = make_color_rgb(rV, gV, bV); matched = true;
-        } else show_debug_message("BGCOLOR: Invalid RGB arg count in '" + inner + "'");
-    } else show_debug_message("BGCOLOR: Missing ) in '" + colstr + "'");
+        } else if (dbg_on(DBG_FLOW))  {show_debug_message("BGCOLOR: Invalid RGB arg count in '" + inner + "'");}
+    } else if (dbg_on(DBG_FLOW))  {show_debug_message("BGCOLOR: Missing ) in '" + colstr + "'");}
 }
  else {
-        show_debug_message("BGCOLOR: No matching named color or RGB format found for '" + colstr + "'");
+        if (dbg_on(DBG_FLOW))  show_debug_message("BGCOLOR: No matching named color or RGB format found for '" + colstr + "'");
     }
 
     global.background_draw_color = bg_color;
     global.background_draw_enabled = (bg_color != c_black);
 
-    show_debug_message("BGCOLOR: Final color set to " + string(bg_color) + ", background_draw_enabled: " + string(global.background_draw_enabled));
+    if (dbg_on(DBG_FLOW))  show_debug_message("BGCOLOR: Final color set to " + string(bg_color) + ", background_draw_enabled: " + string(global.background_draw_enabled));
 }

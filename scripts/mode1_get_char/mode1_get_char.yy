@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"mode1_get_char",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"mode1_get_char",
+  "parent":{
+    "name":"MODE_1_COMMANDS",
+    "path":"folders/Scripts/MODE_1_COMMANDS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

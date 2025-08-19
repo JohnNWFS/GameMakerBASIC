@@ -8,11 +8,11 @@
 
 function evaluate_postfix(postfix) {
     var stack = [];
-    show_debug_message("Evaluating postfix: " + string(postfix));
+    if (dbg_on(DBG_PARSE)) show_debug_message("Evaluating postfix: " + string(postfix));
 
     for (var i = 0; i < array_length(postfix); i++) {
         var token = postfix[i];
-        show_debug_message("POSTFIX: Processing token [" + string(i) + "] → " + string(token));
+        if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: Processing token [" + string(i) + "] → " + string(token));
 
         // Normalize once
         var trimmed     = string_trim(string(token));
@@ -22,7 +22,7 @@ function evaluate_postfix(postfix) {
         // Ignore commas completely (arg separators, never values)
         // -------------------------------------------------------
         if (trimmed == ",") {
-            show_debug_message("POSTFIX: Ignoring stray comma token");
+            if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: Ignoring stray comma token");
             continue;
         }
 
@@ -39,17 +39,17 @@ function evaluate_postfix(postfix) {
                 var arrName = arrNameU; // arrays stored uppercase in helpers
                 var idxText = string_trim(idxTextRaw);
 
-                show_debug_message("POSTFIX[ARRAY]: Candidate '" + string(token) + "' → name='" + arrName + "', idxText='" + idxText + "'");
+                if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX[ARRAY]: Candidate '" + string(token) + "' → name='" + arrName + "', idxText='" + idxText + "'");
 
                 var idxVal = basic_evaluate_expression_v2(idxText);
                 if (!is_real(idxVal)) {
-                    show_debug_message("POSTFIX[ARRAY] ERROR: Index non-numeric from '" + idxText + "' → '" + string(idxVal) + "'. Pushing 0.");
+                    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX[ARRAY] ERROR: Index non-numeric from '" + idxText + "' → '" + string(idxVal) + "'. Pushing 0.");
                     array_push(stack, 0);
                     continue;
                 }
 
                 var arrVal = basic_array_get(arrName, idxVal); // your 1-based getter
-                show_debug_message("POSTFIX[ARRAY]: " + arrName + "(" + string(idxVal) + ") → " + string(arrVal));
+                if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX[ARRAY]: " + arrName + "(" + string(idxVal) + ") → " + string(arrVal));
                 array_push(stack, arrVal);
                 continue;
             }
@@ -61,7 +61,7 @@ function evaluate_postfix(postfix) {
         if (is_numeric_string(trimmed)) {
             var num = real(trimmed);
             array_push(stack, num);
-            show_debug_message("POSTFIX: Pushed number → " + string(num));
+            if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: Pushed number → " + string(num));
             continue;
         }
 
@@ -75,7 +75,7 @@ function evaluate_postfix(postfix) {
             var str = string_copy(trimmed, 2, string_length(trimmed) - 2);
             str = string_replace_all(str, "\"\"", "\"");  // unescape "" -> "
             array_push(stack, str);
-            if (dbg_on(DBG_FLOW)) show_debug_message("POSTFIX: Pushed quoted string literal → " + str);
+            if (dbg_on(DBG_FLOW)) if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: Pushed quoted string literal → " + str);
             continue;
         }
 
@@ -84,7 +84,7 @@ function evaluate_postfix(postfix) {
         // -------------------------------------------------------
         if (is_operator(token_upper)) {
             if (array_length(stack) < 2) {
-                show_debug_message("? POSTFIX ERROR: Not enough operands for operator " + token_upper);
+                if (dbg_on(DBG_PARSE)) show_debug_message("? POSTFIX ERROR: Not enough operands for operator " + token_upper);
                 return 0;
             }
             var b = array_pop(stack);
@@ -120,12 +120,12 @@ function evaluate_postfix(postfix) {
                     if (is_string(b)) b = real(b);
                     result = power(a, b); break;
                 default:
-                    show_debug_message("? POSTFIX WARNING: Unknown operator = " + token_upper + " → 0");
+                    if (dbg_on(DBG_PARSE)) show_debug_message("? POSTFIX WARNING: Unknown operator = " + token_upper + " → 0");
                     result = 0; break;
             }
 
             array_push(stack, result);
-            show_debug_message("POSTFIX: Operator result (" + token_upper + ") = " + string(result));
+            if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: Operator result (" + token_upper + ") = " + string(result));
             continue;
         }
 
@@ -134,7 +134,7 @@ function evaluate_postfix(postfix) {
         // -------------------------------------------------------
         if (is_function(token_upper)) {
             token_upper = string_upper(string_trim(token));
-            show_debug_message("POSTFIX: Dispatching function → '" + token_upper + "'");
+            if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: Dispatching function → '" + token_upper + "'");
 
             switch (token_upper) {
                 // ---- Random
@@ -143,7 +143,7 @@ function evaluate_postfix(postfix) {
                     if (n <= 0) n = 1;
                     var r1 = irandom(n - 1) + 1;
                     array_push(stack, r1);
-                    show_debug_message("POSTFIX: RND1(" + string(n) + ") → " + string(r1));
+                    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: RND1(" + string(n) + ") → " + string(r1));
                     break;
                 }
                 case "RND2": {
@@ -174,7 +174,7 @@ function evaluate_postfix(postfix) {
                     } else {
                         var result = irandom_range(min_val, max_val);
                         array_push(stack, result);
-                        show_debug_message("POSTFIX: RND2(" + string(min_val) + "," + string(max_val) + ") → " + string(result));
+                        if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: RND2(" + string(min_val) + "," + string(max_val) + ") → " + string(result));
                     }
                     break;
                 }
@@ -183,7 +183,7 @@ function evaluate_postfix(postfix) {
                 case "TIMER": {
                     var secs = floor(current_time / 1000); // ms → seconds since game start
                     array_push(stack, secs);
-                    show_debug_message("FUNC: TIMER → " + string(secs));
+                    if (dbg_on(DBG_PARSE)) show_debug_message("FUNC: TIMER → " + string(secs));
                     break;
                 }
                 case "TIME$": {
@@ -197,7 +197,7 @@ function evaluate_postfix(postfix) {
                     var sss = (ss < 10 ? "0" : "") + string(ss);
                     var out = hhs + ":" + mms + ":" + sss;
                     array_push(stack, out);
-                    show_debug_message("FUNC: TIME$ → " + out);
+                    if (dbg_on(DBG_PARSE)) show_debug_message("FUNC: TIME$ → " + out);
                     break;
                 }
                 case "DATE$": {
@@ -210,7 +210,7 @@ function evaluate_postfix(postfix) {
                     var dds = (dd < 10 ? "0" : "") + string(dd);
                     var out2 = string(yy) + "-" + mos + "-" + dds;
                     array_push(stack, out2);
-                    show_debug_message("FUNC: DATE$ → " + out2);
+                    if (dbg_on(DBG_PARSE)) show_debug_message("FUNC: DATE$ → " + out2);
                     break;
                 }
 				
@@ -224,9 +224,9 @@ case "INKEY$": {
         result = global.basic_variables[? "__INKEY_RESULT"];
         // Clear the result after reading it
         ds_map_delete(global.basic_variables, "__INKEY_RESULT");
-        show_debug_message("INKEY$ function: Returning stored result '" + result + "'");
+        if (dbg_on(DBG_PARSE)) show_debug_message("INKEY$ function: Returning stored result '" + result + "'");
     } else {
-        show_debug_message("INKEY$ function: No stored result, returning empty");
+        if (dbg_on(DBG_PARSE)) show_debug_message("INKEY$ function: No stored result, returning empty");
     }
     
     array_push(stack, result);
@@ -249,7 +249,7 @@ case "INKEY$": {
                     var vsgn = safe_real_pop(stack);
                     var sgnv = (vsgn > 0) - (vsgn < 0);
                     array_push(stack, sgnv);
-                    show_debug_message("POSTFIX: SGN(" + string(vsgn) + ") → " + string(sgnv));
+                    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: SGN(" + string(vsgn) + ") → " + string(sgnv));
                     break;
                 }
 
@@ -263,14 +263,14 @@ case "INKEY$": {
                     var vstr = safe_real_pop(stack);
                     var s = string(vstr);
                     array_push(stack, s);
-                    show_debug_message("POSTFIX: STR$ → " + s);
+                    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: STR$ → " + s);
                     break;
                 }
                 case "CHR$": {
                     var cv = safe_real_pop(stack);
                     var c  = chr(cv);
                     array_push(stack, c);
-                    show_debug_message("POSTFIX: CHR$ → " + c);
+                    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: CHR$ → " + c);
                     break;
                 }
 
@@ -287,7 +287,7 @@ case "INKEY$": {
                     var outrep = "";
                     repeat (nrep) outrep += srep;
                     array_push(stack, outrep);
-                    show_debug_message("POSTFIX: REPEAT$('"+srep+"', "+string(nrep)+") → len="+string(string_length(outrep)));
+                    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: REPEAT$('"+srep+"', "+string(nrep)+") → len="+string(string_length(outrep)));
                     break;
                 }
 
@@ -298,7 +298,7 @@ case "INKEY$": {
 
                     var outleft = (nleft <= 0) ? "" : string_copy(sleft, 1, nleft);
                     array_push(stack, outleft);
-                    show_debug_message("POSTFIX: LEFT$('"+sleft+"', "+string(nleft)+") → '"+outleft+"'");
+                    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: LEFT$('"+sleft+"', "+string(nleft)+") → '"+outleft+"'");
                     break;
                 }
 
@@ -311,7 +311,7 @@ case "INKEY$": {
                     var start = max(1, lenr - nright + 1);
                     var outright = (nright <= 0) ? "" : string_copy(sright, start, nright);
                     array_push(stack, outright);
-                    show_debug_message("POSTFIX: RIGHT$('"+sright+"', "+string(nright)+") → '"+outright+"'");
+                    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: RIGHT$('"+sright+"', "+string(nright)+") → '"+outright+"'");
                     break;
                 }
 
@@ -328,12 +328,12 @@ case "INKEY$": {
                         outm = string_copy(strm, smid, lmid);
                     }
                     array_push(stack, outm);
-                    show_debug_message("POSTFIX: MID$('"+strm+"', "+string(smid)+", "+string(lmid)+") → '"+outm+"'");
+                    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: MID$('"+strm+"', "+string(smid)+", "+string(lmid)+") → '"+outm+"'");
                     break;
                 }
 
                 default:
-                    show_debug_message("? POSTFIX WARNING: Unknown function = " + token_upper + " — pushing last real as fallback");
+                    if (dbg_on(DBG_PARSE)) show_debug_message("? POSTFIX WARNING: Unknown function = " + token_upper + " — pushing last real as fallback");
                     array_push(stack, safe_real_pop(stack));
                     break;
             }
@@ -359,7 +359,7 @@ case "INKEY$": {
             }
 
             array_push(stack, vv);
-            show_debug_message("POSTFIX: Loaded variable " + token_upper + " = " + string(vv));
+            if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: Loaded variable " + token_upper + " = " + string(vv));
             continue;
         }
 
@@ -367,7 +367,7 @@ case "INKEY$": {
         // Fallback: push as string literal (unknown token)
         // -------------------------------------------------------
         array_push(stack, trimmed);
-        show_debug_message("POSTFIX: Pushed fallback string → " + trimmed);
+        if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: Pushed fallback string → " + trimmed);
     }
 
     return (array_length(stack) > 0) ? stack[array_length(stack) - 1] : 0;

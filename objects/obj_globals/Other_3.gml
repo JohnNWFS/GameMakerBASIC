@@ -71,6 +71,6 @@
 	
 	// === 1. FIRST: Add this to your obj_globals Create event ===
 	// Initialize the key input queue with debugging
-	show_debug_message("INKEY$ INIT: Creating queue...");
+	if (dbg_on(DBG_EXEC)) show_debug_message("INKEY$ INIT: Creating queue...");
 	global.__inkey_queue = ds_queue_create();
-	show_debug_message("INKEY$ INIT: Queue created, exists = " + string(ds_exists(global.__inkey_queue, ds_type_queue)));
+	if (dbg_on(DBG_EXEC)) show_debug_message("INKEY$ INIT: Queue created, exists = " + string(ds_exists(global.__inkey_queue, ds_type_queue)));

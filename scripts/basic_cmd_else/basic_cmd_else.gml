@@ -1,10 +1,10 @@
 /// @script basic_cmd_else
 /// @description Handle ELSE in a structured IF…ELSEIF…ELSE…ENDIF
 function basic_cmd_else() {
-    show_debug_message("ELSE START");
+    if (dbg_on(DBG_FLOW))  show_debug_message("ELSE START");
     // ← GUARD: must have an open IF
     if (ds_stack_empty(global.if_stack)) {
-        show_debug_message("?ELSE ERROR: ELSE without matching IF");
+        if (dbg_on(DBG_FLOW))  show_debug_message("?ELSE ERROR: ELSE without matching IF");
         return;
     }
 	
@@ -17,11 +17,11 @@ function basic_cmd_else() {
     if (taken) {
         // Already ran IF or an ELSEIF → skip entire ELSE-block
         global.interpreter_next_line = endifIx;
-        show_debug_message("ELSE skipping to ENDIF at index " + string(endifIx));
+        if (dbg_on(DBG_FLOW))  show_debug_message("ELSE skipping to ENDIF at index " + string(endifIx));
     } else {
         // No branch yet taken → run ELSE body
         ds_map_replace(frame, "takenBranch", true);
         global.interpreter_next_line = current_index + 1;
-        show_debug_message("ELSE entering branch at index " + string(global.interpreter_next_line));
+        if (dbg_on(DBG_FLOW))  show_debug_message("ELSE entering branch at index " + string(global.interpreter_next_line));
     }
 }

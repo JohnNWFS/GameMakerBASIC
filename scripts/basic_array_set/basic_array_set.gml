@@ -8,17 +8,17 @@
 
 function basic_array_set(_name, _idx, _val) {
     var nm = string_upper(string_trim(_name));
-    show_debug_message("ARRAY_SET: Setting " + nm + "[" + string(_idx) + "] = " + string(_val));
+    if (dbg_on(DBG_FLOW))  show_debug_message("ARRAY_SET: Setting " + nm + "[" + string(_idx) + "] = " + string(_val));
 
     // Ensure the map entry exists and is a ds_list
     if (!ds_map_exists(global.basic_arrays, nm)) {
-        show_debug_message("ARRAY_SET: Creating new ds_list for " + nm);
+        if (dbg_on(DBG_FLOW))  show_debug_message("ARRAY_SET: Creating new ds_list for " + nm);
         global.basic_arrays[? nm] = ds_list_create();
     }
 
     var lst = global.basic_arrays[? nm];
     if (!ds_exists(lst, ds_type_list)) {
-        show_debug_message("ARRAY_SET: Replacing non-list backing store for " + nm);
+        if (dbg_on(DBG_FLOW))  show_debug_message("ARRAY_SET: Replacing non-list backing store for " + nm);
         lst = ds_list_create();
         global.basic_arrays[? nm] = lst;
     }
@@ -28,7 +28,7 @@ function basic_array_set(_name, _idx, _val) {
 
     // OPTIONAL: hard-stop on negative indexes (comment this out if you prefer silent ignore)
     if (idx < 0) {
-        show_debug_message("ARRAY_SET ERROR: Negative index " + string(idx) + " for array " + nm);
+        if (dbg_on(DBG_FLOW))  show_debug_message("ARRAY_SET ERROR: Negative index " + string(idx) + " for array " + nm);
         return;
     }
 

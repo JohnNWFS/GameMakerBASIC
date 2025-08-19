@@ -202,3 +202,138 @@ E GM1041 The type 'String' appears where the type 'Id.DsMap' is expected. new_pr
 E GM1041 The type 'String' appears where the type 'Id.DsList' is expected. obj_basic_interpreter : Step 14:40
 E GM1041 The type 'String' appears where the type 'Id.DsList' is expected. obj_basic_interpreter : Step 102:36
 
+
+
+ Immediate Options to Pick Up Again:
+Here are some natural next steps from where we left off:
+
+✔ Add next string function: LEFT$, RIGHT$, MID$
+
+Easy to implement using string slicing.
+
+Great test of multi-arg string functions like REPEAT$.
+
+✔ Add VAL() or ASC()
+
+Bridges string/number domains and useful in many BASIC programs.
+
+✔ Resume work on PRINTAT or CLSCHAR
+
+Finish making your grid support act like a real text console.
+
+✔ Enhance tokenizer to safely handle comments (')
+
+Allows inline remarks without breaking expression parsing.
+
+✔ Improve error handling/debug trace during program run
+
+Optional debug toggle that shows line numbers and stack state at crash.
+
+10 PRINT "RND(1,20): " + RND(1,20)
+
+
+Great question. Here’s a clean, **non-graphics** backlog for an 80s-style BASIC, grouped and prioritized. I’m only listing what’s missing vs. what you already have (PRINT/INPUT/LET/IF/WHILE/FOR/NEXT/GOTO/GOSUB/RETURN/DIM/END/PAUSE/CLS/… plus DATA/READ/RESTORE).
+
+# Phase 1 — Low-risk, high-utility (do these next)
+
+* **RANDOMIZE \[n] / RANDOMIZE TIMER**
+  Seed `RND`. Tiny change: add `global.rand_seed` + seed GM’s RNG.
+  Tests: `RANDOMIZE 1 : PRINT RND(1,10) : RANDOMIZE 1 : PRINT RND(1,10)  ' same`
+* **TIMER / TIME\$ / DATE\$** (functions)
+  `TIMER` returns seconds since start; `TIME$` = `"HH:MM:SS"`, `DATE$` = `"YYYY-MM-DD"`.
+* **INKEY\$** (non-blocking keystroke)
+  Returns `""` if none; otherwise single char. Doesn’t pause like INPUT.
+* **String basics (functions)**
+
+  * `LEN(s$)`, `INSTR(s$, sub$ [,start])`, `ASC(s$)`, `VAL(s$)`, `CHR$(n)`
+  * `STRING$(n, ch$|n)`, `SPACE$(n)`, `UCASE$(s$)`, `LCASE$(s$)`, `LTRIM$(s$)`, `RTRIM$(s$)`
+* **Math additions**
+  `SQR(x)`, `ATN(x)` (you have SIN/COS/TAN/INT/ABS/EXP/LOG10).
+* **TAB(n) / SPC(n)** for PRINT layout (no formatting engine; just emit spaces).
+  (You already have `PRINTAT`—TAB/SPC makes porting easier.)
+
+# Phase 2 — Control-flow conveniences
+
+* **ON expr GOTO l1, l2, l3…**
+  If expr=2 → GOTO l2. (1-based; out-of-range → no jump.)
+* **ON expr GOSUB l1, l2, l3…**
+  Same dispatch, but push return; respects your existing GOSUB stack.
+* **SELECT CASE expr … CASE v / CASE ELSE … END SELECT** *(optional, QBasic-era)*
+  If you want to stay strictly GW-BASIC, skip; otherwise very nice for readability.
+* **STOP** (soft halt to editor)
+  Equivalent to your graceful END + return to editor room.
+
+# Phase 3 — Text file I/O (very useful for level/data files)
+
+* **OPEN "name" FOR INPUT|OUTPUT|APPEND AS #n**
+  Minimal: map `#n` → an open file handle (ds\_map).
+* **LINE INPUT #n, var\$** (read a whole line)
+  **INPUT #n, v1\[,v2…]** (comma-delimited fields; numbers auto-parse)
+  **PRINT #n, expr \[;|, expr…]** (write line; semicolon = no newline)
+* **EOF(#n)** (returns 1/0)
+* **CLOSE #n**
+  (We can add `FREEFILE` later; for now require `#1..#8`.)
+
+# Phase 4 — Arrays & memory niceties
+
+* **ERASE A \[,B…]** (release arrays)
+* **OPTION BASE 0|1** *(optional; only if you want compatibility)*
+  Your interpreter currently treats indices as 0-based in user code; if your array helper is 1-based internally, keep it hidden or add `OPTION BASE` later with care.
+* **REDIM** *(skip for now; that’s VB-era)*
+
+# Phase 5 — Formatting & quality-of-life (later)
+
+* **PRINT USING** (formatted print) — powerful but non-trivial; postpone.
+* **ENV\$ / COMMAND\$ / SYSTEM** — environment/exit; optional.
+
+---
+
+## Implementation plan (minimal ripples)
+
+**Core dispatch:** add these keywords to `handle_basic_command`:
+
+* `RANDOMIZE`, `ON`, `OPEN`, `LINE`, `INPUT#`, `PRINT#`, `EOF`, `CLOSE`, `STOP`, `ERASE`, `OPTION`.
+  Also add `READ/RESTORE/DATA` you already whitelisted to `basic_cmd_if_inline` (you did).
+
+**Functions (expression layer):** extend your `is_function()` and evaluator with:
+
+* `LEN, INSTR, ASC, VAL, CHR$, STRING$, SPACE$, UCASE$, LCASE$, LTRIM$, RTRIM$, SQR, ATN, TIMER, TIME$, DATE$`.
+* Keep each to a single small `case` in `evaluate_postfix`. We already showed pattern for string funcs.
+
+**Helpers you’ll need (new tiny scripts):**
+
+* `basic_randomize(seed_or_timer)` → seeds RNG; debug log seed.
+* `basic_time_now$()` / `basic_date_now$()` / `basic_timer()`
+* `basic_file_open(path, mode, chan)` / `basic_file_close(chan)`
+  `basic_file_readline$(chan)` / `basic_file_eof(chan)` / `basic_file_print(chan, text)`
+  Store handles in `global.file_channels` map keyed by channel int; include debug.
+
+**Parser/flow touches (already in shape):**
+
+* Your inline IF handler already executes THEN/ELSE segments and jumps to `stmt+1`. `ON GOTO/GOSUB` uses the same “legacy line jump” you have; zero changes to resume logic.
+
+---
+
+## Sanity test set for Phase 1 (no file I/O)
+
+```
+10 RANDOMIZE 1
+20 PRINT "R1=";RND(1,10)
+30 RANDOMIZE 1: PRINT "R2=";RND(1,10)   ' expect R1=R2
+
+40 PRINT "LEN/INSTR=";LEN("ABC");",";INSTR("ABCABC","BC",3)   ' 3,5
+50 PRINT "ASC/CHR$=";ASC("A");",";CHR$(66)                    ' 65,B
+60 PRINT "VAL=";VAL("123");",";VAL("12A")                     ' 123,12 (or 12/0 per your choice)
+70 PRINT "CASE=";UCASE$("aB");",";LCASE$("Xy")                ' AB,xy
+80 PRINT "TRIM=";"[";LTRIM$("  X ");"][";RTRIM$("  X ");"]"   ' [X ][  X]
+90 PRINT "STRING/SPACE=";"[";STRING$(3,"*");SPACE$(2);"]"     ' [***  ]
+
+100 PRINT "SQR/ATN=";SQR(9);",";INT(ATN(1)*4)                 ' 3,3
+110 PRINT "TIME/DATE=";TIME$();",";DATE$()
+120 PRINT "INKEY$ test: press a key";: FOR I=1 TO 120 : K$=INKEY$ : IF K$<>"" THEN PRINT " [";K$;"]" : I=120 : ENDIF : NEXT I
+130 END
+```
+
+If you want, I’ll start with **RANDOMIZE + TIMER/TIME\$/DATE\$ + INKEY\$ + LEN/INSTR/ASC/VAL/CHR\$/UCASE\$/LCASE\$/LTRIM\$/RTRIM\$/STRING\$/SPACE\$/SQR/ATN** in one pass.
+Per our workflow: send me the three scripts you want patched (`handle_basic_command`, `evaluate_postfix`, and your function registry `is_function`) and I’ll return **surgical diffs with debug lines** for just those additions.
+

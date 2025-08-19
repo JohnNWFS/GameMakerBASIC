@@ -7,11 +7,11 @@
 
 function basic_array_init(_name, _size) {
     var nm = string_upper(string_trim(_name));
-    show_debug_message("ARRAY_INIT: Initializing " + nm + " with size " + string(_size));
+    if (dbg_on(DBG_FLOW))  show_debug_message("ARRAY_INIT: Initializing " + nm + " with size " + string(_size));
 
     // If the array already exists, destroy its backing list
     if (ds_map_exists(global.basic_arrays, nm)) {
-        show_debug_message("ARRAY_INIT WARNING: Array '" + nm + "' already exists, destroying");
+        if (dbg_on(DBG_FLOW))  show_debug_message("ARRAY_INIT WARNING: Array '" + nm + "' already exists, destroying");
         var old_lst = global.basic_arrays[? nm];
         if (ds_exists(old_lst, ds_type_list)) {
             ds_list_destroy(old_lst);
@@ -22,7 +22,7 @@ function basic_array_init(_name, _size) {
     // Normalize and validate size
     var sz = floor(real(_size));
     if (sz < 0) {
-        show_debug_message("ARRAY_INIT ERROR: Invalid size " + string(sz) + " for " + nm);
+        if (dbg_on(DBG_FLOW))  show_debug_message("ARRAY_INIT ERROR: Invalid size " + string(sz) + " for " + nm);
         return;
     }
 
@@ -33,5 +33,5 @@ function basic_array_init(_name, _size) {
     }
     global.basic_arrays[? nm] = lst;
 
-    show_debug_message("ARRAY_INIT: Created " + nm + " with size " + string(ds_list_size(lst)));
+    if (dbg_on(DBG_FLOW))  show_debug_message("ARRAY_INIT: Created " + nm + " with size " + string(ds_list_size(lst)));
 }

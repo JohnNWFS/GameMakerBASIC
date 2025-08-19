@@ -7,18 +7,18 @@
 
 function basic_array_get(_name, _idx) {
     var nm = string_upper(string_trim(_name));
-    show_debug_message("ARRAY_GET: Accessing " + nm + "[" + string(_idx) + "]");
+    if (dbg_on(DBG_FLOW))  show_debug_message("ARRAY_GET: Accessing " + nm + "[" + string(_idx) + "]");
 
     // Must exist in the map
     if (!ds_map_exists(global.basic_arrays, nm)) {
-        show_debug_message("ARRAY_GET ERROR: Array '" + nm + "' does not exist");
+        if (dbg_on(DBG_FLOW))  show_debug_message("ARRAY_GET ERROR: Array '" + nm + "' does not exist");
         return 0;
     }
 
     // Must be a valid ds_list handle
     var lst = global.basic_arrays[? nm];
     if (!ds_exists(lst, ds_type_list)) {
-        show_debug_message("ARRAY_GET ERROR: '" + nm + "' is not a ds_list");
+        if (dbg_on(DBG_FLOW))  show_debug_message("ARRAY_GET ERROR: '" + nm + "' is not a ds_list");
         return 0;
     }
 
@@ -28,7 +28,7 @@ function basic_array_get(_name, _idx) {
     // Bounds check
     var n = ds_list_size(lst);
     if (idx < 0 || idx >= n) {
-        show_debug_message("ARRAY_GET ERROR: Index " + string(idx) + " out of bounds for " + nm + " (size=" + string(n) + ")");
+        if (dbg_on(DBG_FLOW))  show_debug_message("ARRAY_GET ERROR: Index " + string(idx) + " out of bounds for " + nm + " (size=" + string(n) + ")");
         return 0;
     }
 

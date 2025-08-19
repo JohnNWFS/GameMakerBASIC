@@ -1,7 +1,7 @@
 /// @script infix_to_postfix
 // === BEGIN: infix_to_postfix ===
 function infix_to_postfix(tokens) {
-    show_debug_message("Converting to postfix: " + string(tokens));
+    if (dbg_on(DBG_PARSE)) show_debug_message("Converting to postfix: " + string(tokens));
 
     var output = [];
     var stack  = [];
@@ -26,7 +26,7 @@ function infix_to_postfix(tokens) {
         var t  = tokens[i];        // raw token
         // Ignore commas as separators — functions handle arg order explicitly
         if (t == ",") {
-            show_debug_message("INFIX: Skipping comma token");
+            if (dbg_on(DBG_PARSE)) show_debug_message("INFIX: Skipping comma token");
             continue;
         }
 
@@ -50,7 +50,7 @@ function infix_to_postfix(tokens) {
                 var inner   = "";
                 var matched = false;
 
-                show_debug_message("INFIX: Candidate for array collapse → '" + string(t) + "' followed by '('");
+                if (dbg_on(DBG_PARSE)) show_debug_message("INFIX: Candidate for array collapse → '" + string(t) + "' followed by '('");
 
                 while (j < array_length(tokens)) {
                     var tk = tokens[j];
@@ -70,11 +70,11 @@ function infix_to_postfix(tokens) {
                 if (matched) {
                     var collapsed = string(t) + "(" + inner + ")";
                     array_push(output, collapsed);
-                    show_debug_message("INFIX: Collapsed array read token → '" + collapsed + "' (consumed through index " + string(j) + ")");
+                     if (dbg_on(DBG_PARSE)) show_debug_message("INFIX: Collapsed array read token → '" + collapsed + "' (consumed through index " + string(j) + ")");
                     i = j; // skip to ')'
                     continue;
                 } else {
-                    show_debug_message("INFIX: WARNING — unmatched '(' after '" + string(t) + "'. Not collapsing.");
+                     if (dbg_on(DBG_PARSE)) show_debug_message("INFIX: WARNING — unmatched '(' after '" + string(t) + "'. Not collapsing.");
                 }
             }
         }
@@ -84,7 +84,7 @@ function infix_to_postfix(tokens) {
         // ==========================================================
         if (is_numeric_string(t)) {
             array_push(output, t);
-            show_debug_message("Added number to output: " + string(t));
+             if (dbg_on(DBG_PARSE)) show_debug_message("Added number to output: " + string(t));
             continue;
         }
 
@@ -93,7 +93,7 @@ function infix_to_postfix(tokens) {
         // ==========================================================
         if (ds_map_exists(global.basic_variables, tu)) {
             array_push(output, tu);
-            show_debug_message("Added variable name to output: " + tu);
+             if (dbg_on(DBG_PARSE)) show_debug_message("Added variable name to output: " + tu);
             continue;
         }
 
@@ -102,7 +102,7 @@ function infix_to_postfix(tokens) {
         // ==========================================================
         if (t == "(") {
             array_push(stack, t);
-            show_debug_message("Pushed '(' onto operator stack");
+             if (dbg_on(DBG_PARSE)) show_debug_message("Pushed '(' onto operator stack");
             continue;
         }
 
@@ -113,13 +113,13 @@ function infix_to_postfix(tokens) {
             while (array_length(stack) > 0 && stack[array_length(stack) - 1] != "(") {
                 var popped_close = array_pop(stack);
                 array_push(output, popped_close);
-                show_debug_message("Popped '" + string(popped_close) + "' from stack to output (closing ')')");
+                 if (dbg_on(DBG_PARSE)) show_debug_message("Popped '" + string(popped_close) + "' from stack to output (closing ')')");
             }
             if (array_length(stack) > 0 && stack[array_length(stack) - 1] == "(") {
                 array_pop(stack); // discard '('
-                show_debug_message("Discarded matching '(' from stack");
+                 if (dbg_on(DBG_PARSE)) show_debug_message("Discarded matching '(' from stack");
             } else {
-                show_debug_message("INFIX: WARNING — stray ')' with no matching '('");
+                 if (dbg_on(DBG_PARSE)) show_debug_message("INFIX: WARNING — stray ')' with no matching '('");
             }
             continue;
         }
@@ -128,7 +128,7 @@ function infix_to_postfix(tokens) {
         // 6) OPERATORS (+ - * / % MOD ^ etc.)
         // ==========================================================
         if (is_operator(t)) {
-            show_debug_message("Found operator: " + string(t));
+            if (dbg_on(DBG_PARSE)) show_debug_message("Found operator: " + string(t));
 
             while (array_length(stack) > 0) {
                 var top = stack[array_length(stack) - 1];
@@ -138,14 +138,14 @@ function infix_to_postfix(tokens) {
                 )) {
                     var popped_op = array_pop(stack);
                     array_push(output, popped_op);
-                    show_debug_message("Popped higher/equal precedence operator '" + string(popped_op) + "' to output");
+                     if (dbg_on(DBG_PARSE)) show_debug_message("Popped higher/equal precedence operator '" + string(popped_op) + "' to output");
                 } else {
                     break;
                 }
             }
 
             array_push(stack, t);
-            show_debug_message("Pushed operator '" + string(t) + "' onto stack");
+             if (dbg_on(DBG_PARSE)) show_debug_message("Pushed operator '" + string(t) + "' onto stack");
             continue;
         }
 
@@ -163,14 +163,14 @@ function infix_to_postfix(tokens) {
                 // NAME()
                 if (i + 2 < array_length(tokens) && tokens[i + 1] == "(" && tokens[i + 2] == ")") {
                     array_push(output, fn_name);
-                    show_debug_message("INFIX: Zero-arg fn '" + fn_name + "()' → pushed opcode only");
+                    if (dbg_on(DBG_PARSE)) show_debug_message("INFIX: Zero-arg fn '" + fn_name + "()' → pushed opcode only");
                     i += 2; // consume "()"
                     continue;
                 }
                 // NAME without parentheses
                 if (i + 1 >= array_length(tokens) || tokens[i + 1] != "(") {
                     array_push(output, fn_name);
-                    show_debug_message("INFIX: Zero-arg fn '" + fn_name + "' without '()' → treated as zero-arg");
+                     if (dbg_on(DBG_PARSE)) show_debug_message("INFIX: Zero-arg fn '" + fn_name + "' without '()' → treated as zero-arg");
                     continue;
                 }
                 // If it has '(' but not immediately ')', fall through to generic handling
@@ -206,7 +206,7 @@ function infix_to_postfix(tokens) {
 
                     // Push the function itself
                     array_push(output, fn_name);
-                    show_debug_message("Processed balanced 1-arg function: " + fn_name + "(...)");
+                     if (dbg_on(DBG_PARSE)) show_debug_message("Processed balanced 1-arg function: " + fn_name + "(...)");
 
                     i = jB; // consume up to ')'
                     continue;
@@ -249,7 +249,7 @@ function infix_to_postfix(tokens) {
                             // Empty parens: RND()
                             array_push(output, "1");
                             array_push(output, "RND1");
-                            show_debug_message("Processed empty RND() → default to RND(1)");
+                             if (dbg_on(DBG_PARSE)) show_debug_message("Processed empty RND() → default to RND(1)");
                             i = j;
                             continue;
                         } else if (array_length(arg_tokens) == 1) {
@@ -257,7 +257,7 @@ function infix_to_postfix(tokens) {
                             var inner_post = infix_to_postfix(arg_tokens[0]);
                             _push_all(output, inner_post);
                             array_push(output, "RND1");
-                            show_debug_message("Processed RND(n): " + string(arg_tokens[0]));
+                             if (dbg_on(DBG_PARSE)) show_debug_message("Processed RND(n): " + string(arg_tokens[0]));
                             i = j;
                             continue;
                         } else if (array_length(arg_tokens) == 2) {
@@ -267,19 +267,19 @@ function infix_to_postfix(tokens) {
                             _push_all(output, min_post);
                             _push_all(output, max_post);
                             array_push(output, "RND2");
-                            show_debug_message("Processed RND(min,max): " + string(arg_tokens[0]) + ", " + string(arg_tokens[1]));
+                             if (dbg_on(DBG_PARSE)) show_debug_message("Processed RND(min,max): " + string(arg_tokens[0]) + ", " + string(arg_tokens[1]));
                             i = j;
                             continue;
                         }
                     }
                     // Malformed RND call
-                    show_debug_message("Malformed RND call at token '" + string(t) + "' — passing through");
+                     if (dbg_on(DBG_PARSE)) show_debug_message("Malformed RND call at token '" + string(t) + "' — passing through");
                     array_push(output, t);
                     i = j;
                     continue;
                 } else {
                     // RND without parentheses
-                    show_debug_message("? Function 'RND' used without parentheses. Defaulting to RND(1) behavior.");
+                     if (dbg_on(DBG_PARSE)) show_debug_message("? Function 'RND' used without parentheses. Defaulting to RND(1) behavior.");
                     array_push(output, "1");
                     array_push(output, "RND1");
                     continue;
@@ -293,9 +293,9 @@ function infix_to_postfix(tokens) {
             if (i + 1 >= array_length(tokens) || tokens[i + 1] != "(") {
                 if (_is_zero_arg_fn(fn_name)) {
                     array_push(output, fn_name);
-                    show_debug_message("INFIX: Zero-arg fn '" + fn_name + "' used without '()' → pushed opcode");
+                     if (dbg_on(DBG_PARSE)) show_debug_message("INFIX: Zero-arg fn '" + fn_name + "' used without '()' → pushed opcode");
                 } else {
-                    show_debug_message("? Function '" + string(t) + "' used without parentheses. Defaulting to " + fn_name + "(1) behavior.");
+                     if (dbg_on(DBG_PARSE)) show_debug_message("? Function '" + string(t) + "' used without parentheses. Defaulting to " + fn_name + "(1) behavior.");
                     array_push(output, "1");
                     array_push(output, fn_name);
                 }
@@ -304,7 +304,7 @@ function infix_to_postfix(tokens) {
 
             // Empty parens like REPEAT$()
             if (i + 2 < array_length(tokens) && tokens[i + 1] == "(" && tokens[i + 2] == ")") {
-                show_debug_message("Function " + fn_name + "() with no args not supported (non-RND) — passing token through");
+                 if (dbg_on(DBG_PARSE)) show_debug_message("Function " + fn_name + "() with no args not supported (non-RND) — passing token through");
                 array_push(output, t);
                 i += 2;
                 continue;
@@ -312,7 +312,7 @@ function infix_to_postfix(tokens) {
 
             // REPEAT$(s, n) — exactly 2 args (simple positional form)
             if (fn_name == "REPEAT$") {
-                show_debug_message("REPEAT$ DEBUG: i=" + string(i) + ", total=" + string(array_length(tokens)));
+                 if (dbg_on(DBG_PARSE)) show_debug_message("REPEAT$ DEBUG: i=" + string(i) + ", total=" + string(array_length(tokens)));
                 if (i + 5 < array_length(tokens)
                 &&  tokens[i + 1] == "("
                 &&  tokens[i + 3] == ","
@@ -323,10 +323,10 @@ function infix_to_postfix(tokens) {
                     array_push(output, rq1);
                     array_push(output, rq2);
                     array_push(output, fn_name);
-                    show_debug_message("Processed REPEAT$(s,n): args = " + string(rq1) + ", " + string(rq2));
+                     if (dbg_on(DBG_PARSE)) show_debug_message("Processed REPEAT$(s,n): args = " + string(rq1) + ", " + string(rq2));
                     i += 5;
                 } else {
-                    show_debug_message("Malformed REPEAT$ call starting at token '" + string(t) + "'");
+                     if (dbg_on(DBG_PARSE)) show_debug_message("Malformed REPEAT$ call starting at token '" + string(t) + "'");
                     array_push(output, t);
                 }
                 continue;
@@ -334,7 +334,7 @@ function infix_to_postfix(tokens) {
 
             // MID$(s, start, len) — 3 args
             if (fn_name == "MID$") {
-                show_debug_message("MID$ DEBUG: i=" + string(i) + ", total tokens=" + string(array_length(tokens)));
+                 if (dbg_on(DBG_PARSE)) show_debug_message("MID$ DEBUG: i=" + string(i) + ", total tokens=" + string(array_length(tokens)));
                 if (i + 7 < array_length(tokens)
                 &&  tokens[i + 1] == "("
                 &&  tokens[i + 3] == ","
@@ -348,10 +348,10 @@ function infix_to_postfix(tokens) {
                     array_push(output, ma2);
                     array_push(output, ma3);
                     array_push(output, fn_name);
-                    show_debug_message("Processed MID$(s,start,len): " + string(ma1) + ", " + string(ma3));
+                     if (dbg_on(DBG_PARSE)) show_debug_message("Processed MID$(s,start,len): " + string(ma1) + ", " + string(ma3));
                     i += 7;
                 } else {
-                    show_debug_message("Malformed MID$ call starting at token '" + string(t) + "'");
+                     if (dbg_on(DBG_PARSE)) show_debug_message("Malformed MID$ call starting at token '" + string(t) + "'");
                     array_push(output, t);
                 }
                 continue;
@@ -369,13 +369,13 @@ function infix_to_postfix(tokens) {
                 array_push(output, la1);
                 array_push(output, la2);
                 array_push(output, fn_name);
-                show_debug_message("Processed " + fn_name + "(arg1,arg2): " + string(la1) + ", " + string(la2));
+                 if (dbg_on(DBG_PARSE)) show_debug_message("Processed " + fn_name + "(arg1,arg2): " + string(la1) + ", " + string(la2));
                 i += 5;
                 continue;
             }
 
             // Fallback: malformed function call
-            show_debug_message("Malformed function call: " + string(t));
+             if (dbg_on(DBG_PARSE)) show_debug_message("Malformed function call: " + string(t));
             array_push(output, t);
             continue;
         }
@@ -383,7 +383,7 @@ function infix_to_postfix(tokens) {
         // ==========================================================
         // 8) UNKNOWN TOKEN — pass through (evaluator often tolerates)
         // ==========================================================
-        show_debug_message("Unknown token, adding to output: " + string(t));
+         if (dbg_on(DBG_PARSE)) show_debug_message("Unknown token, adding to output: " + string(t));
         array_push(output, t);
     }
 
@@ -393,10 +393,10 @@ function infix_to_postfix(tokens) {
     while (array_length(stack) > 0) {
         var tail = array_pop(stack);
         array_push(output, tail);
-        show_debug_message("Drained operator stack → appended '" + string(tail) + "'");
+         if (dbg_on(DBG_PARSE)) show_debug_message("Drained operator stack → appended '" + string(tail) + "'");
     }
 
-    show_debug_message("Final postfix: " + string(output));
+     if (dbg_on(DBG_PARSE)) show_debug_message("Final postfix: " + string(output));
     return output;
 }
 // === END: infix_to_postfix ===
@@ -411,11 +411,11 @@ function infix_to_postfix(tokens) {
 
 function evaluate_postfix(postfix) {
     var stack = [];
-    show_debug_message("Evaluating postfix: " + string(postfix));
+    if (dbg_on(DBG_PARSE)) show_debug_message("Evaluating postfix: " + string(postfix));
 
     for (var i = 0; i < array_length(postfix); i++) {
         var token = postfix[i];
-        show_debug_message("POSTFIX: Processing token [" + string(i) + "] → " + string(token));
+        if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: Processing token [" + string(i) + "] → " + string(token));
 
         // Normalize once
         var trimmed     = string_trim(string(token));
@@ -425,7 +425,7 @@ function evaluate_postfix(postfix) {
         // Ignore commas completely (arg separators, never values)
         // -------------------------------------------------------
         if (trimmed == ",") {
-            show_debug_message("POSTFIX: Ignoring stray comma token");
+            if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: Ignoring stray comma token");
             continue;
         }
 
@@ -442,17 +442,17 @@ function evaluate_postfix(postfix) {
                 var arrName = arrNameU; // arrays stored uppercase in helpers
                 var idxText = string_trim(idxTextRaw);
 
-                show_debug_message("POSTFIX[ARRAY]: Candidate '" + string(token) + "' → name='" + arrName + "', idxText='" + idxText + "'");
+                if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX[ARRAY]: Candidate '" + string(token) + "' → name='" + arrName + "', idxText='" + idxText + "'");
 
                 var idxVal = basic_evaluate_expression_v2(idxText);
                 if (!is_real(idxVal)) {
-                    show_debug_message("POSTFIX[ARRAY] ERROR: Index non-numeric from '" + idxText + "' → '" + string(idxVal) + "'. Pushing 0.");
+                    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX[ARRAY] ERROR: Index non-numeric from '" + idxText + "' → '" + string(idxVal) + "'. Pushing 0.");
                     array_push(stack, 0);
                     continue;
                 }
 
                 var arrVal = basic_array_get(arrName, idxVal); // your 1-based getter
-                show_debug_message("POSTFIX[ARRAY]: " + arrName + "(" + string(idxVal) + ") → " + string(arrVal));
+                if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX[ARRAY]: " + arrName + "(" + string(idxVal) + ") → " + string(arrVal));
                 array_push(stack, arrVal);
                 continue;
             }
@@ -464,7 +464,7 @@ function evaluate_postfix(postfix) {
         if (is_numeric_string(trimmed)) {
             var num = real(trimmed);
             array_push(stack, num);
-            show_debug_message("POSTFIX: Pushed number → " + string(num));
+            if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: Pushed number → " + string(num));
             continue;
         }
 
@@ -478,7 +478,7 @@ function evaluate_postfix(postfix) {
             var str = string_copy(trimmed, 2, string_length(trimmed) - 2);
             str = string_replace_all(str, "\"\"", "\"");  // unescape "" -> "
             array_push(stack, str);
-            if (dbg_on(DBG_FLOW)) show_debug_message("POSTFIX: Pushed quoted string literal → " + str);
+            if (dbg_on(DBG_FLOW)) if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: Pushed quoted string literal → " + str);
             continue;
         }
 
@@ -487,7 +487,7 @@ function evaluate_postfix(postfix) {
         // -------------------------------------------------------
         if (is_operator(token_upper)) {
             if (array_length(stack) < 2) {
-                show_debug_message("? POSTFIX ERROR: Not enough operands for operator " + token_upper);
+                if (dbg_on(DBG_PARSE)) show_debug_message("? POSTFIX ERROR: Not enough operands for operator " + token_upper);
                 return 0;
             }
             var b = array_pop(stack);
@@ -523,12 +523,12 @@ function evaluate_postfix(postfix) {
                     if (is_string(b)) b = real(b);
                     result = power(a, b); break;
                 default:
-                    show_debug_message("? POSTFIX WARNING: Unknown operator = " + token_upper + " → 0");
+                    if (dbg_on(DBG_PARSE)) show_debug_message("? POSTFIX WARNING: Unknown operator = " + token_upper + " → 0");
                     result = 0; break;
             }
 
             array_push(stack, result);
-            show_debug_message("POSTFIX: Operator result (" + token_upper + ") = " + string(result));
+            if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: Operator result (" + token_upper + ") = " + string(result));
             continue;
         }
 
@@ -537,7 +537,7 @@ function evaluate_postfix(postfix) {
         // -------------------------------------------------------
         if (is_function(token_upper)) {
             token_upper = string_upper(string_trim(token));
-            show_debug_message("POSTFIX: Dispatching function → '" + token_upper + "'");
+            if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: Dispatching function → '" + token_upper + "'");
 
             switch (token_upper) {
                 // ---- Random
@@ -546,7 +546,7 @@ function evaluate_postfix(postfix) {
                     if (n <= 0) n = 1;
                     var r1 = irandom(n - 1) + 1;
                     array_push(stack, r1);
-                    show_debug_message("POSTFIX: RND1(" + string(n) + ") → " + string(r1));
+                    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: RND1(" + string(n) + ") → " + string(r1));
                     break;
                 }
                 case "RND2": {
@@ -577,7 +577,7 @@ function evaluate_postfix(postfix) {
                     } else {
                         var result = irandom_range(min_val, max_val);
                         array_push(stack, result);
-                        show_debug_message("POSTFIX: RND2(" + string(min_val) + "," + string(max_val) + ") → " + string(result));
+                        if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: RND2(" + string(min_val) + "," + string(max_val) + ") → " + string(result));
                     }
                     break;
                 }
@@ -586,7 +586,7 @@ function evaluate_postfix(postfix) {
                 case "TIMER": {
                     var secs = floor(current_time / 1000); // ms → seconds since game start
                     array_push(stack, secs);
-                    show_debug_message("FUNC: TIMER → " + string(secs));
+                    if (dbg_on(DBG_PARSE)) show_debug_message("FUNC: TIMER → " + string(secs));
                     break;
                 }
                 case "TIME$": {
@@ -600,7 +600,7 @@ function evaluate_postfix(postfix) {
                     var sss = (ss < 10 ? "0" : "") + string(ss);
                     var out = hhs + ":" + mms + ":" + sss;
                     array_push(stack, out);
-                    show_debug_message("FUNC: TIME$ → " + out);
+                    if (dbg_on(DBG_PARSE)) show_debug_message("FUNC: TIME$ → " + out);
                     break;
                 }
                 case "DATE$": {
@@ -613,7 +613,7 @@ function evaluate_postfix(postfix) {
                     var dds = (dd < 10 ? "0" : "") + string(dd);
                     var out2 = string(yy) + "-" + mos + "-" + dds;
                     array_push(stack, out2);
-                    show_debug_message("FUNC: DATE$ → " + out2);
+                    if (dbg_on(DBG_PARSE)) show_debug_message("FUNC: DATE$ → " + out2);
                     break;
                 }
 				
@@ -627,9 +627,9 @@ case "INKEY$": {
         result = global.basic_variables[? "__INKEY_RESULT"];
         // Clear the result after reading it
         ds_map_delete(global.basic_variables, "__INKEY_RESULT");
-        show_debug_message("INKEY$ function: Returning stored result '" + result + "'");
+        if (dbg_on(DBG_PARSE)) show_debug_message("INKEY$ function: Returning stored result '" + result + "'");
     } else {
-        show_debug_message("INKEY$ function: No stored result, returning empty");
+        if (dbg_on(DBG_PARSE)) show_debug_message("INKEY$ function: No stored result, returning empty");
     }
     
     array_push(stack, result);
@@ -652,7 +652,7 @@ case "INKEY$": {
                     var vsgn = safe_real_pop(stack);
                     var sgnv = (vsgn > 0) - (vsgn < 0);
                     array_push(stack, sgnv);
-                    show_debug_message("POSTFIX: SGN(" + string(vsgn) + ") → " + string(sgnv));
+                    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: SGN(" + string(vsgn) + ") → " + string(sgnv));
                     break;
                 }
 
@@ -666,14 +666,14 @@ case "INKEY$": {
                     var vstr = safe_real_pop(stack);
                     var s = string(vstr);
                     array_push(stack, s);
-                    show_debug_message("POSTFIX: STR$ → " + s);
+                    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: STR$ → " + s);
                     break;
                 }
                 case "CHR$": {
                     var cv = safe_real_pop(stack);
                     var c  = chr(cv);
                     array_push(stack, c);
-                    show_debug_message("POSTFIX: CHR$ → " + c);
+                    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: CHR$ → " + c);
                     break;
                 }
 
@@ -690,7 +690,7 @@ case "INKEY$": {
                     var outrep = "";
                     repeat (nrep) outrep += srep;
                     array_push(stack, outrep);
-                    show_debug_message("POSTFIX: REPEAT$('"+srep+"', "+string(nrep)+") → len="+string(string_length(outrep)));
+                    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: REPEAT$('"+srep+"', "+string(nrep)+") → len="+string(string_length(outrep)));
                     break;
                 }
 
@@ -701,7 +701,7 @@ case "INKEY$": {
 
                     var outleft = (nleft <= 0) ? "" : string_copy(sleft, 1, nleft);
                     array_push(stack, outleft);
-                    show_debug_message("POSTFIX: LEFT$('"+sleft+"', "+string(nleft)+") → '"+outleft+"'");
+                    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: LEFT$('"+sleft+"', "+string(nleft)+") → '"+outleft+"'");
                     break;
                 }
 
@@ -714,7 +714,7 @@ case "INKEY$": {
                     var start = max(1, lenr - nright + 1);
                     var outright = (nright <= 0) ? "" : string_copy(sright, start, nright);
                     array_push(stack, outright);
-                    show_debug_message("POSTFIX: RIGHT$('"+sright+"', "+string(nright)+") → '"+outright+"'");
+                    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: RIGHT$('"+sright+"', "+string(nright)+") → '"+outright+"'");
                     break;
                 }
 
@@ -731,12 +731,12 @@ case "INKEY$": {
                         outm = string_copy(strm, smid, lmid);
                     }
                     array_push(stack, outm);
-                    show_debug_message("POSTFIX: MID$('"+strm+"', "+string(smid)+", "+string(lmid)+") → '"+outm+"'");
+                    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: MID$('"+strm+"', "+string(smid)+", "+string(lmid)+") → '"+outm+"'");
                     break;
                 }
 
                 default:
-                    show_debug_message("? POSTFIX WARNING: Unknown function = " + token_upper + " — pushing last real as fallback");
+                    if (dbg_on(DBG_PARSE)) show_debug_message("? POSTFIX WARNING: Unknown function = " + token_upper + " — pushing last real as fallback");
                     array_push(stack, safe_real_pop(stack));
                     break;
             }
@@ -762,7 +762,7 @@ case "INKEY$": {
             }
 
             array_push(stack, vv);
-            show_debug_message("POSTFIX: Loaded variable " + token_upper + " = " + string(vv));
+            if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: Loaded variable " + token_upper + " = " + string(vv));
             continue;
         }
 
@@ -770,7 +770,7 @@ case "INKEY$": {
         // Fallback: push as string literal (unknown token)
         // -------------------------------------------------------
         array_push(stack, trimmed);
-        show_debug_message("POSTFIX: Pushed fallback string → " + trimmed);
+        if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: Pushed fallback string → " + trimmed);
     }
 
     return (array_length(stack) > 0) ? stack[array_length(stack) - 1] : 0;
@@ -778,9 +778,18 @@ case "INKEY$": {
 
 // === BEGIN: obj_basic_interpreter.Step ===
 // obj_basic_interpreter → Step Event
+
+// Add this at the very start of obj_basic_interpreter Step event for debugging
+/*if (keyboard_check_pressed(vk_enter)) {
+    show_debug_message("ENTER pressed - pause_in_effect: " + string(global.pause_in_effect) + 
+                      ", awaiting_input: " + string(global.awaiting_input) + 
+                      ", pause_mode: " + string(global.pause_mode));
+}*/
+
+
 global.dbg_frame_count = 0;
 if (global.dbg_dropped_count > 0) {
-    show_debug_message("DBG: dropped " + string(global.dbg_dropped_count) + " lines this frame");
+    if (dbg_on(DBG_PERF)) show_debug_message("DBG: dropped " + string(global.dbg_dropped_count) + " lines this frame");
     global.dbg_dropped_count = 0;
 }
 
@@ -820,11 +829,15 @@ if (global.program_has_ended) {
 // ==============================
 if (global.awaiting_input) {
     if (global.pause_mode) {
-        if (keyboard_check_pressed(vk_enter)) {
+        if (keyboard_check_pressed(vk_enter) || keyboard_check_pressed(vk_escape)) {
+          if (dbg_on(DBG_FLOW))   show_debug_message("PAUSE: ENTER/ESC detected, resuming...");
             global.awaiting_input = false;
             global.pause_mode = false;
+            global.pause_in_effect = false;
             global.input_target_var = "";
             global.interpreter_input = "";
+			//
+			global.interpreter_resume_stmt_index = global.interpreter_current_stmt_index + 1;
         }
     } else {
         for (var _k = 32; _k <= 126; _k++) if (keyboard_check_pressed(_k)) handle_interpreter_character_input(_k);
@@ -871,7 +884,7 @@ global.interpreter_current_line_index = line_index;
 // CHANGED: prefer legacy line jump (GOSUB/GOTO) over statement-level resume,
 // and CLEAR any pending statement-level flags when legacy wins.
 if (global.interpreter_next_line >= 0) {
-    show_debug_message("IFJUMP: legacy line jump wins → line=" + string(global.interpreter_next_line));
+   if (dbg_on(DBG_FLOW))  show_debug_message("IFJUMP: legacy line jump wins → line=" + string(global.interpreter_next_line));
     line_index = global.interpreter_next_line;
     global.interpreter_current_line_index = global.interpreter_next_line;
     global.interpreter_resume_stmt_index = 0;
@@ -883,7 +896,7 @@ if (global.interpreter_next_line >= 0) {
 
     global.interpreter_next_line = -1;
 } else if (global.interpreter_use_stmt_jump && global.interpreter_target_line >= 0) {
-    show_debug_message("IFJUMP: using statement-level jump → line=" + string(global.interpreter_target_line) + ", stmt=" + string(global.interpreter_target_stmt));
+   if (dbg_on(DBG_FLOW))  show_debug_message("IFJUMP: using statement-level jump → line=" + string(global.interpreter_target_line) + ", stmt=" + string(global.interpreter_target_stmt));
     line_index = global.interpreter_target_line;
     global.interpreter_current_line_index = global.interpreter_target_line;
     global.interpreter_resume_stmt_index = max(0, global.interpreter_target_stmt);
@@ -911,12 +924,12 @@ if (line_index < ds_list_size(global.line_list)) {
     var parts   = split_on_unquoted_colons(trimmed);
 
     global.current_line_number = line_number;
-    show_debug_message("Running line " + string(line_number));
+    if (dbg_on(DBG_FLOW)) show_debug_message("Running line " + string(line_number));
 
     var _start_stmt = 0;
     if (global.interpreter_resume_stmt_index > 0) {
         _start_stmt = global.interpreter_resume_stmt_index;
-        show_debug_message("Resuming at statement index " + string(_start_stmt)
+       if (dbg_on(DBG_FLOW)) show_debug_message("Resuming at statement index " + string(_start_stmt)
             + " on line " + string(line_number));
         global.interpreter_resume_stmt_index = 0;
     }
@@ -932,7 +945,7 @@ if (line_index < ds_list_size(global.line_list)) {
         // REM / apostrophe: stop the *physical line*
         if (cmd2 == "REM" || string_char_at(stmt, 1) == "'") {
             if (dbg_on(DBG_FLOW)) {
-                show_debug_message("REM/' : stop parsing remainder of line "
+               show_debug_message("REM/' : stop parsing remainder of line "
                     + string(line_number) + " at part " + string(p) + "/"
                     + string(array_length(parts) - 1));
             }
@@ -947,20 +960,20 @@ if (line_index < ds_list_size(global.line_list)) {
 
         global.interpreter_current_stmt_index = p;
 
-        show_debug_message("Command: " + cmd2 + " | Arg: " + arg2);
+        if (dbg_on(DBG_FLOW)) show_debug_message("Command: " + cmd2 + " | Arg: " + arg2);
         handle_basic_command(cmd2, arg2);
 
         // --- If a pause was armed (e.g., LET ... = INKEY$), stop RIGHT HERE ---
         if (global.pause_in_effect) {
             global.interpreter_resume_stmt_index = p; // retry this colon slot next frame
-            show_debug_message("PAUSE: engaged during statement; will retry stmt index " + string(p) + " next frame");
+            if (dbg_on(DBG_FLOW)) show_debug_message("PAUSE: engaged during statement; will retry stmt index " + string(p) + " next frame");
             break;
         }
 
         // CHANGED ORDER: prefer legacy line jump break over statement-level break,
         // and when legacy is present, also clear any stale statement-level jump flags.
         if (global.interpreter_next_line >= 0) {
-            show_debug_message("IFJUMP: breaking line loop for LEGACY LINE jump");
+            if (dbg_on(DBG_FLOW)) show_debug_message("IFJUMP: breaking line loop for LEGACY LINE jump");
             // --- NEW: clear statement-level flags so they don't redirect after the target line executes
             global.interpreter_use_stmt_jump = false;
             global.interpreter_target_line   = -1;
@@ -968,7 +981,7 @@ if (line_index < ds_list_size(global.line_list)) {
             break;
         }
         if (global.interpreter_use_stmt_jump && global.interpreter_target_line >= 0) {
-            show_debug_message("IFJUMP: breaking line loop for STATEMENT-LEVEL jump request");
+            if (dbg_on(DBG_FLOW)) show_debug_message("IFJUMP: breaking line loop for STATEMENT-LEVEL jump request");
             break;
         }
     }
@@ -1016,6 +1029,239 @@ if (global.pause_in_effect && global.inkey_mode) {
     handle_inkey_input();
 }
 // === END: obj_basic_interpreter.Step ===
+
+/// @function handle_basic_command(cmd, arg)
+/// @description Routes BASIC commands (and multiple colon-separated statements) to the correct functions
+function handle_basic_command(cmd, arg) {
+    // Rebuild the full statement (so we catch any colons in the original)
+    var full = string_trim(cmd + (string_length(arg) ? " " + arg : ""));
+
+    // Split on unquoted, top-level colons.
+    var parts = split_on_unquoted_colons(full);
+
+    // Dispatch each sub-statement in turn
+    for (var i = 0; i < array_length(parts); i++) {
+        var stmt = string_trim(parts[i]);
+        if (stmt == "") continue;
+
+        if (dbg_on(DBG_FLOW)) show_debug_message("DISPATCH PART: " + stmt);
+
+        // Strip any trailing REM (apostrophe handled inside)
+        stmt = strip_basic_remark(stmt);
+
+        // Pull off the verb vs. the rest
+        var sp = string_pos(" ", stmt);
+        var _verb, _rest;
+        if (sp > 0) {
+            _verb = string_upper(string_copy(stmt, 1, sp - 1));
+            _rest = string_trim(string_copy(stmt, sp + 1, string_length(stmt)));
+        } else {
+            _verb = string_upper(stmt);
+            _rest = "";
+        }
+
+
+
+
+// ---------- SYNTAX GUARD: INKEY$ misuse (quote-aware) ----------
+{
+    var _src  = stmt;                      // stmt already had remarks stripped
+    var _len  = string_length(_src);
+    var _up   = string_upper(_src);
+
+    var inq = false;       // inside "..."
+    var i   = 1;
+    var found_inkey = false;
+    var eq_pos = 0;        // first '=' found outside quotes
+
+    while (i <= _len) {
+        var ch = string_char_at(_src, i);
+
+        // Handle quotes and escaped quotes
+        if (ch == "\"") {
+            // Check for escaped quote "" inside strings
+            if (i < _len && string_char_at(_src, i + 1) == "\"") {
+                i += 2;    // skip escaped quote pair
+                continue;
+            }
+            inq = !inq;    // toggle quote state
+            i++;
+            continue;
+        }
+
+        // Only process characters outside quotes
+        if (!inq) {
+            if (eq_pos == 0 && ch == "=") eq_pos = i;
+
+            // Detect INKEY$ outside quotes - fixed the boundary check
+            if (i + 5 <= _len && string_copy(_up, i, 6) == "INKEY$") {
+                found_inkey = true;
+                break;
+            }
+        }
+
+        i++;
+    }
+
+    if (found_inkey) {
+        // Allow only: LET ... = INKEY$  or implicit  NAME = INKEY$
+        var implicit_assign = false;
+        if (eq_pos > 0) {
+            var lhs = string_trim(string_copy(_src, 1, eq_pos - 1));
+            if (string_length(lhs) > 0) {
+                var h  = string_upper(string_char_at(lhs, 1));
+                var oc = ord(h);
+                if (oc >= 65 && oc <= 90) implicit_assign = true;  // starts with A..Z
+            }
+        }
+
+        if (!(_verb == "LET" || implicit_assign)) {
+            basic_syntax_error(
+                "INKEY$ may only appear on the right side of an assignment like  K$ = INKEY$",
+                global.current_line_number,
+                global.interpreter_current_stmt_index,
+                "INKEY_MISUSE"
+            );
+            return;
+        }
+    }
+}
+// ---------- END SYNTAX GUARD ----------
+
+
+
+
+
+
+
+// Guard: IF must contain THEN in the same statement
+if (_verb == "IF" && string_pos("THEN", string_upper(_rest)) <= 0) {
+    basic_syntax_error(
+        "IF requires THEN",
+        /* line_no */ undefined, // let basic_syntax_error compute via basic_current_line_no()
+        /* stmt_idx */ global.interpreter_current_stmt_index,
+		"IF REQUIRES THEN"
+    );
+    return;
+}
+
+
+        // === INLINE IF COLLAPSE (also catches malformed inline IF without THEN) ===
+        if (_verb == "IF") {
+            // Reconstruct the original physical line from the dispatcher’s position
+            var line_idx   = global.interpreter_current_line_index; // set by Step
+            var line_no    = global.line_list[| line_idx];
+            var src_line   = ds_map_find_value(global.program_map, line_no);
+            var parts_full = split_on_unquoted_colons(string_trim(src_line));
+
+            // Build the remainder of this physical line from the current colon slot
+            var p         = global.interpreter_current_stmt_index;  // set by Step
+            var remainder = parts_full[p];
+            for (var t = p + 1; t < array_length(parts_full); t++) {
+                remainder += ":" + parts_full[t];
+            }
+
+            // Text after the "IF" keyword
+            var after_if = string_trim(string_copy(remainder, 3, max(0, string_length(remainder) - 2)));
+            var up_after = string_upper(after_if);
+
+var has_then           = (string_pos("THEN", up_after) > 0);
+var has_colon_tail     = (string_pos(":", remainder) > 0);
+var has_action_no_then = (!has_then && string_length(after_if) > 0);
+
+// Check if there's content after THEN
+var has_content_after_then = false;
+if (has_then) {
+    var then_pos = string_pos("THEN", up_after);
+    var after_then = string_trim(string_copy(after_if, then_pos + 4, string_length(after_if)));
+    has_content_after_then = (string_length(after_then) > 0);
+}
+
+// Decide: inline vs. structured block IF…ENDIF
+if (has_content_after_then || has_colon_tail || has_action_no_then) {
+                // Inline: feed the whole thing to the inline handler
+                var arg_full = remainder;
+                var up_rem   = string_upper(string_trim(remainder));
+                if (string_copy(up_rem, 1, 2) == "IF") {
+                    arg_full = string_trim(string_copy(remainder, 3, string_length(remainder) - 2));
+                }
+
+                if (dbg_on(DBG_FLOW)) show_debug_message("COMMAND DISPATCH (collapsed IF): IF | ARG: " + arg_full);
+                basic_cmd_if_inline(arg_full);
+
+                // If the inline handler halted with an error, don't synthesize a jump
+                if (global.program_has_ended || !global.interpreter_running) {
+                    break; // stop dispatching; Step will show the error/end screen
+                }
+
+                // Otherwise, consume the rest of this physical line so Step won’t re-run it
+                global.interpreter_use_stmt_jump = true;
+                global.interpreter_target_line   = line_idx;
+                global.interpreter_target_stmt   = array_length(parts_full); // end-of-line slot
+                break;
+            }
+            // Else fall-through to the structured IF handler below.
+        }
+
+        if (dbg_on(DBG_FLOW)) show_debug_message("COMMAND DISPATCH: " + _verb + " | ARG: " + _rest);
+
+        switch (_verb) {
+            case "PRINT":     basic_cmd_print(_rest, global.current_line_number); break;
+            case "LET":       basic_cmd_let(_rest); break;
+            case "GOTO":      basic_cmd_goto(_rest); break;
+            case "INPUT":     basic_cmd_input(_rest); break;
+            case "COLOR":     basic_cmd_color(_rest); break;
+            case "CLS":       basic_cmd_cls(); break;
+
+            // Structured control flow (multi-line)
+            case "IF":        basic_cmd_if(_rest); break;
+            case "ELSEIF":    basic_cmd_elseif(_rest); break;
+            case "ELSE":      basic_cmd_else(); break;
+            case "ENDIF":     basic_cmd_endif(); break;
+
+            case "FOR":       basic_cmd_for(_rest); break;
+            case "NEXT":      basic_cmd_next(_rest); break;
+            case "WHILE":     basic_cmd_while(_rest); break;
+            case "WEND":      basic_cmd_wend(); break;
+
+            case "GOSUB":     basic_cmd_gosub(_rest); break;
+            case "RETURN":    basic_cmd_return(); break;
+
+            case "BGCOLOR":   basic_cmd_bgcolor(_rest); break;
+            case "PAUSE":     basic_cmd_pause(); break;
+            case "MODE":      basic_cmd_mode(_rest); break;
+            case "CLSCHAR":   basic_cmd_clschar(_rest); break;
+            case "PSET":      basic_cmd_pset(_rest); break;
+            case "CHARAT":    basic_cmd_charat(_rest); break;
+            case "PRINTAT":   basic_cmd_printat(_rest); break;
+            case "FONT":      basic_cmd_font(_rest); break;
+            case "DIM":       basic_cmd_dim(_rest); break; // 1-D arrays
+
+            case "END":       basic_cmd_end(); break;
+
+            case "REM":
+                // no-op
+                break;
+
+            case "DATA":
+                // Runtime no-op (DATA was harvested at load time)
+                if (dbg_on(DBG_FLOW)) show_debug_message("DATA (runtime): no-op");
+                break;
+
+            case "READ":      basic_cmd_read(_rest); break;
+            case "RESTORE":   basic_cmd_restore(_rest); break;
+
+            default:
+                // implicit LET?  e.g.  "X = 5"
+                if (string_pos("=", _verb + " " + _rest) > 0) {
+                    basic_cmd_let(_verb + " " + _rest);
+                } else {
+                    basic_show_message("UNKNOWN COMMAND: " + _verb);
+                }
+                break;
+        }
+    }
+}
 
 function basic_evaluate_condition(expr) {
     var s = string_trim(expr);
@@ -1220,229 +1466,6 @@ function basic_evaluate_condition(expr) {
     return _truth;
 }
 
-/// @function handle_basic_command(cmd, arg)
-/// @description Routes BASIC commands (and multiple colon-separated statements) to the correct functions
-function handle_basic_command(cmd, arg) {
-    // Rebuild the full statement (so we catch any colons in the original)
-    var full = string_trim(cmd + (string_length(arg) ? " " + arg : ""));
-
-    // Split on unquoted, top-level colons.
-    var parts = split_on_unquoted_colons(full);
-
-    // Dispatch each sub-statement in turn
-    for (var i = 0; i < array_length(parts); i++) {
-        var stmt = string_trim(parts[i]);
-        if (stmt == "") continue;
-
-        show_debug_message("DISPATCH PART: " + stmt);
-
-        // Strip any trailing REM (apostrophe handled inside)
-        stmt = strip_basic_remark(stmt);
-
-        // Pull off the verb vs. the rest
-        var sp = string_pos(" ", stmt);
-        var _verb, _rest;
-        if (sp > 0) {
-            _verb = string_upper(string_copy(stmt, 1, sp - 1));
-            _rest = string_trim(string_copy(stmt, sp + 1, string_length(stmt)));
-        } else {
-            _verb = string_upper(stmt);
-            _rest = "";
-        }
-
-
-
-
-// ---------- SYNTAX GUARD: INKEY$ misuse (quote-aware) ----------
-{
-    var _src  = stmt;                      // stmt already had remarks stripped
-    var _len  = string_length(_src);
-    var _up   = string_upper(_src);
-
-    var inq = false;       // inside "..."
-    var i   = 1;
-    var found_inkey = false;
-    var eq_pos = 0;        // first '=' found outside quotes
-
-    while (i <= _len) {
-        var ch = string_char_at(_src, i);
-
-        // Toggle for quotes, support doubled quotes "" inside strings
-        if (ch == "\"") {
-            if (i < _len && string_char_at(_src, i + 1) == "\"") {
-                i += 2;    // skip escaped quote
-                continue;
-            }
-            inq = !inq;
-            i++;
-            continue;
-        }
-
-        if (!inq) {
-            if (eq_pos == 0 && ch == "=") eq_pos = i;
-
-            // Detect INKEY$ outside quotes
-            if (i + 5 <= _len && string_copy(_up, i, 6) == "INKEY$") {
-                found_inkey = true;
-                break;
-            }
-        }
-
-        i++;
-    }
-
-    if (found_inkey) {
-        // Allow only: LET ... = INKEY$  or implicit  NAME = INKEY$
-        var implicit_assign = false;
-        if (eq_pos > 0) {
-            var lhs = string_trim(string_copy(_src, 1, eq_pos - 1));
-            if (string_length(lhs) > 0) {
-                var h  = string_upper(string_char_at(lhs, 1));
-                var oc = ord(h);
-                if (oc >= 65 && oc <= 90) implicit_assign = true;  // starts with A..Z
-            }
-        }
-
-        if (!(_verb == "LET" || implicit_assign)) {
-            basic_syntax_error(
-                "INKEY$ may only appear on the right side of an assignment like  K$ = INKEY$",
-                global.current_line_number,
-                global.interpreter_current_stmt_index,
-                "INKEY_MISUSE"
-            );
-            return;
-        }
-    }
-}
-// ---------- END SYNTAX GUARD ----------
-
-
-
-
-
-
-
-// Guard: IF must contain THEN in the same statement
-if (_verb == "IF" && string_pos("THEN", string_upper(_rest)) <= 0) {
-    basic_syntax_error(
-        "IF requires THEN",
-        /* line_no */ undefined, // let basic_syntax_error compute via basic_current_line_no()
-        /* stmt_idx */ global.interpreter_current_stmt_index,
-		"IF REQUIRES THEN"
-    );
-    return;
-}
-
-
-        // === INLINE IF COLLAPSE (also catches malformed inline IF without THEN) ===
-        if (_verb == "IF") {
-            // Reconstruct the original physical line from the dispatcher’s position
-            var line_idx   = global.interpreter_current_line_index; // set by Step
-            var line_no    = global.line_list[| line_idx];
-            var src_line   = ds_map_find_value(global.program_map, line_no);
-            var parts_full = split_on_unquoted_colons(string_trim(src_line));
-
-            // Build the remainder of this physical line from the current colon slot
-            var p         = global.interpreter_current_stmt_index;  // set by Step
-            var remainder = parts_full[p];
-            for (var t = p + 1; t < array_length(parts_full); t++) {
-                remainder += ":" + parts_full[t];
-            }
-
-            // Text after the "IF" keyword
-            var after_if = string_trim(string_copy(remainder, 3, max(0, string_length(remainder) - 2)));
-            var up_after = string_upper(after_if);
-
-            var has_then           = (string_pos("THEN", up_after) > 0);
-            var has_colon_tail     = (string_pos(":", remainder) > 0);
-            var has_action_no_then = (!has_then && string_length(after_if) > 0); // e.g., IF X=1 PRINT "NO THEN"
-
-            // Decide: inline vs. structured block IF…ENDIF
-            if (has_then || has_colon_tail || has_action_no_then) {
-                // Inline: feed the whole thing to the inline handler
-                var arg_full = remainder;
-                var up_rem   = string_upper(string_trim(remainder));
-                if (string_copy(up_rem, 1, 2) == "IF") {
-                    arg_full = string_trim(string_copy(remainder, 3, string_length(remainder) - 2));
-                }
-
-                show_debug_message("COMMAND DISPATCH (collapsed IF): IF | ARG: " + arg_full);
-                basic_cmd_if_inline(arg_full);
-
-                // If the inline handler halted with an error, don't synthesize a jump
-                if (global.program_has_ended || !global.interpreter_running) {
-                    break; // stop dispatching; Step will show the error/end screen
-                }
-
-                // Otherwise, consume the rest of this physical line so Step won’t re-run it
-                global.interpreter_use_stmt_jump = true;
-                global.interpreter_target_line   = line_idx;
-                global.interpreter_target_stmt   = array_length(parts_full); // end-of-line slot
-                break;
-            }
-            // Else fall-through to the structured IF handler below.
-        }
-
-        show_debug_message("COMMAND DISPATCH: " + _verb + " | ARG: " + _rest);
-
-        switch (_verb) {
-            case "PRINT":     basic_cmd_print(_rest, global.current_line_number); break;
-            case "LET":       basic_cmd_let(_rest); break;
-            case "GOTO":      basic_cmd_goto(_rest); break;
-            case "INPUT":     basic_cmd_input(_rest); break;
-            case "COLOR":     basic_cmd_color(_rest); break;
-            case "CLS":       basic_cmd_cls(); break;
-
-            // Structured control flow (multi-line)
-            case "IF":        basic_cmd_if(_rest); break;
-            case "ELSEIF":    basic_cmd_elseif(_rest); break;
-            case "ELSE":      basic_cmd_else(); break;
-            case "ENDIF":     basic_cmd_endif(); break;
-
-            case "FOR":       basic_cmd_for(_rest); break;
-            case "NEXT":      basic_cmd_next(_rest); break;
-            case "WHILE":     basic_cmd_while(_rest); break;
-            case "WEND":      basic_cmd_wend(); break;
-
-            case "GOSUB":     basic_cmd_gosub(_rest); break;
-            case "RETURN":    basic_cmd_return(); break;
-
-            case "BGCOLOR":   basic_cmd_bgcolor(_rest); break;
-            case "PAUSE":     basic_cmd_pause(); break;
-            case "MODE":      basic_cmd_mode(_rest); break;
-            case "CLSCHAR":   basic_cmd_clschar(_rest); break;
-            case "PSET":      basic_cmd_pset(_rest); break;
-            case "CHARAT":    basic_cmd_charat(_rest); break;
-            case "PRINTAT":   basic_cmd_printat(_rest); break;
-            case "FONT":      basic_cmd_font(_rest); break;
-            case "DIM":       basic_cmd_dim(_rest); break; // 1-D arrays
-
-            case "END":       basic_cmd_end(); break;
-
-            case "REM":
-                // no-op
-                break;
-
-            case "DATA":
-                // Runtime no-op (DATA was harvested at load time)
-                if (dbg_on(DBG_FLOW)) show_debug_message("DATA (runtime): no-op");
-                break;
-
-            case "READ":      basic_cmd_read(_rest); break;
-            case "RESTORE":   basic_cmd_restore(_rest); break;
-
-            default:
-                // implicit LET?  e.g.  "X = 5"
-                if (string_pos("=", _verb + " " + _rest) > 0) {
-                    basic_cmd_let(_verb + " " + _rest);
-                } else {
-                    basic_show_message("UNKNOWN COMMAND: " + _verb);
-                }
-                break;
-        }
-    }
-}
-
 /// @func build_data_streams()
 /// @desc Pre-scan the loaded program for DATA statements and harvest values
 ///       into named streams: global.data_streams[stream_name] = { list, ptr }.
@@ -1604,6 +1627,9 @@ function build_data_streams() {
 #macro DBG_FLOW   4     // IF/WHILE/GOTO/GOSUB flow
 #macro DBG_IO     8     // INPUT/PRINT/UI prompts
 #macro DBG_ARRAY  16    // array get/set, DIM
+#macro DBG_PERF   32    // performance
+#macro DBG_STEP   64    // Execution
+#macro DBG_EXEC   128	// EXEC
 #macro DBG_ALL    0x7fffffff
 
 /*
@@ -2174,8 +2200,9 @@ function basic_tokenize_expression_v2(expr) {
             continue;
         }
 
+
         // --- Handle operators ---
-        if (c == "+" || c == "*" || c == "/" || c == "(" || c == ")" || c == "%") {
+			if (c == "+" || c == "*" || c == "/" || c == "(" || c == ")" || c == "%" || c == "^") {
             if (current != "") {
                 if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Finalizing token before operator: '" + current + "'");
                 array_push(tokens, string_upper(current) == "MOD" ? "MOD" : current);
@@ -2213,49 +2240,52 @@ function basic_tokenize_expression_v2(expr) {
             continue;
         }
 
-        // --- Handle subtraction/negative numbers ---
-        if (c == "-") {
-            var is_negative_number = false;
-            if (i < len && (ord(string_char_at(expr, i + 1)) >= 48 && ord(string_char_at(expr, i + 1)) <= 57)) {
-                // Check if - is followed by a digit
-                if (array_length(tokens) == 0 || current != "") {
-                    // If no tokens yet or current is non-empty (e.g., after a variable), treat as subtraction
-                    if (current != "") {
-                        if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Finalizing token before subtraction: '" + current + "'");
-                        array_push(tokens, string_upper(current) == "MOD" ? "MOD" : current);
-                        if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Token added: " + current);
-                        current = "";
-                    }
-                    array_push(tokens, "-");
-                    if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Subtraction operator token added: -");
-                } else {
-                    // After an operator or parenthesis, treat as negative number
-                    var last_token = tokens[array_length(tokens) - 1];
-                    if (last_token == "+" || last_token == "-" || last_token == "*" || 
-                        last_token == "/" || last_token == "(" || last_token == "%" || 
-                        string_upper(last_token) == "MOD") {
-                        is_negative_number = true;
-                    }
-                }
-            } else {
-                // Lone - or followed by non-digit is always subtraction
-                if (current != "") {
-                    if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Finalizing token before subtraction: '" + current + "'");
-                    array_push(tokens, string_upper(current) == "MOD" ? "MOD" : current);
-                    if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Token added: " + current);
-                    current = "";
-                }
-                array_push(tokens, "-");
-                if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Subtraction operator token added: -");
+// --- Handle subtraction/negative numbers ---
+if (c == "-") {
+    // First, finalize any pending token
+    if (current != "") {
+        if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Finalizing token before minus: '" + current + "'");
+        array_push(tokens, string_upper(current) == "MOD" ? "MOD" : current);
+        if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Token added: " + current);
+        current = "";
+    }
+    
+    // Check if this should be a negative number
+    var is_negative = false;
+    
+    // Must be followed by a digit to be a negative number
+    if (i < len && (ord(string_char_at(expr, i + 1)) >= 48 && ord(string_char_at(expr, i + 1)) <= 57)) {
+        if (array_length(tokens) == 0) {
+            // Start of expression -> negative number
+            is_negative = true;
+        } else {
+            // Check what the last token was
+            var last_token = tokens[array_length(tokens) - 1];
+            if (last_token == "+" || last_token == "-" || last_token == "*" || 
+                last_token == "/" || last_token == "(" || last_token == "%" || 
+                last_token == "^" || string_upper(last_token) == "MOD" || 
+                last_token == "=" || last_token == "<" || last_token == ">" ||
+                last_token == "<=" || last_token == ">=" || last_token == "<>") {
+                // After operator -> negative number
+                is_negative = true;
             }
-
-            if (is_negative_number) {
-                if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Beginning negative number with '-'");
-                current += "-";
-            }
-            i++;
-            continue;
         }
+    }
+    
+    if (is_negative) {
+        // Start building a negative number token
+        current = "-";
+        if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Starting negative number");
+    } else {
+        // Regular subtraction operator
+        array_push(tokens, "-");
+        if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Added subtraction operator");
+    }
+    
+    i++;
+    continue;
+}
+//END if c = -
 
         // --- Accumulate characters for identifiers or numbers ---
         current += c;
@@ -2536,7 +2566,7 @@ function basic_cmd_next(arg) {
 }
 
 function run_program() {
-    show_debug_message("RUN_PROGRAM START - color is: " + string(global.current_draw_color));
+    if (dbg_on(DBG_FLOW)) show_debug_message("RUN_PROGRAM START - color is: " + string(global.current_draw_color));
 	// Always remember where we launched from (editor room)
 	global.editor_return_room = rm_editor;
 
@@ -2596,7 +2626,7 @@ function run_program() {
     // ── Build helpers that validators/dispatchers rely on ─────────────────
     build_data_streams();     // harvest DATA / prep READ/RESTORE
     build_if_block_map();     // multi-line IF/ELSE structure
-    show_debug_message("IF-block map built (" + string(ds_map_size(global.if_block_map)) + " blocks)");
+    if (dbg_on(DBG_FLOW)) show_debug_message("IF-block map built (" + string(ds_map_size(global.if_block_map)) + " blocks)");
 
     // ── VALIDATE: visible errors + correct room ───────────────────────────
     // Assumes basic_validate_program() exists.
@@ -3108,6 +3138,94 @@ function basic_cmd_elseif(arg) {
     }
 }
 
+/// @script basic_cmd_if
+/// @description Block‐structured IF…THEN…ELSEIF…ELSE…ENDIF initializer
+function basic_cmd_if(arg) {
+    show_debug_message("IF START — Raw arg: '" + arg + "'");
+
+    // 1) Compute the current line‐list index (we assume global.interpreter_next_line was pre-incremented)
+    var current_index = global.interpreter_current_line_index;
+
+// DEBUG: Show what's in the IF block map
+    show_debug_message("DEBUG: current_index = " + string(current_index));
+    var keys = ds_map_keys_to_array(global.if_block_map);
+    for (var i = 0; i < array_length(keys); i++) {
+        show_debug_message("DEBUG: IF block map key[" + string(i) + "] = " + string(keys[i]));
+    }
+
+
+
+    // ── Legacy inline IF?  If no block metadata exists, invoke old handler ──
+    if (!ds_map_exists(global.if_block_map, current_index)) {
+        show_debug_message("No block metadata for line " + string(current_index) + 
+                           " — falling back to INLINE IF");
+        basic_cmd_if_inline(arg);
+        return;
+    }
+
+    // 2) Strip off the trailing THEN and isolate the condition
+    var raw     = string_trim(arg);
+    var upper   = string_upper(raw);
+    var then_pos = string_pos("THEN", upper);
+    if (then_pos <= 0) {
+        show_debug_message("?IF ERROR: Missing THEN in '" + raw + "'");
+        return;
+    }
+    var condition_text = string_trim(string_copy(raw, 1, then_pos - 1));
+    show_debug_message("Parsed condition: '" + condition_text + "'");
+
+    // 3) Evaluate the condition (supporting simple AND/OR)
+    var result    = false;
+    var logic_op  = "";
+    var upcond    = string_upper(condition_text);
+    if (string_pos("AND", upcond) > 0) logic_op = "AND";
+    else if (string_pos("OR", upcond) > 0) logic_op = "OR";
+
+    if (logic_op != "") {
+        var parts = string_split(condition_text, logic_op);
+        if (array_length(parts) != 2) {
+            show_debug_message("?IF ERROR: Malformed " + logic_op + " condition: '" + condition_text + "'");
+            return;
+        }
+        var res1 = basic_evaluate_condition(string_trim(parts[0]));
+        var res2 = basic_evaluate_condition(string_trim(parts[1]));
+        result = (logic_op == "AND") ? (res1 && res2) : (res1 || res2);
+        show_debug_message("Combined condition (" + logic_op + "): " +
+                           string(res1) + " " + logic_op + " " + string(res2) +
+                           " = " + string(result));
+    } else {
+        result = basic_evaluate_condition(condition_text);
+        show_debug_message("Single condition result: " + string(result));
+    }
+
+    // 4) Fetch the precomputed block‐metadata for this IF
+    if (!ds_map_exists(global.if_block_map, current_index)) {
+        show_debug_message("?IF ERROR: No IF block metadata for line index " + string(current_index));
+        return;
+    }
+    var blockInfo    = global.if_block_map[? current_index];
+    var firstBranch  = blockInfo[? "firstBranchIndex"];
+
+    // 5) Push a new frame onto the IF‐stack
+    var frame = ds_map_create();
+    ds_map_add(frame, "startIndex",      current_index);
+    ds_map_add(frame, "takenBranch",     result);
+    ds_map_add(frame, "firstBranchIndex", firstBranch);
+    ds_map_add(frame, "endifIndex",      blockInfo[? "endifIndex"]);
+    ds_map_add(frame, "elseifIndices",   blockInfo[? "elseifIndices"]);  // a ds_list of indices
+    ds_map_add(frame, "elseIndex",       blockInfo[? "elseIndex"]);      // –1 if none
+    ds_stack_push(global.if_stack, frame);
+
+    // 6) Jump into THEN‐block or skip to the first ELSEIF/ELSE/ENDIF
+    if (result) {
+        global.interpreter_next_line = current_index + 1;
+        show_debug_message("IF TRUE: entering THEN at index " + string(global.interpreter_next_line));
+    } else {
+        global.interpreter_next_line = firstBranch;
+        show_debug_message("IF FALSE: skipping to index " + string(global.interpreter_next_line));
+    }
+}
+
 	/// @description Cleanup all global DS structures at game end
 	global.inkey_mode = false;
 	// ─────────────────────────────
@@ -3181,89 +3299,105 @@ function basic_cmd_elseif(arg) {
 	
 	// === 1. FIRST: Add this to your obj_globals Create event ===
 	// Initialize the key input queue with debugging
-	show_debug_message("INKEY$ INIT: Creating queue...");
+	if (dbg_on(DBG_EXEC)) show_debug_message("INKEY$ INIT: Creating queue...");
 	global.__inkey_queue = ds_queue_create();
-	show_debug_message("INKEY$ INIT: Queue created, exists = " + string(ds_exists(global.__inkey_queue, ds_type_queue)));
+	if (dbg_on(DBG_EXEC)) show_debug_message("INKEY$ INIT: Queue created, exists = " + string(ds_exists(global.__inkey_queue, ds_type_queue)));
 
-/// @script basic_cmd_if
-/// @description Block‐structured IF…THEN…ELSEIF…ELSE…ENDIF initializer
-function basic_cmd_if(arg) {
-    show_debug_message("IF START — Raw arg: '" + arg + "'");
+function basic_validate_program() {
+    // Ensure structures exist
+    if (!ds_exists(global.program_map, ds_type_map) || !ds_exists(global.line_list, ds_type_list)) return true;
 
-    // 1) Compute the current line‐list index (we assume global.interpreter_next_line was pre-incremented)
-    var current_index = global.interpreter_current_line_index;
-
-    // ── Legacy inline IF?  If no block metadata exists, invoke old handler ──
-    if (!ds_map_exists(global.if_block_map, current_index)) {
-        show_debug_message("No block metadata for line " + string(current_index) + 
-                           " — falling back to INLINE IF");
-        basic_cmd_if_inline(arg);
-        return;
-    }
-
-    // 2) Strip off the trailing THEN and isolate the condition
-    var raw     = string_trim(arg);
-    var upper   = string_upper(raw);
-    var then_pos = string_pos("THEN", upper);
-    if (then_pos <= 0) {
-        show_debug_message("?IF ERROR: Missing THEN in '" + raw + "'");
-        return;
-    }
-    var condition_text = string_trim(string_copy(raw, 1, then_pos - 1));
-    show_debug_message("Parsed condition: '" + condition_text + "'");
-
-    // 3) Evaluate the condition (supporting simple AND/OR)
-    var result    = false;
-    var logic_op  = "";
-    var upcond    = string_upper(condition_text);
-    if (string_pos("AND", upcond) > 0) logic_op = "AND";
-    else if (string_pos("OR", upcond) > 0) logic_op = "OR";
-
-    if (logic_op != "") {
-        var parts = string_split(condition_text, logic_op);
-        if (array_length(parts) != 2) {
-            show_debug_message("?IF ERROR: Malformed " + logic_op + " condition: '" + condition_text + "'");
-            return;
+    // Helpers local to validator
+    var _top_level_eq_pos = function(s) {
+        var L = string_length(s), _depth = 0, inq = false;
+        for (var i = 1; i <= L; i++) {
+            var ch = string_char_at(s, i);
+            if (ch == "\"") { inq = !inq; continue; }
+            if (inq) continue;
+            if (ch == "(") { _depth++; continue; }
+            if (ch == ")") { if (_depth > 0) _depth--; continue; }
+            if (ch == "=" && _depth == 0) return i;
         }
-        var res1 = basic_evaluate_condition(string_trim(parts[0]));
-        var res2 = basic_evaluate_condition(string_trim(parts[1]));
-        result = (logic_op == "AND") ? (res1 && res2) : (res1 || res2);
-        show_debug_message("Combined condition (" + logic_op + "): " +
-                           string(res1) + " " + logic_op + " " + string(res2) +
-                           " = " + string(result));
-    } else {
-        result = basic_evaluate_condition(condition_text);
-        show_debug_message("Single condition result: " + string(result));
-    }
+        return 0;
+    };
+    
+    var _is_letter = function(ch) {
+        if (string_length(ch) < 1) return false;
+        var c = ord(string_upper(ch));
+        return (c >= 65 && c <= 90);
+    };
+    
+    var _is_valid_lhs = function(lhs) {
+        lhs = string_trim(lhs);
+        if (lhs == "") return false;
+        var head = string_char_at(lhs, 1);
+        // Inline the letter check to avoid scoping issues
+        var head_ord = ord(string_upper(head));
+        var is_valid_head = (string_length(head) >= 1) && (head_ord >= 65 && head_ord <= 90);
+        if (!is_valid_head) return false;
+        var p = string_pos("(", lhs);
+        if (p > 0 && string_char_at(lhs, string_length(lhs)) != ")") return false;
+        return true;
+    };
+    
+    var _has_unquoted_inkey = function(stmt, up) {
+        var inq = false;
+        var stmt_len = string_length(stmt);
+        for (var j = 1; j <= stmt_len - 5; j++) {
+            var ch = string_char_at(stmt, j);
+            if (ch == "\"") {
+                if (j < stmt_len && string_char_at(stmt, j + 1) == "\"") {
+                    j++; // skip escaped quote
+                    continue;
+                }
+                inq = !inq;
+                continue;
+            }
+            if (!inq && j + 5 <= stmt_len && string_copy(up, j, 6) == "INKEY$") {
+                return true;
+            }
+        }
+        return false;
+    };
 
-    // 4) Fetch the precomputed block‐metadata for this IF
-    if (!ds_map_exists(global.if_block_map, current_index)) {
-        show_debug_message("?IF ERROR: No IF block metadata for line index " + string(current_index));
-        return;
-    }
-    var blockInfo    = global.if_block_map[? current_index];
-    var firstBranch  = blockInfo[? "firstBranchIndex"];
+    // Walk each physical line in program order
+    for (var i = 0; i < ds_list_size(global.line_list); i++) {
+        var line_no  = global.line_list[| i];
+        var src_line = ds_map_find_value(global.program_map, line_no);
+        if (!is_string(src_line)) continue;
 
-    // 5) Push a new frame onto the IF‐stack
-    var frame = ds_map_create();
-    ds_map_add(frame, "startIndex",      current_index);
-    ds_map_add(frame, "takenBranch",     result);
-    ds_map_add(frame, "firstBranchIndex", firstBranch);
-    ds_map_add(frame, "endifIndex",      blockInfo[? "endifIndex"]);
-    ds_map_add(frame, "elseifIndices",   blockInfo[? "elseifIndices"]);  // a ds_list of indices
-    ds_map_add(frame, "elseIndex",       blockInfo[? "elseIndex"]);      // –1 if none
-    ds_stack_push(global.if_stack, frame);
+        // Split on top-level colons (your helper)
+        var parts = split_on_unquoted_colons(string_trim(src_line));
+        for (var p = 0; p < array_length(parts); p++) {
+            var stmt_raw = string_trim(parts[p]);
+            if (stmt_raw == "") continue;
 
-    // 6) Jump into THEN‐block or skip to the first ELSEIF/ELSE/ENDIF
-    if (result) {
-        global.interpreter_next_line = current_index + 1;
-        show_debug_message("IF TRUE: entering THEN at index " + string(global.interpreter_next_line));
-    } else {
-        global.interpreter_next_line = firstBranch;
-        show_debug_message("IF FALSE: skipping to index " + string(global.interpreter_next_line));
+            // Ignore REM / apostrophe comments entirely
+            var sp  = string_pos(" ", stmt_raw);
+            var verb = (sp > 0) ? string_upper(string_copy(stmt_raw, 1, sp - 1)) : string_upper(stmt_raw);
+            if (verb == "REM" || string_char_at(stmt_raw, 1) == "'") break;
+
+            var stmt = strip_basic_remark(stmt_raw);
+            var up   = string_upper(stmt);
+
+            // Use quote-aware INKEY$ detection instead of simple string_pos
+            if (_has_unquoted_inkey(stmt, up)) {
+                var eqp = _top_level_eq_pos(stmt);
+                if (eqp > 0) {
+                    var lhs = string_copy(stmt, 1, eqp - 1);
+                    if (!_is_valid_lhs(lhs)) {
+                        basic_syntax_error("Left side of assignment must be a variable or array name before INKEY$", line_no, p, "INKEY_LHS");
+                        return false;
+                    }
+                } else if (verb != "LET") {
+                    basic_syntax_error("INKEY$ may only appear on the right side of an assignment like  X$ = INKEY$", line_no, p, "INKEY_MISUSE");
+                    return false;
+                }
+            }
+        }
     }
+    return true;
 }
-
 /// @script basic_cmd_input
 /// @description Prompt the user with a text and await input into a variable
 function basic_cmd_input(arg) {
@@ -3511,76 +3645,6 @@ function basic_run_to_console() {
     show_debug_message("==== END PROGRAM CONSOLE OUTPUT ====");
 }
 
-function basic_validate_program() {
-    // Ensure structures exist
-    if (!ds_exists(global.program_map, ds_type_map) || !ds_exists(global.line_list, ds_type_list)) return true;
-
-    // Helpers local to validator
-    var _top_level_eq_pos = function(s) {
-        var L = string_length(s), _depth = 0, inq = false;
-        for (var i = 1; i <= L; i++) {
-            var ch = string_char_at(s, i);
-            if (ch == "\"") { inq = !inq; continue; }
-            if (inq) continue;
-            if (ch == "(") { _depth++; continue; }
-            if (ch == ")") { if (_depth > 0) _depth--; continue; }
-            if (ch == "=" && _depth == 0) return i;
-        }
-        return 0;
-    };
-    var _is_letter = function(ch) {
-        if (string_length(ch) < 1) return false;
-        var c = ord(string_upper(ch));
-        return (c >= 65 && c <= 90);
-    };
-    var _is_valid_lhs = function(lhs) {
-        lhs = string_trim(lhs);
-        if (lhs == "") return false;
-        var head = string_char_at(lhs, 1);
-        if (!_is_letter(head)) return false;
-        var p = string_pos("(", lhs);
-        if (p > 0 && string_char_at(lhs, string_length(lhs)) != ")") return false;
-        return true;
-    };
-
-    // Walk each physical line in program order
-    for (var i = 0; i < ds_list_size(global.line_list); i++) {
-        var line_no  = global.line_list[| i];
-        var src_line = ds_map_find_value(global.program_map, line_no);
-        if (!is_string(src_line)) continue;
-
-        // Split on top-level colons (your helper)
-        var parts = split_on_unquoted_colons(string_trim(src_line));
-        for (var p = 0; p < array_length(parts); p++) {
-            var stmt_raw = string_trim(parts[p]);
-            if (stmt_raw == "") continue;
-
-            // Ignore REM / apostrophe comments entirely
-            var sp  = string_pos(" ", stmt_raw);
-            var verb = (sp > 0) ? string_upper(string_copy(stmt_raw, 1, sp - 1)) : string_upper(stmt_raw);
-            if (verb == "REM" || string_char_at(stmt_raw, 1) == "'") break;
-
-            var stmt = strip_basic_remark(stmt_raw);
-            var up   = string_upper(stmt);
-
-            if (string_pos("INKEY$", up) > 0) {
-                var eqp = _top_level_eq_pos(stmt);
-                if (eqp > 0) {
-                    var lhs = string_copy(stmt, 1, eqp - 1);
-                    if (!_is_valid_lhs(lhs)) {
-                        basic_syntax_error("Left side of assignment must be a variable or array name before INKEY$", line_no, p, "INKEY_LHS");
-                        return false;
-                    }
-                } else if (verb != "LET") {
-                    basic_syntax_error("INKEY$ may only appear on the right side of an assignment like  X$ = INKEY$", line_no, p, "INKEY_MISUSE");
-                    return false;
-                }
-            }
-        }
-    }
-    return true;
-}
-
 if (global.justreturned == 1) {
     current_input = "";
     cursor_pos = 0;
@@ -3677,6 +3741,87 @@ if (keyboard_check_pressed(vk_enter)) {
  }
 
 */
+
+/// @script basic_cmd_color
+/// @description Change text color (and optional background): COLOR fg[, bg]
+function basic_cmd_color(arg) {
+    // Split into up to two parts: foreground and optional background
+    ///
+	// Split on commas, but not inside parentheses
+		var parts = [];
+		var current = "";
+		var paren_depth = 0;
+		var trimmed_arg = string_trim(arg);
+
+		for (var i = 1; i <= string_length(trimmed_arg); i++) {
+		    var ch = string_char_at(trimmed_arg, i);
+		    if (ch == "(") {
+		        paren_depth++;
+		        current += ch;
+		    } else if (ch == ")") {
+		        paren_depth--;
+		        current += ch;
+		    } else if (ch == "," && paren_depth == 0) {
+		        array_push(parts, string_trim(current));
+		        current = "";
+		    } else {
+		        current += ch;
+		    }
+		}
+		if (string_trim(current) != "") {
+		    array_push(parts, string_trim(current));
+		}
+	
+	///
+    var fgStr = string_upper(string_trim(parts[0]));
+    var bgStr = (array_length(parts) > 1)
+                ? string_upper(string_trim(parts[1]))
+                : "";
+
+    // Helper: parse a single color spec (named or RGB), returns -1 on error
+    var parse_color = function(colSpec) {
+        // RGB(r,g,b) form?
+        if (string_copy(colSpec, 1, 4) == "RGB("
+            && string_char_at(colSpec, string_length(colSpec)) == ")")
+        {
+            var inner = string_copy(colSpec, 5, string_length(colSpec) - 5);
+            var comps = string_split(inner, ",");
+            if (array_length(comps) == 3) {
+                var r = clamp(real(string_trim(comps[0])), 0, 255);
+                var g = clamp(real(string_trim(comps[1])), 0, 255);
+                var b = clamp(real(string_trim(comps[2])), 0, 255);
+                return make_color_rgb(r, g, b);
+            } else {
+                return -1;
+            }
+        }
+        // Named color lookup
+        if (ds_map_exists(global.colors, colSpec)) {
+            return global.colors[? colSpec];
+        }
+        return -1;
+    };
+
+    // Parse and apply foreground
+    var fgCol = parse_color(fgStr);
+    if (fgCol >= 0) {
+        global.basic_text_color   = fgCol;
+        global.current_draw_color = fgCol;
+    } else {
+        show_debug_message("?COLOR ERROR: Unknown foreground color '" + fgStr + "'");
+    }
+
+    // Parse and apply background (if provided)
+    if (bgStr != "") {
+        var bgCol = parse_color(bgStr);
+        if (bgCol >= 0) {
+            global.background_draw_color   = bgCol;
+            global.background_draw_enabled = true;
+        } else {
+            show_debug_message("?COLOR ERROR: Unknown background color '" + bgStr + "'");
+        }
+    }
+}
 
 /// @func basic_cmd_read(arg)
 /// @desc READ [@stream,] var1[, var2 ...]
@@ -3785,7 +3930,7 @@ function editor_handle_paste_command() {
                         ds_list_sort(global.line_numbers, true);
                         if (dbg_on(DBG_FLOW)) show_debug_message("PASTE: added line number " + string(line_num));
                     } else if (dbg_on(DBG_FLOW)) {
-                        show_debug_message("PASTE: updated existing line number " + string(line_num) + " (idx=" + string(idx) + ")");
+                        if (dbg_on(DBG_FLOW)) show_debug_message("PASTE: updated existing line number " + string(line_num) + " (idx=" + string(idx) + ")");
                     }
                 }
             }
@@ -4033,61 +4178,6 @@ function basic_syntax_error(msg, line_no, stmt_idx, hint_key) {
     global._syntax_error_just_emitted = true;
 
     show_debug_message("SYNTAX: " + msg + " (line " + string(line_no) + ")");
-}
-
-/// @script basic_cmd_color
-/// @description Change text color (and optional background): COLOR fg[, bg]
-function basic_cmd_color(arg) {
-    // Split into up to two parts: foreground and optional background
-    var parts = string_split(string_trim(arg), ",");
-    var fgStr = string_upper(string_trim(parts[0]));
-    var bgStr = (array_length(parts) > 1)
-                ? string_upper(string_trim(parts[1]))
-                : "";
-
-    // Helper: parse a single color spec (named or RGB), returns -1 on error
-    var parse_color = function(colSpec) {
-        // RGB(r,g,b) form?
-        if (string_copy(colSpec, 1, 4) == "RGB("
-            && string_char_at(colSpec, string_length(colSpec)) == ")")
-        {
-            var inner = string_copy(colSpec, 5, string_length(colSpec) - 5);
-            var comps = string_split(inner, ",");
-            if (array_length(comps) == 3) {
-                var r = clamp(real(string_trim(comps[0])), 0, 255);
-                var g = clamp(real(string_trim(comps[1])), 0, 255);
-                var b = clamp(real(string_trim(comps[2])), 0, 255);
-                return make_color_rgb(r, g, b);
-            } else {
-                return -1;
-            }
-        }
-        // Named color lookup
-        if (ds_map_exists(global.colors, colSpec)) {
-            return global.colors[? colSpec];
-        }
-        return -1;
-    };
-
-    // Parse and apply foreground
-    var fgCol = parse_color(fgStr);
-    if (fgCol >= 0) {
-        global.basic_text_color   = fgCol;
-        global.current_draw_color = fgCol;
-    } else {
-        show_debug_message("?COLOR ERROR: Unknown foreground color '" + fgStr + "'");
-    }
-
-    // Parse and apply background (if provided)
-    if (bgStr != "") {
-        var bgCol = parse_color(bgStr);
-        if (bgCol >= 0) {
-            global.background_draw_color   = bgCol;
-            global.background_draw_enabled = true;
-        } else {
-            show_debug_message("?COLOR ERROR: Unknown background color '" + bgStr + "'");
-        }
-    }
 }
 
 function basic_cmd_clschar(arg) {
@@ -4467,6 +4557,51 @@ gpu_set_blendmode(bm_normal);
 
 //draw_text(10, 24, "Font: " + global.active_font_name);
 
+// === 2A. Create this as a separate script file (handle_inkey_input.gml) ===
+/// @function handle_inkey_input()
+/// @description Handle INKEY$ input during pause
+function handle_inkey_input() {
+    // Only process if we're in INKEY$ mode
+    if (!global.inkey_mode) return false;
+    
+    // Scan for any printable key press
+    for (var key = 32; key <= 126; key++) { // printable ASCII range
+        if (keyboard_check_pressed(key)) {
+            var ch = chr(key);
+            
+            // Store the result
+            global.basic_variables[? "__INKEY_RESULT"] = ch;
+            
+            // Resume program execution
+            global.pause_in_effect = false;
+            global.awaiting_input = false;
+            global.input_target_var = "";
+            global.pause_mode = false;
+            global.input_expected = false;
+            global.inkey_mode = false;
+            
+            if (dbg_on(DBG_FLOW)) show_debug_message("INKEY$: Got keypress '" + ch + "' (code " + string(key) + "), resuming program");
+            return true; // Input was handled
+        }
+    }
+    
+    // Handle special keys if needed
+    if (keyboard_check_pressed(vk_enter)) {
+        global.basic_variables[? "__INKEY_RESULT"] = chr(13);
+        // Resume execution (same cleanup as above)
+        global.pause_in_effect = false;
+        global.awaiting_input = false;
+        global.input_target_var = "";
+        global.pause_mode = false;
+        global.input_expected = false;
+        global.inkey_mode = false;
+        
+        if (dbg_on(DBG_FLOW)) show_debug_message("INKEY$: Got ENTER, resuming program");
+        return true;
+    }
+    
+    return false; // No input yet, keep waiting
+}
 function basic_cmd_wend() {
     show_debug_message("WEND: Entering handler...");
 
@@ -4504,51 +4639,6 @@ function basic_cmd_wend() {
     }
 }
 
-// === 2A. Create this as a separate script file (handle_inkey_input.gml) ===
-/// @function handle_inkey_input()
-/// @description Handle INKEY$ input during pause
-function handle_inkey_input() {
-    // Only process if we're in INKEY$ mode
-    if (!global.inkey_mode) return false;
-    
-    // Scan for any printable key press
-    for (var key = 32; key <= 126; key++) { // printable ASCII range
-        if (keyboard_check_pressed(key)) {
-            var ch = chr(key);
-            
-            // Store the result
-            global.basic_variables[? "__INKEY_RESULT"] = ch;
-            
-            // Resume program execution
-            global.pause_in_effect = false;
-            global.awaiting_input = false;
-            global.input_target_var = "";
-            global.pause_mode = false;
-            global.input_expected = false;
-            global.inkey_mode = false;
-            
-            show_debug_message("INKEY$: Got keypress '" + ch + "' (code " + string(key) + "), resuming program");
-            return true; // Input was handled
-        }
-    }
-    
-    // Handle special keys if needed
-    if (keyboard_check_pressed(vk_enter)) {
-        global.basic_variables[? "__INKEY_RESULT"] = chr(13);
-        // Resume execution (same cleanup as above)
-        global.pause_in_effect = false;
-        global.awaiting_input = false;
-        global.input_target_var = "";
-        global.pause_mode = false;
-        global.input_expected = false;
-        global.inkey_mode = false;
-        
-        show_debug_message("INKEY$: Got ENTER, resuming program");
-        return true;
-    }
-    
-    return false; // No input yet, keep waiting
-}
 // Script assets have changed for v2.3.0 see
 // https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
  // Functions for input handling
@@ -4853,47 +4943,6 @@ function basic_wrap_and_commit(_text, _color) {
     show_debug_message("=== basic_wrap_and_commit END ===");
 }
 
-/// @function basic_array_get(name, idx)
-/// @description Retrieves a value from a 1D array stored in global.basic_arrays (0-based indexing)
-/// @param name The name of the array (string)
-/// @param idx  The index to access (0-based)
-/// arrays v1 — 2025-08-08
-/// 1D arrays backed by ds_list, 0-based, auto-grow, OOB reads return 0
-
-function basic_array_get(_name, _idx) {
-    var nm = string_upper(string_trim(_name));
-    show_debug_message("ARRAY_GET: Accessing " + nm + "[" + string(_idx) + "]");
-
-    // Must exist in the map
-    if (!ds_map_exists(global.basic_arrays, nm)) {
-        show_debug_message("ARRAY_GET ERROR: Array '" + nm + "' does not exist");
-        return 0;
-    }
-
-    // Must be a valid ds_list handle
-    var lst = global.basic_arrays[? nm];
-    if (!ds_exists(lst, ds_type_list)) {
-        show_debug_message("ARRAY_GET ERROR: '" + nm + "' is not a ds_list");
-        return 0;
-    }
-
-    // Normalize index
-    var idx = floor(real(_idx)); // use floor; indices are 0..N-1
-
-    // Bounds check
-    var n = ds_list_size(lst);
-    if (idx < 0 || idx >= n) {
-        show_debug_message("ARRAY_GET ERROR: Index " + string(idx) + " out of bounds for " + nm + " (size=" + string(n) + ")");
-        return 0;
-    }
-
-    // Fetch
-    var value = ds_list_find_value(lst, idx);
-    // OPTIONAL: verbose log (comment out if noisy)
-    // show_debug_message("ARRAY_GET: " + nm + "[" + string(idx) + "] = " + string(value));
-    return value;
-}
-
 function tokenize_expression(expr) {
     var tokens = [];
     var i = 1;
@@ -4934,7 +4983,7 @@ function tokenize_expression(expr) {
             i++;
         }
         else {
-            show_debug_message("Unknown character in expression: " + ch);
+            if (dbg_on(DBG_FLOW)) show_debug_message("Unknown character in expression: " + ch);
             i++;
         }
     }
@@ -4942,6 +4991,47 @@ function tokenize_expression(expr) {
     return tokens;
 }
 
+
+/// @function basic_array_get(name, idx)
+/// @description Retrieves a value from a 1D array stored in global.basic_arrays (0-based indexing)
+/// @param name The name of the array (string)
+/// @param idx  The index to access (0-based)
+/// arrays v1 — 2025-08-08
+/// 1D arrays backed by ds_list, 0-based, auto-grow, OOB reads return 0
+
+function basic_array_get(_name, _idx) {
+    var nm = string_upper(string_trim(_name));
+    show_debug_message("ARRAY_GET: Accessing " + nm + "[" + string(_idx) + "]");
+
+    // Must exist in the map
+    if (!ds_map_exists(global.basic_arrays, nm)) {
+        show_debug_message("ARRAY_GET ERROR: Array '" + nm + "' does not exist");
+        return 0;
+    }
+
+    // Must be a valid ds_list handle
+    var lst = global.basic_arrays[? nm];
+    if (!ds_exists(lst, ds_type_list)) {
+        show_debug_message("ARRAY_GET ERROR: '" + nm + "' is not a ds_list");
+        return 0;
+    }
+
+    // Normalize index
+    var idx = floor(real(_idx)); // use floor; indices are 0..N-1
+
+    // Bounds check
+    var n = ds_list_size(lst);
+    if (idx < 0 || idx >= n) {
+        show_debug_message("ARRAY_GET ERROR: Index " + string(idx) + " out of bounds for " + nm + " (size=" + string(n) + ")");
+        return 0;
+    }
+
+    // Fetch
+    var value = ds_list_find_value(lst, idx);
+    // OPTIONAL: verbose log (comment out if noisy)
+    // show_debug_message("ARRAY_GET: " + nm + "[" + string(idx) + "] = " + string(value));
+    return value;
+}
 
 /// @function basic_array_init(name, size)
 /// @description Initializes a 1D array as a ds_list in global.basic_arrays
@@ -5085,6 +5175,32 @@ function save_program_as(filename) {
     basic_show_message("SAVED: " + filename + " (working_directory)");
 }
 
+// === 2. SECOND: Add this function to your Step event (or call it from Step) ===
+function inkey_capture_keys() {
+    // Debug: Show that capture is running
+    if (keyboard_check_pressed(ord("A"))) {
+        if (dbg_on(DBG_FLOW)) show_debug_message("INKEY$ CAPTURE: A key detected!");
+    }
+    
+    // Scan for any newly pressed printable keys
+    for (var key = 65; key <= 90; key++) { // A-Z first for testing
+        if (keyboard_check_pressed(key)) {
+            var ch = chr(key);
+            if (dbg_on(DBG_FLOW)) show_debug_message("INKEY$ CAPTURE: Key " + string(key) + " pressed, char = '" + ch + "'");
+            
+            // Check if queue exists before adding
+            if (!ds_exists(global.__inkey_queue, ds_type_queue)) {
+                if (dbg_on(DBG_FLOW)) show_debug_message("INKEY$ CAPTURE ERROR: Queue doesn't exist!");
+                global.__inkey_queue = ds_queue_create();
+            }
+            
+            // Add to queue
+            ds_queue_enqueue(global.__inkey_queue, ch);
+            if (dbg_on(DBG_FLOW)) show_debug_message("INKEY$ CAPTURE: '" + ch + "' queued. Queue size now = " + string(ds_queue_size(global.__inkey_queue)));
+            break; // Only capture one key per frame
+        }
+    }
+}
 function basic_cmd_font(arg) {
     if (global.current_mode < 1) {
         basic_print_system_message("FONT not implemented in MODE " + string(global.current_mode));
@@ -5189,32 +5305,6 @@ self.mode1_grid_fill = function(char, fg, bg) {
 drewfont = 0;//temp var
 
 
-// === 2. SECOND: Add this function to your Step event (or call it from Step) ===
-function inkey_capture_keys() {
-    // Debug: Show that capture is running
-    if (keyboard_check_pressed(ord("A"))) {
-        show_debug_message("INKEY$ CAPTURE: A key detected!");
-    }
-    
-    // Scan for any newly pressed printable keys
-    for (var key = 65; key <= 90; key++) { // A-Z first for testing
-        if (keyboard_check_pressed(key)) {
-            var ch = chr(key);
-            show_debug_message("INKEY$ CAPTURE: Key " + string(key) + " pressed, char = '" + ch + "'");
-            
-            // Check if queue exists before adding
-            if (!ds_exists(global.__inkey_queue, ds_type_queue)) {
-                show_debug_message("INKEY$ CAPTURE ERROR: Queue doesn't exist!");
-                global.__inkey_queue = ds_queue_create();
-            }
-            
-            // Add to queue
-            ds_queue_enqueue(global.__inkey_queue, ch);
-            show_debug_message("INKEY$ CAPTURE: '" + ch + "' queued. Queue size now = " + string(ds_queue_size(global.__inkey_queue)));
-            break; // Only capture one key per frame
-        }
-    }
-}
 // Script assets have changed for v2.3.0 see
 // https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
 function load_program_json(filename) {
@@ -5512,6 +5602,27 @@ function set_color_scheme(scheme) {
     basic_show_message("COLOR SCHEME: " + scheme);
     update_display();
  }
+function mode1_grid_set(col, row, char_index, fg, bg) {
+    var grid_obj = instance_find(obj_mode1_grid, 0);
+    if (!instance_exists(grid_obj)) {
+        if (dbg_on(DBG_FLOW)) show_debug_message("mode1_grid_set: No grid object found.");
+        return;
+    }
+
+    var cols = 40;
+    var rows = 25;
+
+    if (col >= 0 && col < cols && row >= 0 && row < rows) {
+        var index = col + row * cols;
+        grid_obj.grid[index].char = char_index;
+        grid_obj.grid[index].fg = fg;
+        grid_obj.grid[index].bg = bg;
+        if (dbg_on(DBG_FLOW)) show_debug_message("mode1_grid_set: Set (" + string(col) + "," + string(row) + ") = " + string(char_index));
+    } else {
+        if (dbg_on(DBG_FLOW)) show_debug_message("mode1_grid_set: Coordinates out of bounds (" + string(col) + "," + string(row) + ")");
+    }
+}
+
 /// @script is_function
 // === BEGIN: is_function ===
 function is_function(t) {
@@ -5594,25 +5705,49 @@ function process_input_line(input_text) {
         handle_command(input_text);
     }
  }
-function mode1_grid_set(col, row, char_index, fg, bg) {
-    var grid_obj = instance_find(obj_mode1_grid, 0);
-    if (!instance_exists(grid_obj)) {
-        show_debug_message("mode1_grid_set: No grid object found.");
-        return;
+function safe_real_pop(stack) {
+    if (array_length(stack) < 1) return 1;
+
+    var raw = array_pop(stack);
+
+    // Pass through real values
+    if (is_real(raw)) return raw;
+
+    // Try to convert string safely
+    var str = string(raw);
+    var tryval = real(str);
+
+    if (is_nan(tryval)) {
+        if (dbg_on(DBG_FLOW)) show_debug_message("? safe_real_pop: Cannot convert '" + string(raw) + "' to number. Returning 0.");
+        return 0;
     }
 
-    var cols = 40;
-    var rows = 25;
-
-    if (col >= 0 && col < cols && row >= 0 && row < rows) {
-        var index = col + row * cols;
-        grid_obj.grid[index].char = char_index;
-        grid_obj.grid[index].fg = fg;
-        grid_obj.grid[index].bg = bg;
-        show_debug_message("mode1_grid_set: Set (" + string(col) + "," + string(row) + ") = " + string(char_index));
-    } else {
-        show_debug_message("mode1_grid_set: Coordinates out of bounds (" + string(col) + "," + string(row) + ")");
+    // Handle invalid conversions like real("RND:")
+    if (!is_numeric_string(str)) {
+        if (dbg_on(DBG_FLOW)) show_debug_message("? POSTFIX ERROR: Cannot convert to number: '" + str + "'");
+        return 1; // or return 0 if you prefer a neutral fallback
     }
+
+    return tryval;
+}
+
+function dump_program_to_console() {
+    if (dbg_on(DBG_FLOW)) show_debug_message("==== BASIC PROGRAM DUMP ====");
+
+    var lines = global.line_numbers; // numeric line numbers
+    var prog = global.program_lines;
+
+    for (var i = 0; i < ds_list_size(lines); i++) {
+        var linenum = ds_list_find_value(lines, i); // numeric
+        if (ds_map_exists(prog, linenum)) {
+            var code = ds_map_find_value(prog, linenum);
+            if (dbg_on(DBG_FLOW)) show_debug_message(string(linenum) + " " + code);
+        } else {
+            if (dbg_on(DBG_FLOW)) show_debug_message("Missing entry for key: " + string(linenum));
+        }
+    }
+
+    if (dbg_on(DBG_FLOW)) show_debug_message("==== END OF DUMP ====");
 }
 
 // Script assets have changed for v2.3.0 see
@@ -5634,32 +5769,6 @@ function mode1_grid_set(col, row, char_index, fg, bg) {
         show_error_message("JSON SAVE ERROR");
     }
  }
-function safe_real_pop(stack) {
-    if (array_length(stack) < 1) return 1;
-
-    var raw = array_pop(stack);
-
-    // Pass through real values
-    if (is_real(raw)) return raw;
-
-    // Try to convert string safely
-    var str = string(raw);
-    var tryval = real(str);
-
-    if (is_nan(tryval)) {
-        show_debug_message("? safe_real_pop: Cannot convert '" + string(raw) + "' to number. Returning 0.");
-        return 0;
-    }
-
-    // Handle invalid conversions like real("RND:")
-    if (!is_numeric_string(str)) {
-        show_debug_message("? POSTFIX ERROR: Cannot convert to number: '" + str + "'");
-        return 1; // or return 0 if you prefer a neutral fallback
-    }
-
-    return tryval;
-}
-
 function basic_parse_csv_args(str) {
     var args = [];
     var current = "";
@@ -5805,25 +5914,6 @@ function navigate_history_up() {
         cursor_pos = string_length(current_input);
     }
  }
-function dump_program_to_console() {
-    show_debug_message("==== BASIC PROGRAM DUMP ====");
-
-    var lines = global.line_numbers; // numeric line numbers
-    var prog = global.program_lines;
-
-    for (var i = 0; i < ds_list_size(lines); i++) {
-        var linenum = ds_list_find_value(lines, i); // numeric
-        if (ds_map_exists(prog, linenum)) {
-            var code = ds_map_find_value(prog, linenum);
-            show_debug_message(string(linenum) + " " + code);
-        } else {
-            show_debug_message("Missing entry for key: " + string(linenum));
-        }
-    }
-
-    show_debug_message("==== END OF DUMP ====");
-}
-
 // Script assets have changed for v2.3.0 see
 // https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
  function navigate_history_down() {
@@ -5982,6 +6072,17 @@ function split_on_unquoted_semicolons(s) {
     return result;
 }
 
+// === 1. Add INKEY$ command handler ===
+function basic_cmd_INKEY() {
+    if (dbg_on(DBG_FLOW)) show_debug_message("INKEY$: Pausing program, waiting for single keypress...");
+    
+    global.pause_in_effect = true;
+    global.awaiting_input = true;
+    global.input_target_var = "__INKEY_RESULT"; // Special variable for INKEY$ result
+    global.pause_mode = true;
+    global.input_expected = true; // We ARE expecting input
+    global.inkey_mode = true; // Flag to indicate INKEY$ mode vs regular INPUT
+}
 function basic_cmd_return() {
     if (ds_stack_empty(global.gosub_stack)) {
         show_debug_message("RETURN: ERROR — gosub_stack is empty");
@@ -6025,17 +6126,6 @@ function interpreter_cmd_print(arg) {
     update_display();
     basic_show_message("NEW PROGRAM");
  }
-// === 1. Add INKEY$ command handler ===
-function basic_cmd_INKEY() {
-    show_debug_message("INKEY$: Pausing program, waiting for single keypress...");
-    
-    global.pause_in_effect = true;
-    global.awaiting_input = true;
-    global.input_target_var = "__INKEY_RESULT"; // Special variable for INKEY$ result
-    global.pause_mode = true;
-    global.input_expected = true; // We ARE expecting input
-    global.inkey_mode = true; // Flag to indicate INKEY$ mode vs regular INPUT
-}
 // Script assets have changed for v2.3.0 see
 // https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
 function add_or_update_program_line(line_num, code) {
@@ -6116,6 +6206,19 @@ function delete_program_line(line_num) {
         ds_list_delete(global.line_numbers, pos);
     }
  }
+function dbg(cat, msg) {
+    // Off fast-path
+    if ((global.debug_mask & cat) == 0) return;
+
+    // Per-frame quota (avoid tanking fps)
+    if (global.dbg_frame_count >= global.dbg_frame_quota) {
+        global.dbg_dropped_count++;
+        return;
+    }
+    global.dbg_frame_count++;
+    if (dbg_on(DBG_FLOW)) show_debug_message(msg);
+}
+
 function basic_parse_color(colstr) {
     colstr = string_upper(string_trim(colstr));
 
@@ -6139,19 +6242,6 @@ function toggle_syntax_highlighting() {
     basic_show_message("SYNTAX HIGHLIGHTING: " + (syntax_highlighting ? "ON" : "OFF"));
     update_display();
  }
-
-function dbg(cat, msg) {
-    // Off fast-path
-    if ((global.debug_mask & cat) == 0) return;
-
-    // Per-frame quota (avoid tanking fps)
-    if (global.dbg_frame_count >= global.dbg_frame_quota) {
-        global.dbg_dropped_count++;
-        return;
-    }
-    global.dbg_frame_count++;
-    show_debug_message(msg);
-}
 
 // Script assets have changed for v2.3.0 see
 // https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information

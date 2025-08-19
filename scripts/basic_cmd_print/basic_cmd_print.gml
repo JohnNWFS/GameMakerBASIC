@@ -10,7 +10,7 @@ function basic_cmd_print(arg, line_number) {
     if (string_length(arg) > 0 && string_char_at(arg, string_length(arg)) == ";") {
         suppress_newline = true;
         arg = string_copy(arg, 1, string_length(arg) - 1);
-        show_debug_message("PRINT: Trailing semicolon detected; suppressing newline");
+        if (dbg_on(DBG_FLOW))  show_debug_message("PRINT: Trailing semicolon detected; suppressing newline");
     }
 
     arg = string_trim(arg);
@@ -66,15 +66,15 @@ function basic_cmd_print(arg, line_number) {
             output += _inner;
             if (dbg_on(DBG_FLOW)) show_debug_message("PRINT: Part " + string(i) + " is string literal → " + _inner);
         } else {
-            show_debug_message("PRINT: Part " + string(i) + " is expression → " + part);
+            if (dbg_on(DBG_FLOW))  show_debug_message("PRINT: Part " + string(i) + " is expression → " + part);
             var tokens = basic_tokenize_expression_v2(part);
-            show_debug_message("PRINT: Tokens = " + string(tokens));
+            if (dbg_on(DBG_FLOW))  show_debug_message("PRINT: Tokens = " + string(tokens));
 
             var postfix = infix_to_postfix(tokens);
-            show_debug_message("PRINT: Postfix = " + string(postfix));
+            if (dbg_on(DBG_FLOW))  show_debug_message("PRINT: Postfix = " + string(postfix));
 
             var result = evaluate_postfix(postfix);
-            show_debug_message("PRINT: Evaluated result = " + string(result));
+            if (dbg_on(DBG_FLOW))  show_debug_message("PRINT: Evaluated result = " + string(result));
 
             // === INKEY$ modal sentinel handling (defer PRINT until key captured) ===
             if (is_string(result) && result == "<<INKEY_WAIT>>") {
@@ -84,7 +84,7 @@ function basic_cmd_print(arg, line_number) {
                 global.inkey_captured   = "";
                 global.pause_in_effect  = true;   // Step will halt advancement and capture key
                 global.awaiting_input   = false;
-                show_debug_message("INKEY_WAIT: Deferring PRINT until a key is captured.");
+                if (dbg_on(DBG_FLOW))  show_debug_message("INKEY_WAIT: Deferring PRINT until a key is captured.");
                 return; // abort PRINT now; we'll re-run this statement after resume
             }
             // === END ===
@@ -126,10 +126,10 @@ function basic_cmd_print(arg, line_number) {
 
     if (!suppress_newline) {
         basic_wrap_and_commit(global.print_line_buffer, global.current_draw_color);
-        show_debug_message("PRINT: Line committed → " + global.print_line_buffer);
+        if (dbg_on(DBG_FLOW))  show_debug_message("PRINT: Line committed → " + global.print_line_buffer);
         global.print_line_buffer = "";
     } else {
-        show_debug_message("PRINT: Output buffered without newline → " + global.print_line_buffer);
+        if (dbg_on(DBG_FLOW))  show_debug_message("PRINT: Output buffered without newline → " + global.print_line_buffer);
     }
 }
 // === END: basic_cmd_print ===

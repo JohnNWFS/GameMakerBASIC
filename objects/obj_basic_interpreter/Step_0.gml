@@ -11,7 +11,7 @@
 
 global.dbg_frame_count = 0;
 if (global.dbg_dropped_count > 0) {
-    show_debug_message("DBG: dropped " + string(global.dbg_dropped_count) + " lines this frame");
+    if (dbg_on(DBG_PERF)) show_debug_message("DBG: dropped " + string(global.dbg_dropped_count) + " lines this frame");
     global.dbg_dropped_count = 0;
 }
 
@@ -52,7 +52,7 @@ if (global.program_has_ended) {
 if (global.awaiting_input) {
     if (global.pause_mode) {
         if (keyboard_check_pressed(vk_enter) || keyboard_check_pressed(vk_escape)) {
-            show_debug_message("PAUSE: ENTER/ESC detected, resuming...");
+          if (dbg_on(DBG_FLOW))   show_debug_message("PAUSE: ENTER/ESC detected, resuming...");
             global.awaiting_input = false;
             global.pause_mode = false;
             global.pause_in_effect = false;
@@ -106,7 +106,7 @@ global.interpreter_current_line_index = line_index;
 // CHANGED: prefer legacy line jump (GOSUB/GOTO) over statement-level resume,
 // and CLEAR any pending statement-level flags when legacy wins.
 if (global.interpreter_next_line >= 0) {
-    show_debug_message("IFJUMP: legacy line jump wins → line=" + string(global.interpreter_next_line));
+   if (dbg_on(DBG_FLOW))  show_debug_message("IFJUMP: legacy line jump wins → line=" + string(global.interpreter_next_line));
     line_index = global.interpreter_next_line;
     global.interpreter_current_line_index = global.interpreter_next_line;
     global.interpreter_resume_stmt_index = 0;
@@ -118,7 +118,7 @@ if (global.interpreter_next_line >= 0) {
 
     global.interpreter_next_line = -1;
 } else if (global.interpreter_use_stmt_jump && global.interpreter_target_line >= 0) {
-    show_debug_message("IFJUMP: using statement-level jump → line=" + string(global.interpreter_target_line) + ", stmt=" + string(global.interpreter_target_stmt));
+   if (dbg_on(DBG_FLOW))  show_debug_message("IFJUMP: using statement-level jump → line=" + string(global.interpreter_target_line) + ", stmt=" + string(global.interpreter_target_stmt));
     line_index = global.interpreter_target_line;
     global.interpreter_current_line_index = global.interpreter_target_line;
     global.interpreter_resume_stmt_index = max(0, global.interpreter_target_stmt);
@@ -146,12 +146,12 @@ if (line_index < ds_list_size(global.line_list)) {
     var parts   = split_on_unquoted_colons(trimmed);
 
     global.current_line_number = line_number;
-    show_debug_message("Running line " + string(line_number));
+    if (dbg_on(DBG_FLOW)) show_debug_message("Running line " + string(line_number));
 
     var _start_stmt = 0;
     if (global.interpreter_resume_stmt_index > 0) {
         _start_stmt = global.interpreter_resume_stmt_index;
-        show_debug_message("Resuming at statement index " + string(_start_stmt)
+       if (dbg_on(DBG_FLOW)) show_debug_message("Resuming at statement index " + string(_start_stmt)
             + " on line " + string(line_number));
         global.interpreter_resume_stmt_index = 0;
     }
@@ -167,7 +167,7 @@ if (line_index < ds_list_size(global.line_list)) {
         // REM / apostrophe: stop the *physical line*
         if (cmd2 == "REM" || string_char_at(stmt, 1) == "'") {
             if (dbg_on(DBG_FLOW)) {
-                show_debug_message("REM/' : stop parsing remainder of line "
+               if (dbg_on(DBG_FLOW)) show_debug_message("REM/' : stop parsing remainder of line "
                     + string(line_number) + " at part " + string(p) + "/"
                     + string(array_length(parts) - 1));
             }
@@ -182,20 +182,20 @@ if (line_index < ds_list_size(global.line_list)) {
 
         global.interpreter_current_stmt_index = p;
 
-        show_debug_message("Command: " + cmd2 + " | Arg: " + arg2);
+        if (dbg_on(DBG_FLOW)) show_debug_message("Command: " + cmd2 + " | Arg: " + arg2);
         handle_basic_command(cmd2, arg2);
 
         // --- If a pause was armed (e.g., LET ... = INKEY$), stop RIGHT HERE ---
         if (global.pause_in_effect) {
             global.interpreter_resume_stmt_index = p; // retry this colon slot next frame
-            show_debug_message("PAUSE: engaged during statement; will retry stmt index " + string(p) + " next frame");
+            if (dbg_on(DBG_FLOW)) show_debug_message("PAUSE: engaged during statement; will retry stmt index " + string(p) + " next frame");
             break;
         }
 
         // CHANGED ORDER: prefer legacy line jump break over statement-level break,
         // and when legacy is present, also clear any stale statement-level jump flags.
         if (global.interpreter_next_line >= 0) {
-            show_debug_message("IFJUMP: breaking line loop for LEGACY LINE jump");
+            if (dbg_on(DBG_FLOW)) show_debug_message("IFJUMP: breaking line loop for LEGACY LINE jump");
             // --- NEW: clear statement-level flags so they don't redirect after the target line executes
             global.interpreter_use_stmt_jump = false;
             global.interpreter_target_line   = -1;
@@ -203,7 +203,7 @@ if (line_index < ds_list_size(global.line_list)) {
             break;
         }
         if (global.interpreter_use_stmt_jump && global.interpreter_target_line >= 0) {
-            show_debug_message("IFJUMP: breaking line loop for STATEMENT-LEVEL jump request");
+            if (dbg_on(DBG_FLOW)) show_debug_message("IFJUMP: breaking line loop for STATEMENT-LEVEL jump request");
             break;
         }
     }

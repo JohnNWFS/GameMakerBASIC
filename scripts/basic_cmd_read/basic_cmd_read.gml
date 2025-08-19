@@ -39,7 +39,7 @@ function basic_cmd_read(arg) {
     for (var di = 0; di < array_length(dests); di++) {
         if (stream.ptr >= ds_list_size(lst)) {
             var msg = "?READ ERROR: Out of DATA on stream '" + stream_name + "'";
-            show_debug_message(msg);
+            if (dbg_on(DBG_FLOW))  show_debug_message(msg);
             // Graceful stop: reuse your END command
             handle_basic_command("END", "");
             return;

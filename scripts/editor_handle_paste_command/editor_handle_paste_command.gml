@@ -40,7 +40,7 @@ function editor_handle_paste_command() {
                         ds_list_sort(global.line_numbers, true);
                         if (dbg_on(DBG_FLOW)) show_debug_message("PASTE: added line number " + string(line_num));
                     } else if (dbg_on(DBG_FLOW)) {
-                        show_debug_message("PASTE: updated existing line number " + string(line_num) + " (idx=" + string(idx) + ")");
+                        if (dbg_on(DBG_FLOW)) show_debug_message("PASTE: updated existing line number " + string(line_num) + " (idx=" + string(idx) + ")");
                     }
                 }
             }

@@ -21,7 +21,7 @@ function handle_inkey_input() {
             global.input_expected = false;
             global.inkey_mode = false;
             
-            show_debug_message("INKEY$: Got keypress '" + ch + "' (code " + string(key) + "), resuming program");
+            if (dbg_on(DBG_FLOW)) show_debug_message("INKEY$: Got keypress '" + ch + "' (code " + string(key) + "), resuming program");
             return true; // Input was handled
         }
     }
@@ -37,7 +37,7 @@ function handle_inkey_input() {
         global.input_expected = false;
         global.inkey_mode = false;
         
-        show_debug_message("INKEY$: Got ENTER, resuming program");
+        if (dbg_on(DBG_FLOW)) show_debug_message("INKEY$: Got ENTER, resuming program");
         return true;
     }
     

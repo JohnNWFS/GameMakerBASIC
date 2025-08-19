@@ -38,7 +38,7 @@ function tokenize_expression(expr) {
             i++;
         }
         else {
-            show_debug_message("Unknown character in expression: " + ch);
+            if (dbg_on(DBG_FLOW)) show_debug_message("Unknown character in expression: " + ch);
             i++;
         }
     }

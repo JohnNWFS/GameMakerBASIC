@@ -64,7 +64,7 @@ function basic_cmd_color(arg) {
         global.basic_text_color   = fgCol;
         global.current_draw_color = fgCol;
     } else {
-        show_debug_message("?COLOR ERROR: Unknown foreground color '" + fgStr + "'");
+        if (dbg_on(DBG_FLOW))  show_debug_message("?COLOR ERROR: Unknown foreground color '" + fgStr + "'");
     }
 
     // Parse and apply background (if provided)
@@ -74,7 +74,7 @@ function basic_cmd_color(arg) {
             global.background_draw_color   = bgCol;
             global.background_draw_enabled = true;
         } else {
-            show_debug_message("?COLOR ERROR: Unknown background color '" + bgStr + "'");
+            if (dbg_on(DBG_FLOW))  show_debug_message("?COLOR ERROR: Unknown background color '" + bgStr + "'");
         }
     }
 }

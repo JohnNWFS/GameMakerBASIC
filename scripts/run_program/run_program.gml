@@ -1,5 +1,5 @@
 function run_program() {
-    show_debug_message("RUN_PROGRAM START - color is: " + string(global.current_draw_color));
+    if (dbg_on(DBG_FLOW)) show_debug_message("RUN_PROGRAM START - color is: " + string(global.current_draw_color));
 	// Always remember where we launched from (editor room)
 	global.editor_return_room = rm_editor;
 
@@ -59,7 +59,7 @@ function run_program() {
     // ── Build helpers that validators/dispatchers rely on ─────────────────
     build_data_streams();     // harvest DATA / prep READ/RESTORE
     build_if_block_map();     // multi-line IF/ELSE structure
-    show_debug_message("IF-block map built (" + string(ds_map_size(global.if_block_map)) + " blocks)");
+    if (dbg_on(DBG_FLOW)) show_debug_message("IF-block map built (" + string(ds_map_size(global.if_block_map)) + " blocks)");
 
     // ── VALIDATE: visible errors + correct room ───────────────────────────
     // Assumes basic_validate_program() exists.

@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"basic_cmd_scroll",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"basic_cmd_scroll",
+  "parent":{
+    "name":"MODE_1_COMMANDS",
+    "path":"folders/Scripts/MODE_1_COMMANDS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

@@ -1,23 +1,23 @@
 /// @script basic_cmd_if
 /// @description Block‐structured IF…THEN…ELSEIF…ELSE…ENDIF initializer
 function basic_cmd_if(arg) {
-    show_debug_message("IF START — Raw arg: '" + arg + "'");
+    if (dbg_on(DBG_FLOW))  show_debug_message("IF START — Raw arg: '" + arg + "'");
 
     // 1) Compute the current line‐list index (we assume global.interpreter_next_line was pre-incremented)
     var current_index = global.interpreter_current_line_index;
 
 // DEBUG: Show what's in the IF block map
-    show_debug_message("DEBUG: current_index = " + string(current_index));
+    if (dbg_on(DBG_FLOW))  show_debug_message("DEBUG: current_index = " + string(current_index));
     var keys = ds_map_keys_to_array(global.if_block_map);
     for (var i = 0; i < array_length(keys); i++) {
-        show_debug_message("DEBUG: IF block map key[" + string(i) + "] = " + string(keys[i]));
+        if (dbg_on(DBG_FLOW))  show_debug_message("DEBUG: IF block map key[" + string(i) + "] = " + string(keys[i]));
     }
 
 
 
     // ── Legacy inline IF?  If no block metadata exists, invoke old handler ──
     if (!ds_map_exists(global.if_block_map, current_index)) {
-        show_debug_message("No block metadata for line " + string(current_index) + 
+        if (dbg_on(DBG_FLOW))  show_debug_message("No block metadata for line " + string(current_index) + 
                            " — falling back to INLINE IF");
         basic_cmd_if_inline(arg);
         return;
@@ -28,11 +28,11 @@ function basic_cmd_if(arg) {
     var upper   = string_upper(raw);
     var then_pos = string_pos("THEN", upper);
     if (then_pos <= 0) {
-        show_debug_message("?IF ERROR: Missing THEN in '" + raw + "'");
+        if (dbg_on(DBG_FLOW))  show_debug_message("?IF ERROR: Missing THEN in '" + raw + "'");
         return;
     }
     var condition_text = string_trim(string_copy(raw, 1, then_pos - 1));
-    show_debug_message("Parsed condition: '" + condition_text + "'");
+    if (dbg_on(DBG_FLOW))  show_debug_message("Parsed condition: '" + condition_text + "'");
 
     // 3) Evaluate the condition (supporting simple AND/OR)
     var result    = false;
@@ -44,23 +44,23 @@ function basic_cmd_if(arg) {
     if (logic_op != "") {
         var parts = string_split(condition_text, logic_op);
         if (array_length(parts) != 2) {
-            show_debug_message("?IF ERROR: Malformed " + logic_op + " condition: '" + condition_text + "'");
+            if (dbg_on(DBG_FLOW))  show_debug_message("?IF ERROR: Malformed " + logic_op + " condition: '" + condition_text + "'");
             return;
         }
         var res1 = basic_evaluate_condition(string_trim(parts[0]));
         var res2 = basic_evaluate_condition(string_trim(parts[1]));
         result = (logic_op == "AND") ? (res1 && res2) : (res1 || res2);
-        show_debug_message("Combined condition (" + logic_op + "): " +
+        if (dbg_on(DBG_FLOW))  show_debug_message("Combined condition (" + logic_op + "): " +
                            string(res1) + " " + logic_op + " " + string(res2) +
                            " = " + string(result));
     } else {
         result = basic_evaluate_condition(condition_text);
-        show_debug_message("Single condition result: " + string(result));
+        if (dbg_on(DBG_FLOW))  show_debug_message("Single condition result: " + string(result));
     }
 
     // 4) Fetch the precomputed block‐metadata for this IF
     if (!ds_map_exists(global.if_block_map, current_index)) {
-        show_debug_message("?IF ERROR: No IF block metadata for line index " + string(current_index));
+        if (dbg_on(DBG_FLOW))  show_debug_message("?IF ERROR: No IF block metadata for line index " + string(current_index));
         return;
     }
     var blockInfo    = global.if_block_map[? current_index];
@@ -79,9 +79,9 @@ function basic_cmd_if(arg) {
     // 6) Jump into THEN‐block or skip to the first ELSEIF/ELSE/ENDIF
     if (result) {
         global.interpreter_next_line = current_index + 1;
-        show_debug_message("IF TRUE: entering THEN at index " + string(global.interpreter_next_line));
+        if (dbg_on(DBG_FLOW))  show_debug_message("IF TRUE: entering THEN at index " + string(global.interpreter_next_line));
     } else {
         global.interpreter_next_line = firstBranch;
-        show_debug_message("IF FALSE: skipping to index " + string(global.interpreter_next_line));
+        if (dbg_on(DBG_FLOW))  show_debug_message("IF FALSE: skipping to index " + string(global.interpreter_next_line));
     }
 }

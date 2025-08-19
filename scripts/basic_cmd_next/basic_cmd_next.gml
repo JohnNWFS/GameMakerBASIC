@@ -11,13 +11,13 @@
 ///   we log a warning (no stack search to keep behavior unchanged).
 
 function basic_cmd_next(arg) {
-    show_debug_message("NEXT: Entering handler with arg: '" + string(arg) + "'");
+    if (dbg_on(DBG_FLOW))  show_debug_message("NEXT: Entering handler with arg: '" + string(arg) + "'");
 
     // --------------------------
     // 0) Validate FOR stack
     // --------------------------
     if (!ds_exists(global.for_stack, ds_type_stack) || ds_stack_empty(global.for_stack)) {
-        show_debug_message("NEXT: ERROR — NEXT without matching FOR");
+        if (dbg_on(DBG_FLOW))  show_debug_message("NEXT: ERROR — NEXT without matching FOR");
         basic_system_message("NEXT without FOR");
         global.interpreter_running = false;
         return;
@@ -34,7 +34,7 @@ function basic_cmd_next(arg) {
         if (is_struct(frame) && variable_struct_exists(frame, "varname")) {
             if (string_upper(frame.varname) != user_var) {
                 // Do NOT alter control flow; just warn (no stack search to avoid side effects).
-                show_debug_message("NEXT: WARNING — NEXT " + user_var + " does not match active FOR var " + string(frame.varname));
+                if (dbg_on(DBG_FLOW))  show_debug_message("NEXT: WARNING — NEXT " + user_var + " does not match active FOR var " + string(frame.varname));
             }
         }
     }
@@ -55,7 +55,7 @@ function basic_cmd_next(arg) {
     // 3) Validate variable store
     // --------------------------
     if (is_undefined(global.basic_variables)) {
-        show_debug_message("NEXT: ERROR — global.basic_variables is undefined.");
+        if (dbg_on(DBG_FLOW))  show_debug_message("NEXT: ERROR — global.basic_variables is undefined.");
         basic_system_message("RUNTIME ERROR: variable store not initialized");
         global.interpreter_running = false;
         return;
@@ -63,7 +63,7 @@ function basic_cmd_next(arg) {
 
     // Fetch current value
     var current = global.basic_variables[? varname];
-    show_debug_message("NEXT: Current value of " + string(varname) + " = " + string(current));
+    if (dbg_on(DBG_FLOW))  show_debug_message("NEXT: Current value of " + string(varname) + " = " + string(current));
 
     // --------------------------
     // 3a) Sanitize to_val / step_val BEFORE applying the step
@@ -74,7 +74,7 @@ function basic_cmd_next(arg) {
     // Guard against STEP=0 to avoid infinite loop when parser fed 0 (e.g., unary minus mishap)
     if (step_val == 0) {
         var inferred = (to_val >= current) ? 1 : -1;
-        show_debug_message("NEXT: STEP evaluated to 0; defaulting to " + string(inferred));
+        if (dbg_on(DBG_FLOW))  show_debug_message("NEXT: STEP evaluated to 0; defaulting to " + string(inferred));
         step_val = inferred;
     }
 
@@ -83,13 +83,13 @@ function basic_cmd_next(arg) {
     // --------------------------
     current += step_val;
     global.basic_variables[? varname] = current;
-    show_debug_message("NEXT: Updated value of " + string(varname) + " = " + string(current));
+    if (dbg_on(DBG_FLOW))  show_debug_message("NEXT: Updated value of " + string(varname) + " = " + string(current));
 
     // --------------------------
     // 4) Continuation test
     // --------------------------
     var continue_loop = (step_val > 0) ? (current <= to_val) : (current >= to_val);
-    show_debug_message("NEXT: Loop check — continue = " + string(continue_loop)
+    if (dbg_on(DBG_FLOW))  show_debug_message("NEXT: Loop check — continue = " + string(continue_loop)
         + " (to=" + string(to_val) + ", step=" + string(step_val) + ")");
 
     if (continue_loop) {
@@ -108,11 +108,11 @@ function basic_cmd_next(arg) {
             if (variable_global_exists("interpreter_use_stmt_jump")) {
                 global.interpreter_use_stmt_jump = true;
             }
-            show_debug_message("NEXT: Inline jump to (line, stmt) = (" + string(loop_line) + ", " + string(loop_stmt) + ")");
+            if (dbg_on(DBG_FLOW))  show_debug_message("NEXT: Inline jump to (line, stmt) = (" + string(loop_line) + ", " + string(loop_stmt) + ")");
         } else {
             // Legacy compatible line-based jump (what you have today)
             global.interpreter_next_line = return_line + 1;
-            show_debug_message("NEXT: Legacy jump — looping back to line index: " + string(global.interpreter_next_line));
+            if (dbg_on(DBG_FLOW))  show_debug_message("NEXT: Legacy jump — looping back to line index: " + string(global.interpreter_next_line));
         }
 
     } else {
@@ -120,7 +120,7 @@ function basic_cmd_next(arg) {
         // 5b) COMPLETE: pop frame and continue after NEXT
         // --------------------------------------------
         ds_stack_pop(global.for_stack);
-        show_debug_message("NEXT: Loop complete — popped FOR frame");
+        if (dbg_on(DBG_FLOW))  show_debug_message("NEXT: Loop complete — popped FOR frame");
         // Execution naturally proceeds to the next statement after NEXT
     }
 }

@@ -4,6 +4,9 @@
 #macro DBG_FLOW   4     // IF/WHILE/GOTO/GOSUB flow
 #macro DBG_IO     8     // INPUT/PRINT/UI prompts
 #macro DBG_ARRAY  16    // array get/set, DIM
+#macro DBG_PERF   32    // performance
+#macro DBG_STEP   64    // Execution
+#macro DBG_EXEC   128	// EXEC
 #macro DBG_ALL    0x7fffffff
 
 /*

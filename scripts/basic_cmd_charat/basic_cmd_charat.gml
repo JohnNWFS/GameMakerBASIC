@@ -4,7 +4,7 @@ function basic_cmd_charat(arg) {
     var args = string_split(arg, ",");
 
     if (array_length(args) < 3) {
-        show_debug_message("CHARAT requires 3 arguments: x, y, char");
+        if (dbg_on(DBG_FLOW))  show_debug_message("CHARAT requires 3 arguments: x, y, char");
         return;
     }
 
@@ -20,7 +20,7 @@ function basic_cmd_charat(arg) {
             var index = _x + _y * cols;
             grid_obj.grid[index].char = char_index;
         } else {
-            show_debug_message("CHARAT: coordinates out of bounds.");
+            if (dbg_on(DBG_FLOW))  show_debug_message("CHARAT: coordinates out of bounds.");
         }
     }
 }

@@ -1,7 +1,7 @@
 function basic_cmd_pset(arg) {
     var args = string_split(arg, ",");
     if (array_length(args) < 5) {
-        show_debug_message("PSET requires 5 arguments: x, y, char, fg, bg");
+        if (dbg_on(DBG_FLOW))  show_debug_message("PSET requires 5 arguments: x, y, char, fg, bg");
         return;
     }
     
@@ -25,11 +25,11 @@ function basic_cmd_pset(arg) {
             grid_obj.grid[index].char = char_index;
             grid_obj.grid[index].fg = fg_color;
             grid_obj.grid[index].bg = bg_color;
-            show_debug_message("PSET: Set tile at (" + string(x_val) + "," + string(y_val) + ") to char=" + string(char_index));
+            if (dbg_on(DBG_FLOW))  show_debug_message("PSET: Set tile at (" + string(x_val) + "," + string(y_val) + ") to char=" + string(char_index));
         } else {
-            show_debug_message("PSET: coordinates out of bounds: (" + string(x_val) + "," + string(y_val) + ")");
+            if (dbg_on(DBG_FLOW))  show_debug_message("PSET: coordinates out of bounds: (" + string(x_val) + "," + string(y_val) + ")");
         }
     } else {
-        show_debug_message("PSET: No grid object found");
+        if (dbg_on(DBG_FLOW))  show_debug_message("PSET: No grid object found");
     }
 }

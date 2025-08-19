@@ -1,11 +1,11 @@
 /// @script basic_cmd_elseif
 /// @description Handle an ELSEIF in a block‐structured IF…THEN…ELSEIF…ELSE…ENDIF chain
 function basic_cmd_elseif(arg) {
-    show_debug_message("ELSEIF START — Raw arg: '" + arg + "'");
+    if (dbg_on(DBG_FLOW))  show_debug_message("ELSEIF START — Raw arg: '" + arg + "'");
     
     // ── GUARD 1: Must have an open IF on the stack ──
     if (ds_stack_empty(global.if_stack)) {
-        show_debug_message("?ELSEIF ERROR: ELSEIF without matching IF");
+        if (dbg_on(DBG_FLOW))  show_debug_message("?ELSEIF ERROR: ELSEIF without matching IF");
         return;
     }
     
@@ -17,7 +17,7 @@ function basic_cmd_elseif(arg) {
     
     // ── GUARD 2: Must have block metadata for this IF ──
     if (!ds_map_exists(global.if_block_map, frame[? "startIndex"])) {
-        show_debug_message("?ELSEIF ERROR: No IF‐block metadata (bad nesting?)");
+        if (dbg_on(DBG_FLOW))  show_debug_message("?ELSEIF ERROR: No IF‐block metadata (bad nesting?)");
         return;
     }
     
@@ -29,7 +29,7 @@ function basic_cmd_elseif(arg) {
     // 3) Find which ELSEIF this is
     var pos = ds_list_find_index(elseif_list, current_index);
     if (pos < 0) {
-        show_debug_message("?ELSEIF ERROR: Unexpected ELSEIF at index " + string(current_index));
+        if (dbg_on(DBG_FLOW))  show_debug_message("?ELSEIF ERROR: Unexpected ELSEIF at index " + string(current_index));
         return;
     }
     
@@ -45,7 +45,7 @@ function basic_cmd_elseif(arg) {
             next_index = endif_index;
         }
         global.interpreter_next_line = next_index;
-        show_debug_message("ELSEIF skipping to index " + string(next_index));
+        if (dbg_on(DBG_FLOW))  show_debug_message("ELSEIF skipping to index " + string(next_index));
         return;
     }
     
@@ -54,11 +54,11 @@ function basic_cmd_elseif(arg) {
     var upperRaw = string_upper(raw);
     var then_pos = string_pos("THEN", upperRaw);
     if (then_pos <= 0) {
-        show_debug_message("?ELSEIF ERROR: Missing THEN in '" + raw + "'");
+        if (dbg_on(DBG_FLOW))  show_debug_message("?ELSEIF ERROR: Missing THEN in '" + raw + "'");
         return;
     }
     var cond_text = string_trim(string_copy(raw, 1, then_pos - 1));
-    show_debug_message("Parsed ELSEIF condition: '" + cond_text + "'");
+    if (dbg_on(DBG_FLOW))  show_debug_message("Parsed ELSEIF condition: '" + cond_text + "'");
     
     // Reuse your AND/OR logic from basic_cmd_if
     var result = false;
@@ -71,25 +71,25 @@ function basic_cmd_elseif(arg) {
         var res1 = basic_evaluate_condition(string_trim(parts[0]));
         var res2 = basic_evaluate_condition(string_trim(parts[1]));
         result = (logic_op == "AND") ? (res1 && res2) : (res1 || res2);
-        show_debug_message("Combined ELSEIF (" + logic_op + "): " +
+        if (dbg_on(DBG_FLOW))  show_debug_message("Combined ELSEIF (" + logic_op + "): " +
                            string(res1) + " " + logic_op + " " + string(res2) +
                            " = " + string(result));
     } else {
         result = basic_evaluate_condition(cond_text);
-        show_debug_message("ELSEIF single condition result: " + string(result));
+        if (dbg_on(DBG_FLOW))  show_debug_message("ELSEIF single condition result: " + string(result));
     }
     
     // 6) If it’s true, mark the frame as “taken” and fall into this block…
     if (result) {
         frame[? "takenBranch"] = true;
         global.interpreter_next_line = current_index + 1;
-        show_debug_message("ELSEIF TRUE: entering branch at index " + string(global.interpreter_next_line));
+        if (dbg_on(DBG_FLOW))  show_debug_message("ELSEIF TRUE: entering branch at index " + string(global.interpreter_next_line));
     } else {
         // …otherwise skip to the next ELSEIF/ELSE/ENDIF
         var next_index = (pos < ds_list_size(elseif_list) - 1)
                          ? elseif_list[| pos + 1]
                          : (else_index >= 0 ? else_index : endif_index);
         global.interpreter_next_line = next_index;
-        show_debug_message("ELSEIF FALSE: skipping to index " + string(next_index));
+        if (dbg_on(DBG_FLOW))  show_debug_message("ELSEIF FALSE: skipping to index " + string(next_index));
     }
 }

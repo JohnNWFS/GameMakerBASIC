@@ -12,7 +12,7 @@ function handle_basic_command(cmd, arg) {
         var stmt = string_trim(parts[i]);
         if (stmt == "") continue;
 
-        show_debug_message("DISPATCH PART: " + stmt);
+        if (dbg_on(DBG_FLOW)) show_debug_message("DISPATCH PART: " + stmt);
 
         // Strip any trailing REM (apostrophe handled inside)
         stmt = strip_basic_remark(stmt);
@@ -154,7 +154,7 @@ if (has_content_after_then || has_colon_tail || has_action_no_then) {
                     arg_full = string_trim(string_copy(remainder, 3, string_length(remainder) - 2));
                 }
 
-                show_debug_message("COMMAND DISPATCH (collapsed IF): IF | ARG: " + arg_full);
+                if (dbg_on(DBG_FLOW)) show_debug_message("COMMAND DISPATCH (collapsed IF): IF | ARG: " + arg_full);
                 basic_cmd_if_inline(arg_full);
 
                 // If the inline handler halted with an error, don't synthesize a jump
@@ -171,15 +171,30 @@ if (has_content_after_then || has_colon_tail || has_action_no_then) {
             // Else fall-through to the structured IF handler below.
         }
 
-        show_debug_message("COMMAND DISPATCH: " + _verb + " | ARG: " + _rest);
+        if (dbg_on(DBG_FLOW)) show_debug_message("COMMAND DISPATCH: " + _verb + " | ARG: " + _rest);
 
         switch (_verb) {
-            case "PRINT":     basic_cmd_print(_rest, global.current_line_number); break;
+            
+			case "PRINT":     
+		    if (global.current_mode >= 1) {
+		        basic_cmd_print_mode1(_rest); 
+		    } else {
+		        basic_cmd_print(_rest, global.current_line_number); 
+		    }
+		    break;
+			
             case "LET":       basic_cmd_let(_rest); break;
             case "GOTO":      basic_cmd_goto(_rest); break;
             case "INPUT":     basic_cmd_input(_rest); break;
             case "COLOR":     basic_cmd_color(_rest); break;
-            case "CLS":       basic_cmd_cls(); break;
+			
+			case "CLS":       
+			    if (global.current_mode >= 1) {
+			        basic_cmd_cls_mode1();
+			    } else {
+			        basic_cmd_cls(); 
+			    }
+			    break;
 
             // Structured control flow (multi-line)
             case "IF":        basic_cmd_if(_rest); break;
@@ -218,6 +233,18 @@ if (has_content_after_then || has_colon_tail || has_action_no_then) {
 
             case "READ":      basic_cmd_read(_rest); break;
             case "RESTORE":   basic_cmd_restore(_rest); break;
+
+			case "LOCATE":    basic_cmd_locate(_rest); break;
+			case "SCROLL":    basic_cmd_scroll(_rest); break;
+
+			case "SCREEN":    // This will be handled as a function in expressions
+			case "POINT":     // This will be handled as a function in expressions  
+			case "POS":       // This will be handled as a function in expressions
+			case "CSRLIN":    // This will be handled as a function in expressions
+			case "TAB":       // This will be handled in PRINT processing
+			case "SPC":       // This will be handled in PRINT processing
+			    break;
+
 
             default:
                 // implicit LET?  e.g.  "X = 5"

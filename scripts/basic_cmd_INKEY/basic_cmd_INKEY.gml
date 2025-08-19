@@ -1,6 +1,6 @@
 // === 1. Add INKEY$ command handler ===
 function basic_cmd_INKEY() {
-    show_debug_message("INKEY$: Pausing program, waiting for single keypress...");
+    if (dbg_on(DBG_FLOW)) show_debug_message("INKEY$: Pausing program, waiting for single keypress...");
     
     global.pause_in_effect = true;
     global.awaiting_input = true;
