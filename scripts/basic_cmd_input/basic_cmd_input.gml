@@ -61,9 +61,9 @@ function basic_cmd_input(arg) {
         if (string_char_at(rawPrompt, string_length(rawPrompt)) != " ") rawPrompt += " ";
         ds_list_add(global.output_lines, rawPrompt);
         ds_list_add(global.output_colors, global.basic_text_color);
-        show_debug_message("INPUT: Prompt='" + rawPrompt + "'");
+        if (dbg_on(DBG_FLOW)) show_debug_message("INPUT: Prompt='" + rawPrompt + "'");
     } else {
-        show_debug_message("INPUT: No prompt (default '? ')");
+        if (dbg_on(DBG_FLOW)) show_debug_message("INPUT: No prompt (default '? ')");
     }
 
     // 5) Seed the variable (string vars end with $, others numeric)
@@ -79,5 +79,5 @@ function basic_cmd_input(arg) {
     global.input_expected   = true;
     global.input_target_var = varName;
 
-    show_debug_message("INPUT: Awaiting input for variable " + varName);
+    if (dbg_on(DBG_FLOW)) show_debug_message("INPUT: Awaiting input for variable " + varName);
 }

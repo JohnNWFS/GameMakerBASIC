@@ -1,14 +1,9 @@
 /// obj_basic_interpreter → Create Event
 
-
-
-
-if (!variable_global_exists("debug_mask")) {
-    global.debug_mask        = DBG_ALL;   // start verbose; you can trim later
-    global.dbg_frame_quota   = 1200;      // ~20 logs per ms at 60fps is ok; tune as needed
+    global.debug_mask        = DBG_ALL;//0;//DBG_ALL;   // start verbose; you can trim later
+    global.dbg_frame_quota   = 0;      // 1200 is ~20 logs per ms at 60fps is ok; tune as needed
     global.dbg_frame_count   = 0;
     global.dbg_dropped_count = 0;
-}
 
 // Set the current draw color
 global.current_draw_color = global.basic_text_color;

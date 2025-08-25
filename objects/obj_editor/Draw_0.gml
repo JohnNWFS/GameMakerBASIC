@@ -1,19 +1,20 @@
-/// @description Insert description here
-// You can write your code in this editor
- // In Draw Event
- draw_set_font(fnt_basic); // Create a monospace font
- draw_set_color(make_color_rgb(255, 191, 64));  // Classic green text
- draw_rectangle_color(0, 0, room_width, room_height, c_black, c_black, c_black, c_black, false);
- 
- if (showing_dir_overlay) {
+/// @description Editor Draw Event
+//- Fixed for 24pt font
+// Set font and calculate actual height
+draw_set_font(fnt_basic);
+var actual_font_height = string_height("A"); // Get real font height
+draw_set_color(make_color_rgb(255, 191, 64));
+draw_rectangle_color(0, 0, room_width, room_height, c_black, c_black, c_black, c_black, false);
+
+if (showing_dir_overlay) {
     draw_set_color(c_black);
     draw_rectangle(0, 0, room_width, room_height, false);
 
-    draw_set_color(c_lime); // or whatever your readable text color is
-    draw_set_font(fnt_basic); // or whatever font you use
-
+    draw_set_color(c_lime);
+    draw_set_font(fnt_basic);
+    
     var col_count = 3;
-    var row_height = font_height;
+    var row_height = actual_font_height; // Use actual font height
     var col_width = room_width div col_count;
     var x_pad = 16;
     var y_pad = 16;
@@ -29,42 +30,41 @@
     }
 
     draw_text(x_pad, room_height - 32, "Press ENTER or ESC to close");
-
     return; // skip rest of Draw so editor doesn't draw underneath
 }
 
- 
- 
- 
- 
- 
- // Draw program lines
- var y_pos = 32;
- var lines_shown = 0;
- var total_lines = ds_list_size(global.line_numbers);
- for (var i = display_start_line; i < total_lines && lines_shown < lines_per_screen; i++) {
+// Draw program lines with proper spacing
+var y_pos = 32;
+var lines_shown = 0;
+var total_lines = ds_list_size(global.line_numbers);
+
+// Calculate how many lines fit on screen
+var available_height = room_height - 128; // Leave space for prompt and messages
+var max_lines = floor(available_height / actual_font_height);
+
+for (var i = display_start_line; i < total_lines && lines_shown < max_lines; i++) {
     var line_num = ds_list_find_value(global.line_numbers, i);
     var code = ds_map_find_value(global.program_lines, line_num);
     var display_text = string(line_num) + " " + code;
     
     draw_text(16, y_pos, display_text);
-    y_pos += font_height;
+    y_pos += actual_font_height; // Use actual font height
     lines_shown++;
- }
- // Draw input prompt
- draw_text(16, room_height - 64, "READY");
- draw_text(16, room_height - 32, "> " + current_input);
- // Draw cursor
- var cursor_x = 16 + string_width("> " + string_copy(current_input, 1, cursor_pos));
- if (current_time % 1000 < 500) { // Blinking cursor
-    draw_text(cursor_x, room_height - 32, "_");
- }
- 
- // In Draw Event (add to display code)
- if (message_text != "") {
+}
+
+// Draw input prompt with proper spacing
+draw_text(16, room_height - (actual_font_height * 2), "READY");
+draw_text(16, room_height - actual_font_height, "> " + current_input);
+
+// Draw cursor
+var cursor_x = 16 + string_width("> " + string_copy(current_input, 1, cursor_pos));
+if (current_time % 1000 < 500) { // Blinking cursor
+    draw_text(cursor_x, room_height - actual_font_height, "_");
+}
+
+// Draw message with proper spacing
+if (message_text != "") {
     draw_set_color(c_yellow);
-    draw_text(16, room_height - 96, message_text);
-    draw_set_color(c_green);
- }
- 
- 
+    draw_text(16, room_height - (actual_font_height * 3), message_text);
+    draw_set_color(make_color_rgb(255, 191, 64)); // Reset color
+}

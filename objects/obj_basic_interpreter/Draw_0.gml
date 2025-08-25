@@ -1,6 +1,10 @@
 /// @description obj_basic_interpreter Draw interpreter output and current input
 draw_set_font(fnt_basic);
 
+    draw_set_color(c_white);
+	draw_text(4, room_height - 60, "FONT=" + global.active_font_name + "  spr=" + string(global.active_font_sprite) + "  num=" + string(sprite_get_number(global.active_font_sprite)));
+
+
 // === BACKGROUND === //
 if (global.background_draw_enabled) {
     draw_set_color(global.background_draw_color);

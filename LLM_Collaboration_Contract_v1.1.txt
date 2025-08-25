@@ -1,0 +1,108 @@
+LLM Collaboration Contract (v1.1)
+
+Purpose:
+Enable reliable, low-overhead, multi-session collaboration on code projects (e.g., GameMaker/GML interpreter work) despite chat length and memory limits. Each new chat should feel like onboarding a new developer who can quickly regain context from a minimal set of artifacts.
+
+1) Operating Principles
+- Continuity over time: Treat each new chat as a reset; regain context from provided docs.
+- Layered context:
+  - Top Layer (always): This contract + short architecture summary.
+  - Middle Layer (session scope): Current subsystem focus + its interfaces.
+  - Bottom Layer (on demand): Specific code snippets/files explicitly requested.
+- Minimal overhead: Single rolling project_status.md.
+- Small, safe changes: Narrow, reversible diffs only.
+- Transparency: Stop and request specific files/functions when missing context.
+- Immutable contract: Do not attempt to rewrite or change this contract in future sessions.
+
+2) Sources of Truth
+- project_status.md (canonical):
+  - Contract / rules
+  - Architecture summary (≤1 screen)
+  - Current subsystem focus
+  - System interfaces (only relevant ones)
+  - Known issues / Next tasks (prioritized)
+  - Recent changes (last 3–5)
+- Code snapshots: Concatenated or modular, provided on demand.
+- Session brief: Contract (short form), focus, and success criteria at session start.
+
+3) Session Structure
+- At session start:
+  - Read Contract + project_status.md + provided code.
+  - Deliver Plan (≤15 lines).
+  - Ask precisely for missing files/functions by name/path/event.
+  - Confirm subsystem state & interfaces.
+- During session:
+  - Provide diff-style patches only (with 2–5 unchanged context lines above/below).
+  - Preserve debug logs & comments; add clarity where needed.
+  - Avoid cross-module changes without approval.
+  - State assumptions if ambiguity exists.
+- At session end: Deliver Checkpoint (see §5).
+
+4) Code-Edit Protocol
+- Diff format:
+// FILE: scripts/basic_cmd_if_inline.gml
+// FUNCTION: basic_evaluate_token()
+// CHANGE: Added RHS-only validation for INKEY$
+- Show only changed sections with 2–5 lines of unchanged context above/below.
+- No invented APIs/platform features.
+- Preserve working behavior.
+- Maintain/add debug logs (DEBUG: or TRACE: prefix).
+
+5) Checkpoint & Continuity
+Template:
+- Subsystem: (name)
+- Changed: (file:function – what/why)
+- Reasoning (opt): (≤5 lines)
+- Open issues / Risks (opt): (bullets)
+- Next tasks: (ordered bullets)
+- Status: (working / blocked / needs-test)
+- Test coverage: (what has been tested / still needs testing)
+- Interface impacts (opt): (if cross-system)
+
+6) Ambiguity & Failure Modes
+- If missing context: “BLOCKED – need: [file/function/event]”
+- If cross-module impact: “BREAKING CHANGE ALERT” → stop for approval.
+- If token wall (~70%): Emit:
+  CONTEXT OVERFLOW – preparing emergency summary
+  Then give one-screen recap & request direction (truncate vs. refresh artifacts).
+
+7) Anti-Patterns
+- Broad rewrites or out-of-scope changes.
+- Silent renames or behavior shifts.
+- Removing debug logs or comments.
+- Silent fall-through in conditionals.
+- Adding dependencies/tools without approval.
+- Hand-wavy “should work” answers without diffs.
+
+8) Project-Specific Guardrails
+- Never assume unseen code; request it.
+- Prefer minimal edits + helpers over refactors.
+- Preserve & expand debug output.
+- GameMaker specifics:
+  - Avoid reserved keywords like depth.
+  - Respect event boundaries (Create/Step/Draw).
+  - Use modern GML syntax.
+  - Avoid perf-heavy allocations in Step.
+
+9) Output & Formatting Rules
+- Begin with Plan (≤15 lines).
+- Use fenced code blocks for diffs.
+- Separate Required Changes vs. Suggestions.
+- Keep prose concise (≤10 lines before diffs, unless recap).
+
+10) Session Opening Checklist
+✅ Read contract (short form)
+✅ Parse project_status.md
+✅ Review subsystem code provided
+✅ Identify system interfaces/dependencies
+✅ Note known issues/constraints
+✅ Confirm session scope & success criteria
+✅ Request missing files/functions by name
+✅ State assumptions about unchanged systems
+✅ Provide Plan (≤15 lines)
+✅ Confirm understanding before proceeding
+
+11) Emergency Protocols
+- Context overflow: Emit recap + request direction.
+- Breaking change detected: Emit “BREAKING CHANGE ALERT” and stop.
+- Blocked: Emit “BLOCKED – need: [requirement].”

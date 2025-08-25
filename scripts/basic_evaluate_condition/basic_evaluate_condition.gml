@@ -1,6 +1,6 @@
 function basic_evaluate_condition(expr) {
     var s = string_trim(expr);
-    show_debug_message("COND: Begin evaluate_condition → '" + s + "'");
+    if (dbg_on(DBG_FLOW)) show_debug_message ("COND: Begin evaluate_condition → '" + s + "'");
 
     // ===== boolean precedence: OR (low) then AND (high) =====
     {
@@ -26,7 +26,7 @@ function basic_evaluate_condition(expr) {
                 if (prev == " " && next == " ") {
                     var left  = string_trim(string_copy(s, 1, i - 1));
                     var right = string_trim(string_copy(s, i + 2, L - (i + 2) + 1));
-                    show_debug_message("COND: top-level OR split → LHS='" + left + "'  ||  RHS='" + right + "'");
+                    if (dbg_on(DBG_FLOW)) show_debug_message ("COND: top-level OR split → LHS='" + left + "'  ||  RHS='" + right + "'");
 
                     var lres = basic_evaluate_condition(left);
                     if (dbg_on(DBG_FLOW)) show_debug_message("COND: OR left result = " + string(lres));
@@ -63,7 +63,7 @@ function basic_evaluate_condition(expr) {
 
                     var lres2 = basic_evaluate_condition(left2);
                     if (dbg_on(DBG_FLOW)) show_debug_message("COND: AND left result = " + string(lres2));
-                    if (!lres2) { show_debug_message("COND: AND short-circuit FALSE"); return false; }
+                    if (!lres2) { if (dbg_on(DBG_FLOW)) show_debug_message("COND: AND short-circuit FALSE"); return false; }
 
                     var rres2 = basic_evaluate_condition(right2);
                     var andres = (lres2 && rres2);

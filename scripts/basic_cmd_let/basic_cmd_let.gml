@@ -6,14 +6,14 @@
 /// - Safeguards unmatched parentheses and empty pieces to avoid hard crashes.
 
 function basic_cmd_let(arg) {
-    show_debug_message("LET: Raw input: '" + string(arg) + "'");
+    if (dbg_on(DBG_FLOW))  show_debug_message("LET: Raw input: '" + string(arg) + "'");
 
     // ---------------------------
     // 1) Split "name = expr"
     // ---------------------------
     var eq_pos = string_pos("=", arg);
     if (eq_pos <= 0) {
-        show_debug_message("LET ERROR: No '=' found in input: " + string(arg));
+        if (dbg_on(DBG_FLOW))  show_debug_message("LET ERROR: No '=' found in input: " + string(arg));
         return;
     }
 
@@ -21,15 +21,15 @@ function basic_cmd_let(arg) {
     var varname = string_upper(string_trim(string_copy(arg, 1, eq_pos - 1)));
     var expr    = string_trim(string_copy(arg, eq_pos + 1, string_length(arg) - eq_pos));
 
-    show_debug_message("LET: Parsed variable name: '" + varname + "'");
-    show_debug_message("LET: Parsed expression    : '" + expr + "'");
+    if (dbg_on(DBG_FLOW))  show_debug_message("LET: Parsed variable name: '" + varname + "'");
+    if (dbg_on(DBG_FLOW))  show_debug_message("LET: Parsed expression    : '" + expr + "'");
 
     if (varname == "") {
-        show_debug_message("LET ERROR: Empty variable name before '='");
+        if (dbg_on(DBG_FLOW))  show_debug_message("LET ERROR: Empty variable name before '='");
         return;
     }
     if (expr == "") {
-        show_debug_message("LET WARNING: Empty expression after '='; treating as empty string");
+        if (dbg_on(DBG_FLOW))  show_debug_message("LET WARNING: Empty expression after '='; treating as empty string");
         global.basic_variables[? varname] = "";
         return;
     }
@@ -56,11 +56,11 @@ function basic_cmd_let(arg) {
 
             if (string_char_at(varname, string_length(varname)) == "$") {
                 global.basic_variables[? varname] = _ch;
-                show_debug_message("INKEY_WAIT: assigning captured char '" + _ch + "' to " + varname);
+                if (dbg_on(DBG_FLOW))  show_debug_message("INKEY_WAIT: assigning captured char '" + _ch + "' to " + varname);
             } else {
                 var _asc = ord(_ch);
                 global.basic_variables[? varname] = _asc;
-                show_debug_message("INKEY_WAIT: assigning ASC('" + _ch + "')=" + string(_asc) + " to " + varname);
+                if (dbg_on(DBG_FLOW))  show_debug_message("INKEY_WAIT: assigning ASC('" + _ch + "')=" + string(_asc) + " to " + varname);
             }
 
             // Do NOT pause; normal flow continues and Step will advance colon slot.
@@ -72,7 +72,7 @@ function basic_cmd_let(arg) {
         global.inkey_waiting    = true;
         global.pause_in_effect  = true;   // gate used by your PAUSE
         global.awaiting_input   = false;  // ensure INPUT gate is off
-        show_debug_message("INKEY_WAIT: armed for '" + varname + "'; pausing until key release");
+        if (dbg_on(DBG_FLOW))  show_debug_message("INKEY_WAIT: armed for '" + varname + "'; pausing until key release");
         return;
     }
 
@@ -85,7 +85,7 @@ function basic_cmd_let(arg) {
     {
         var str_val = string_copy(expr, 2, string_length(expr) - 2);
         global.basic_variables[? varname] = str_val;
-        show_debug_message("LET: Assigned string value: '" + str_val + "' to '" + varname + "'");
+        if (dbg_on(DBG_FLOW))  show_debug_message("LET: Assigned string value: '" + str_val + "' to '" + varname + "'");
         return;
     }
 
@@ -97,7 +97,7 @@ function basic_cmd_let(arg) {
     if (openPos > 0) {
         // Ensure trailing ')'
         if (string_char_at(varname, string_length(varname)) != ")") {
-            show_debug_message("LET WARNING: Array syntax missing ')': '" + varname + "'. Falling back to scalar assignment.");
+            if (dbg_on(DBG_FLOW))  show_debug_message("LET WARNING: Array syntax missing ')': '" + varname + "'. Falling back to scalar assignment.");
         } else {
             // Extract array name and raw index text (allow spaces inside)
             var arrName = string_copy(varname, 1, openPos - 1);
@@ -111,7 +111,7 @@ function basic_cmd_let(arg) {
             idxText = string_trim(idxText);
 
             if (arrName == "" || idxText == "") {
-                show_debug_message("LET WARNING: Malformed array target. arrName='" + arrName + "', idxText='" + idxText + "'. Falling back to scalar.");
+                if (dbg_on(DBG_FLOW))  show_debug_message("LET WARNING: Malformed array target. arrName='" + arrName + "', idxText='" + idxText + "'. Falling back to scalar.");
             } else {
                 // Evaluate index and value via the standard expression pipeline
                 var idxVal   = basic_evaluate_expression_v2(idxText);
@@ -119,13 +119,13 @@ function basic_cmd_let(arg) {
 
                 // Defensive: if idxVal is not numeric, bail gracefully
                 if (!is_real(idxVal)) {
-                    show_debug_message("LET ERROR: Array index evaluated to non-numeric '" + string(idxVal) + "' from '" + idxText + "'");
+                    if (dbg_on(DBG_FLOW))  show_debug_message("LET ERROR: Array index evaluated to non-numeric '" + string(idxVal) + "' from '" + idxText + "'");
                     return;
                 }
 
                 // Perform 1-based array set via your helper
                 basic_array_set(arrName, idxVal, valueVal);
-                show_debug_message("LET: Assigned array '" + arrName + "(" + string(idxVal) + ")' = " + string(valueVal));
+                if (dbg_on(DBG_FLOW))  show_debug_message("LET: Assigned array '" + arrName + "(" + string(idxVal) + ")' = " + string(valueVal));
                 return;
             }
         }
@@ -141,9 +141,9 @@ function basic_cmd_let(arg) {
     global.basic_variables[? varname] = result;
 
     if (is_string(result)) {
-        show_debug_message("LET: Assigned string value: '" + string(result) + "' to '" + varname + "'");
+        if (dbg_on(DBG_FLOW))  show_debug_message("LET: Assigned string value: '" + string(result) + "' to '" + varname + "'");
     } else {
-        show_debug_message("LET: Assigned numeric value: " + string(result) + " to '" + varname + "'");
+        if (dbg_on(DBG_FLOW))  show_debug_message("LET: Assigned numeric value: " + string(result) + " to '" + varname + "'");
     }
 }
 // === END: basic_cmd_let ===

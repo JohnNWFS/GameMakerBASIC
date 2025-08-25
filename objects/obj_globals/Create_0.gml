@@ -87,11 +87,32 @@ global.mode_rooms[? 0] = rm_basic_interpreter; // Text
 global.mode_rooms[? 1] = rm_mode1_graphics;    // Tile graphics
 global.mode_rooms[? 2] = rm_mode2_pixel;       // Pixel graphics
 
-//MODE 1 sprite sheet container
+// MODE 1 sprite sheet container
 // FONT registry for MODE 1
 global.font_sheets = ds_map_create();
+
+// Base character sheet
 ds_map_add(global.font_sheets, "DEFAULT", spr_charactersheet);
+
+// Special 32×32 or alt glyphs
 ds_map_add(global.font_sheets, "SPECIAL", spr_charactersheet_special);
+
+// 16×16 set
+ds_map_add(global.font_sheets, "16x16", spr_charactersheet_16x16);
+ds_map_add(global.font_sheets, "16x16_SPECIAL", spr_charactersheet_16x16_special);
+
+// 8×8 set
+ds_map_add(global.font_sheets, "8x8", spr_charactersheet_8x8);
+ds_map_add(global.font_sheets, "DEFAULT_32", spr_charactersheet);
+ds_map_add(global.font_sheets, "DEFAULT_16", spr_charactersheet_16x16);
+ds_map_add(global.font_sheets, "DEFAULT_8",  spr_charactersheet_8x8);
+
+ds_map_add(global.font_sheets, "SPECIAL_16", spr_charactersheet_16x16_special);
+
+// Initialize active sheet
+global.mode1_active_sprite   = global.font_sheets[? "DEFAULT_32"];
+global.mode1_active_font_key = "DEFAULT_32";
+global.mode1_cell_px         = 32;
 
 global.active_font_name = "DEFAULT";
 global.active_font_sprite = global.font_sheets[? global.active_font_name];

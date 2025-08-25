@@ -244,7 +244,9 @@ if (has_content_after_then || has_colon_tail || has_action_no_then) {
 			case "TAB":       // This will be handled in PRINT processing
 			case "SPC":       // This will be handled in PRINT processing
 			    break;
-
+			
+			case "FONTSET":  basic_cmd_fontset(_rest); 
+			break;
 
             default:
                 // implicit LET?  e.g.  "X = 5"

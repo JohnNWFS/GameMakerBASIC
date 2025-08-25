@@ -44,5 +44,5 @@ function basic_syntax_error(msg, line_no, stmt_idx, hint_key) {
     // Let run_program() know not to clear the screen immediately
     global._syntax_error_just_emitted = true;
 
-    show_debug_message("SYNTAX: " + msg + " (line " + string(line_no) + ")");
+    if (dbg_on(DBG_FLOW)) show_debug_message("SYNTAX: " + msg + " (line " + string(line_no) + ")");
 }
