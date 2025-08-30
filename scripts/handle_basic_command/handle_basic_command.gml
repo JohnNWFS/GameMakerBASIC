@@ -28,7 +28,11 @@ function handle_basic_command(cmd, arg) {
             _rest = "";
         }
 
-
+           // Skip INKEY$ as command (handled as function in evaluate_postfix)
+           if (_verb == "INKEY$") {
+               if (dbg_on(DBG_FLOW)) show_debug_message("INKEY$: Ignored as command, treated as function");
+               continue;
+           }
 
 
 // ---------- SYNTAX GUARD: INKEY$ misuse (quote-aware) ----------

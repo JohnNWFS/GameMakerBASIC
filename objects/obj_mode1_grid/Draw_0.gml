@@ -1,4 +1,4 @@
-/// @description obj_mode1_grid Draw Event
+/// @event obj_mode1_grid/Draw
 //draw_sprite(spr_charactersheet,10,10,10);
 var tile_w    = global.mode1_cell_px; // 32 (default), 16, or 8
 var tile_h    = global.mode1_cell_px;
@@ -55,8 +55,8 @@ for (var _y = 0; _y < rows; _y++) {
     }
 }
 
-    draw_set_color(c_white);
-	draw_text(4, room_height - 40, "FONT=" + global.active_font_name + "  spr=" + string(global.active_font_sprite) + "  num=" + string(sprite_get_number(global.active_font_sprite)));
+//    draw_set_color(c_white);
+//	draw_text(4, room_height - 40, "FONT=" + global.active_font_name + "  spr=" + string(global.active_font_sprite) + "  num=" + string(sprite_get_number(global.active_font_sprite)));
 	
 // Reset draw state after the loop
 draw_set_color(c_white);

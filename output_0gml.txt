@@ -618,25 +618,21 @@ function evaluate_postfix(postfix) {
                 }
 				
 				
-// === 3. Modify your INKEY$ function case to just return the stored result ===
-case "INKEY$": {
-    var result = "";
-    
-    // Check if we have a stored result from the blocking input
-    if (ds_map_exists(global.basic_variables, "__INKEY_RESULT")) {
-        result = global.basic_variables[? "__INKEY_RESULT"];
-        // Clear the result after reading it
-        ds_map_delete(global.basic_variables, "__INKEY_RESULT");
-        if (dbg_on(DBG_PARSE)) show_debug_message("INKEY$ function: Returning stored result '" + result + "'");
-    } else {
-        if (dbg_on(DBG_PARSE)) show_debug_message("INKEY$ function: No stored result, returning empty");
-    }
-    
-    array_push(stack, result);
-    break;
-}
+                case "INKEY$": {
+                if (dbg_on(DBG_PARSE)) show_debug_message("INKEY$ function: Processing INKEY$ token");
+ 
+                   var result = "";
+                   if (ds_exists(global.__inkey_queue, ds_type_queue) && !ds_queue_empty(global.__inkey_queue)) {
+                       result = ds_queue_dequeue(global.__inkey_queue);
+                       if (dbg_on(DBG_PARSE)) show_debug_message("INKEY$ function: Dequeued '" + result + "', queue size now = " + string(ds_queue_size(global.__inkey_queue)));
+                   } else {
+                       if (dbg_on(DBG_PARSE)) show_debug_message("INKEY$ function: Queue empty or not initialized, returning empty string");
+                   }
+                    array_push(stack, result);
+                    break;
+                }
 
-                // ---- Math
+				// ---- Math
                 case "ABS": array_push(stack, abs(safe_real_pop(stack))); break;
                 case "EXP": array_push(stack, exp(safe_real_pop(stack))); break;
 
@@ -786,6 +782,8 @@ case "INKEY$": {
                       ", pause_mode: " + string(global.pause_mode));
 }*/
 
+// Capture keys for INKEY$ every frame
+inkey_capture_keys();
 
 global.dbg_frame_count = 0;
 if (global.dbg_dropped_count > 0) {
@@ -847,7 +845,7 @@ if (global.awaiting_input) {
     return;
 }
 
-// ------------------------------------------------------------------
+/*// ------------------------------------------------------------------
 // INKEY$ modal wait handler (blocking GET-style for LET ... = INKEY$)
 // Armed by basic_cmd_let: pause_in_effect=true & inkey_waiting=true
 // Captures ONE printable key (ASCII 32..126) on pressed edge, then resumes.
@@ -871,7 +869,7 @@ if (global.pause_in_effect && global.inkey_waiting) {
         //show_debug_message("INKEY_WAIT: paused, waiting for printable key");
     }
     return; // don't advance interpreter while waiting / just after capture
-}
+}*/
 
 // ==============================
 // === Synchronize for structured IF…ELSE handling ===
@@ -1060,7 +1058,11 @@ function handle_basic_command(cmd, arg) {
             _rest = "";
         }
 
-
+           // Skip INKEY$ as command (handled as function in evaluate_postfix)
+           if (_verb == "INKEY$") {
+               if (dbg_on(DBG_FLOW)) show_debug_message("INKEY$: Ignored as command, treated as function");
+               continue;
+           }
 
 
 // ---------- SYNTAX GUARD: INKEY$ misuse (quote-aware) ----------
@@ -1651,156 +1653,6 @@ function build_data_streams() {
         show_debug_message("DATA DEFAULT SIZE = " + string(ds_list_size(_def.list)));
     }
 }
-
-/// @function basic_cmd_let(arg)
-// === BEGIN: basic_cmd_let ===
-/// @description BASIC LET/assignment with array support (D(I)=expr), scalars, and string literals.
-/// Notes:
-/// - Array indices are evaluated via basic_evaluate_expression_v2 and stored with basic_array_set (1-based).
-/// - Safeguards unmatched parentheses and empty pieces to avoid hard crashes.
-
-function basic_cmd_let(arg) {
-    if (dbg_on(DBG_FLOW))  show_debug_message("LET: Raw input: '" + string(arg) + "'");
-
-    // ---------------------------
-    // 1) Split "name = expr"
-    // ---------------------------
-    var eq_pos = string_pos("=", arg);
-    if (eq_pos <= 0) {
-        if (dbg_on(DBG_FLOW))  show_debug_message("LET ERROR: No '=' found in input: " + string(arg));
-        return;
-    }
-
-    // Normalize name and expression text
-    var varname = string_upper(string_trim(string_copy(arg, 1, eq_pos - 1)));
-    var expr    = string_trim(string_copy(arg, eq_pos + 1, string_length(arg) - eq_pos));
-
-    if (dbg_on(DBG_FLOW))  show_debug_message("LET: Parsed variable name: '" + varname + "'");
-    if (dbg_on(DBG_FLOW))  show_debug_message("LET: Parsed expression    : '" + expr + "'");
-
-    if (varname == "") {
-        if (dbg_on(DBG_FLOW))  show_debug_message("LET ERROR: Empty variable name before '='");
-        return;
-    }
-    if (expr == "") {
-        if (dbg_on(DBG_FLOW))  show_debug_message("LET WARNING: Empty expression after '='; treating as empty string");
-        global.basic_variables[? varname] = "";
-        return;
-    }
-
-    // ---------------------------------------------------
-    // 1.5) SPECIAL: Blocking GET-style INKEY$ on RHS
-    //      - Arms pause on first encounter, waits for key release.
-    //      - On resume, assigns captured char; string to $ vars, ASC() to numeric.
-    // ---------------------------------------------------
-    var _exprU = string_upper(string_replace_all(string_replace_all(expr, " ", ""), "\t", ""));
-    var _is_inkey = (_exprU == "INKEY$" || _exprU == "INKEY$()");
-
-    if (_is_inkey) {
-        // Ensure INKEY state globals exist
-        if (is_undefined(global.inkey_waiting))       global.inkey_waiting       = false;
-        if (is_undefined(global.inkey_captured))      global.inkey_captured      = "";
-        if (is_undefined(global.inkey_target_var))    global.inkey_target_var    = "";
-
-        // If a char was captured already (from the Step pause handler), assign now
-        if (!global.inkey_waiting && is_string(global.inkey_captured) && string_length(global.inkey_captured) > 0) {
-            var _ch = global.inkey_captured;
-            global.inkey_captured   = "";   // consume
-            global.inkey_target_var = "";   // clear
-
-            if (string_char_at(varname, string_length(varname)) == "$") {
-                global.basic_variables[? varname] = _ch;
-                if (dbg_on(DBG_FLOW))  show_debug_message("INKEY_WAIT: assigning captured char '" + _ch + "' to " + varname);
-            } else {
-                var _asc = ord(_ch);
-                global.basic_variables[? varname] = _asc;
-                if (dbg_on(DBG_FLOW))  show_debug_message("INKEY_WAIT: assigning ASC('" + _ch + "')=" + string(_asc) + " to " + varname);
-            }
-
-            // Do NOT pause; normal flow continues and Step will advance colon slot.
-            return;
-        }
-
-        // Otherwise, arm the modal wait (pause just like PAUSE) and return.
-        global.inkey_target_var = varname;
-        global.inkey_waiting    = true;
-        global.pause_in_effect  = true;   // gate used by your PAUSE
-        global.awaiting_input   = false;  // ensure INPUT gate is off
-        if (dbg_on(DBG_FLOW))  show_debug_message("INKEY_WAIT: armed for '" + varname + "'; pausing until key release");
-        return;
-    }
-
-    // -----------------------------------------------
-    // 2) String-literal assignment (double quotes)
-    // -----------------------------------------------
-    if (string_length(expr) >= 2
-    &&  string_char_at(expr, 1) == "\""
-    &&  string_char_at(expr, string_length(expr)) == "\"")
-    {
-        var str_val = string_copy(expr, 2, string_length(expr) - 2);
-        global.basic_variables[? varname] = str_val;
-        if (dbg_on(DBG_FLOW))  show_debug_message("LET: Assigned string value: '" + str_val + "' to '" + varname + "'");
-        return;
-    }
-
-    // ---------------------------------------------------
-    // 3) Array assignment: NAME( index_expr ) = value_expr
-    //     - Works for VAR( I ), VAR( 1+J ), etc.
-    // ---------------------------------------------------
-    var openPos = string_pos("(", varname);
-    if (openPos > 0) {
-        // Ensure trailing ')'
-        if (string_char_at(varname, string_length(varname)) != ")") {
-            if (dbg_on(DBG_FLOW))  show_debug_message("LET WARNING: Array syntax missing ')': '" + varname + "'. Falling back to scalar assignment.");
-        } else {
-            // Extract array name and raw index text (allow spaces inside)
-            var arrName = string_copy(varname, 1, openPos - 1);
-            var idxText = string_copy(varname, openPos + 1, string_length(varname) - openPos - 1);
-            // strip trailing ')' if still present due to odd spacing
-            if (string_length(idxText) > 0 && string_char_at(idxText, string_length(idxText)) == ")") {
-                idxText = string_delete(idxText, string_length(idxText), 1);
-            }
-
-            arrName = string_upper(string_trim(arrName));
-            idxText = string_trim(idxText);
-
-            if (arrName == "" || idxText == "") {
-                if (dbg_on(DBG_FLOW))  show_debug_message("LET WARNING: Malformed array target. arrName='" + arrName + "', idxText='" + idxText + "'. Falling back to scalar.");
-            } else {
-                // Evaluate index and value via the standard expression pipeline
-                var idxVal   = basic_evaluate_expression_v2(idxText);
-                var valueVal = basic_evaluate_expression_v2(expr);
-
-                // Defensive: if idxVal is not numeric, bail gracefully
-                if (!is_real(idxVal)) {
-                    if (dbg_on(DBG_FLOW))  show_debug_message("LET ERROR: Array index evaluated to non-numeric '" + string(idxVal) + "' from '" + idxText + "'");
-                    return;
-                }
-
-                // Perform 1-based array set via your helper
-                basic_array_set(arrName, idxVal, valueVal);
-                if (dbg_on(DBG_FLOW))  show_debug_message("LET: Assigned array '" + arrName + "(" + string(idxVal) + ")' = " + string(valueVal));
-                return;
-            }
-        }
-        // If we got here, array syntax was malformed; continue to scalar handling below
-    }
-
-    // ---------------------------------------------------
-    // 4) Scalar numeric / expression assignment (fallback)
-    // ---------------------------------------------------
-    var result = basic_evaluate_expression_v2(expr);
-
-    // We don’t force-type; whatever evaluate returns is stored
-    global.basic_variables[? varname] = result;
-
-    if (is_string(result)) {
-        if (dbg_on(DBG_FLOW))  show_debug_message("LET: Assigned string value: '" + string(result) + "' to '" + varname + "'");
-    } else {
-        if (dbg_on(DBG_FLOW))  show_debug_message("LET: Assigned numeric value: " + string(result) + " to '" + varname + "'");
-    }
-}
-// === END: basic_cmd_let ===
 
 /// @script dbg_macros.gml
 #macro DBG_PARSE  1     // tokenizer, parser, DIM/LET parsing
@@ -2766,6 +2618,209 @@ global.editor_return_room = room; // whatever room the editor lives in at startu
 global.config[? "show_error_hints"] = true; // show compact help lines under syntax errors
 
 
+// FILE: scripts/basic_cmd_let.gml
+// FUNCTION: basic_cmd_let
+// CHANGE: Remove INKEY$ blocking logic, evaluate via basic_evaluate_expression_v2
+
+function basic_cmd_let(arg) {
+    if (dbg_on(DBG_FLOW))  show_debug_message("LET: Raw input: '" + string(arg) + "'");
+
+    // ---------------------------
+    // 1) Split "name = expr"
+    // ---------------------------
+    var eq_pos = string_pos("=", arg);
+    if (eq_pos <= 0) {
+        if (dbg_on(DBG_FLOW))  show_debug_message("LET ERROR: No '=' found in input: " + string(arg));
+        return;
+    }
+
+    // Normalize name and expression text
+    var varname = string_upper(string_trim(string_copy(arg, 1, eq_pos - 1)));
+    var expr    = string_trim(string_copy(arg, eq_pos + 1, string_length(arg) - eq_pos));
+
+    if (dbg_on(DBG_FLOW))  show_debug_message("LET: Parsed variable name: '" + varname + "'");
+    if (dbg_on(DBG_FLOW))  show_debug_message("LET: Parsed expression    : '" + expr + "'");
+
+    if (varname == "") {
+        if (dbg_on(DBG_FLOW))  show_debug_message("LET ERROR: Empty variable name before '='");
+        return;
+    }
+    if (expr == "") {
+        if (dbg_on(DBG_FLOW))  show_debug_message("LET WARNING: Empty expression after '='; treating as empty string");
+        global.basic_variables[? varname] = "";
+        return;
+    }
+
+
+     // -----------------------------------------------
+     // 2) String-literal assignment (double quotes)
+     // -----------------------------------------------
+     if (string_length(expr) >= 2
+     &&  string_char_at(expr, 1) == "\""
+     &&  string_char_at(expr, string_length(expr)) == "\"")
+     {
+         var str_val = string_copy(expr, 2, string_length(expr) - 2);
+         global.basic_variables[? varname] = str_val;
+         if (dbg_on(DBG_FLOW))  show_debug_message("LET: Assigned string value: '" + str_val + "' to '" + varname + "'");
+         return;
+     }
+
+     // ---------------------------------------------------
+     // 3) Array assignment: NAME( index_expr ) = value_expr
+     //     - Works for VAR( I ), VAR( 1+J ), etc.
+     // ---------------------------------------------------
+     var openPos = string_pos("(", varname);
+     if (openPos > 0) {
+         // Ensure trailing ')'
+         if (string_char_at(varname, string_length(varname)) != ")") {
+             if (dbg_on(DBG_FLOW))  show_debug_message("LET WARNING: Array syntax missing ')': '" + varname + "'. Falling back to scalar assignment.");
+         } else {
+             // Extract array name and raw index text (allow spaces inside)
+             var arrName = string_copy(varname, 1, openPos - 1);
+             var idxText = string_copy(varname, openPos + 1, string_length(varname) - openPos - 1);
+             // strip trailing ')' if still present due to odd spacing
+             if (string_length(idxText) > 0 && string_char_at(idxText, string_length(idxText)) == ")") {
+                 idxText = string_delete(idxText, string_length(idxText), 1);
+             }
+
+             arrName = string_upper(string_trim(arrName));
+             idxText = string_trim(idxText);
+
+             if (arrName == "" || idxText == "") {
+                 if (dbg_on(DBG_FLOW))  show_debug_message("LET WARNING: Malformed array target. arrName='" + arrName + "', idxText='" + idxText + "'. Falling back to scalar.");
+             } else {
+                 // Evaluate index and value via the standard expression pipeline
+                 var idxVal   = basic_evaluate_expression_v2(idxText);
+                 var valueVal = basic_evaluate_expression_v2(expr);
+
+                 // Defensive: if idxVal is not numeric, bail gracefully
+                 if (!is_real(idxVal)) {
+                     if (dbg_on(DBG_FLOW))  show_debug_message("LET ERROR: Array index evaluated to non-numeric '" + string(idxVal) + "' from '" + idxText + "'");
+                     return;
+                 }
+
+                 // Perform 1-based array set via your helper
+                 basic_array_set(arrName, idxVal, valueVal);
+                 if (dbg_on(DBG_FLOW))  show_debug_message("LET: Assigned array '" + arrName + "(" + string(idxVal) + ")' = " + string(valueVal));
+                 return;
+             }
+         }
+         // If we got here, array syntax was malformed; continue to scalar handling below
+     }
+
+     // ---------------------------------------------------
+     // 4) Scalar numeric / expression assignment (fallback)
+     // ---------------------------------------------------
+     var result = basic_evaluate_expression_v2(expr);
+
+     // We don’t force-type; whatever evaluate returns is stored
+     global.basic_variables[? varname] = result;
+
+    if (dbg_on(DBG_FLOW))  show_debug_message("LET: Assigned value: '" + string(result) + "' to '" + varname + "'");
+     if (is_string(result)) {
+         if (dbg_on(DBG_FLOW))  show_debug_message("LET: Assigned string value: '" + string(result) + "' to '" + varname + "'");
+     } else {
+         if (dbg_on(DBG_FLOW))  show_debug_message("LET: Assigned numeric value: " + string(result) + " to '" + varname + "'");
+     }
+}
+/// @description Cleanup all global DS structures at game end
+global.inkey_mode = false;
+// ─────────────────────────────
+// MAPS
+// ─────────────────────────────
+if (ds_exists(global.basic_variables, ds_type_map)) ds_map_destroy(global.basic_variables);
+if (ds_exists(global.program_lines, ds_type_map)) ds_map_destroy(global.program_lines);
+if (ds_exists(global.basic_program, ds_type_map)) ds_map_destroy(global.basic_program);
+if (ds_exists(global.program_map, ds_type_map)) ds_map_destroy(global.program_map);
+if (ds_exists(global.colors, ds_type_map)) ds_map_destroy(global.colors);
+if (ds_exists(global.if_block_map, ds_type_map)) {
+    var _key = ds_map_find_first(global.if_block_map);
+    while (!is_undefined(_key)) {
+        var _info = global.if_block_map[? _key];
+        if (ds_exists(_info[? "elseifIndices"], ds_type_list)) ds_list_destroy(_info[? "elseifIndices"]);
+        ds_map_destroy(_info);
+        _key = ds_map_find_next(global.if_block_map, _key);
+    }
+    ds_map_destroy(global.if_block_map);
+}
+if (ds_exists(global.mode_rooms, ds_type_map)) ds_map_destroy(global.mode_rooms);
+if (ds_exists(global.font_sheets, ds_type_map)) ds_map_destroy(global.font_sheets);
+if (ds_exists(global.config, ds_type_map)) ds_map_destroy(global.config);
+if (ds_exists(global.data_streams, ds_type_map)) {
+    var _key = ds_map_find_first(global.data_streams);
+    while (!is_undefined(_key)) {
+        var _stream = global.data_streams[? _key];
+        if (ds_exists(_stream.list, ds_type_list)) ds_list_destroy(_stream.list);
+        _key = ds_map_find_next(global.data_streams, _key);
+    }
+    ds_map_destroy(global.data_streams);
+}
+
+// ─────────────────────────────
+// ARRAYS
+// ─────────────────────────────
+if (ds_exists(global.basic_arrays, ds_type_map)) {
+    // Destroy each backing list…
+    var _key = ds_map_find_first(global.basic_arrays);
+    while (!is_undefined(_key)) {
+        var _lst = global.basic_arrays[? _key];
+        ds_list_destroy(_lst);
+        _key = ds_map_find_next(global.basic_arrays, _key);
+    }
+    // Then destroy the map itself
+    ds_map_destroy(global.basic_arrays);
+}
+
+// ─────────────────────────────
+// LISTS
+// ─────────────────────────────
+if (ds_exists(global.line_list, ds_type_list)) ds_list_destroy(global.line_list);
+if (ds_exists(global.line_numbers, ds_type_list)) ds_list_destroy(global.line_numbers);
+if (ds_exists(global.basic_line_numbers, ds_type_list)) {
+    ds_list_destroy(global.basic_line_numbers);
+}
+
+if (ds_exists(global.undo_stack, ds_type_list)) {
+    while (!ds_list_empty(global.undo_stack)) {
+        var _snapshot = ds_list_find_value(global.undo_stack, 0);
+        if (ds_exists(_snapshot[? "global.program_lines"], ds_type_map)) ds_map_destroy(_snapshot[? "global.program_lines"]);
+        if (ds_exists(_snapshot[? "global.line_numbers"], ds_type_list)) ds_list_destroy(_snapshot[? "global.line_numbers"]);
+        ds_map_destroy(_snapshot);
+        ds_list_delete(global.undo_stack, 0);
+    }
+    ds_list_destroy(global.undo_stack);
+}
+if (ds_exists(global.output_lines, ds_type_list)) ds_list_destroy(global.output_lines);
+if (ds_exists(global.output_colors, ds_type_list)) ds_list_destroy(global.output_colors);
+if (ds_exists(global.input_history, ds_type_list)) ds_list_destroy(global.input_history);
+
+// ─────────────────────────────
+// STACKS
+// ─────────────────────────────
+if (ds_exists(global.gosub_stack, ds_type_stack)) ds_stack_destroy(global.gosub_stack);
+if (ds_exists(global.for_stack, ds_type_stack)) ds_stack_destroy(global.for_stack);
+if (ds_exists(global.while_stack, ds_type_stack)) ds_stack_destroy(global.while_stack);
+if (ds_exists(global.if_stack, ds_type_stack)) ds_stack_destroy(global.if_stack);
+
+// ─────────────────────────────
+// TEMPORARY LIST (used in interpreter object)
+// ─────────────────────────────
+if (variable_global_exists("interpreter_current_program")) {
+    if (ds_exists(interpreter_current_program, ds_type_list)) {
+        ds_list_destroy(interpreter_current_program);
+    }
+}
+
+// ─────────────────────────────
+// Buffer & State Cleanup
+// ─────────────────────────────
+global.print_line_buffer = "";
+global.editor_spawned = false;
+
+if (ds_exists(global.__inkey_queue, ds_type_queue)) {
+    ds_queue_destroy(global.__inkey_queue);
+}
+
 function run_program() {
     if (dbg_on(DBG_FLOW)) show_debug_message("RUN_PROGRAM START - color is: " + string(global.current_draw_color));
 	// Always remember where we launched from (editor room)
@@ -3354,83 +3409,6 @@ function basic_cmd_print_mode1(arg) {
     
     if (dbg_on(DBG_FLOW)) show_debug_message("PRINT MODE1: Finished printing '" + output_text + "', cursor at (" + string(global.mode1_cursor_x) + "," + string(global.mode1_cursor_y) + ")");
 }
-	/// @description Cleanup all global DS structures at game end
-	global.inkey_mode = false;
-	// ─────────────────────────────
-	// MAPS
-	// ─────────────────────────────
-	if (ds_exists(global.basic_variables, ds_type_map)) ds_map_destroy(global.basic_variables);
-	if (ds_exists(global.program_lines, ds_type_map)) ds_map_destroy(global.program_lines);
-	if (ds_exists(global.basic_program, ds_type_map)) ds_map_destroy(global.basic_program);
-	if (ds_exists(global.program_map, ds_type_map)) ds_map_destroy(global.program_map);
-	if (ds_exists(global.colors, ds_type_map)) ds_map_destroy(global.colors);
-
-
-	// ─────────────────────────────
-	// ARRAYS
-	// ─────────────────────────────
-	if (ds_exists(global.basic_arrays, ds_type_map)) {
-	    // Destroy each backing list…
-	    var _key = ds_map_find_first(global.basic_arrays);
-	    while (!is_undefined(_key)) {
-	        var _lst = global.basic_arrays[? _key];
-	        ds_list_destroy(_lst);
-	        _key = ds_map_find_next(global.basic_arrays, _key);
-	    }
-	    // Then destroy the map itself
-	    ds_map_destroy(global.basic_arrays);
-	}
-
-
-	// ─────────────────────────────
-	// LISTS
-	// ─────────────────────────────
-	if (ds_exists(global.line_list, ds_type_list)) ds_list_destroy(global.line_list);
-	if (ds_exists(global.line_numbers, ds_type_list)) ds_list_destroy(global.line_numbers);
-
-	if (variable_global_exists("basic_line_numbers")) {
-	    if (ds_exists(global.basic_line_numbers, ds_type_list)) {
-	        ds_list_destroy(global.basic_line_numbers);
-	    }
-	}
-
-	if (ds_exists(global.undo_stack, ds_type_list)) ds_list_destroy(global.undo_stack);
-	if (ds_exists(global.output_lines, ds_type_list)) ds_list_destroy(global.output_lines);
-	if (ds_exists(global.output_colors, ds_type_list)) ds_list_destroy(global.output_colors);
-	if (ds_exists(global.input_history, ds_type_list)) ds_list_destroy(global.input_history);
-
-	// ─────────────────────────────
-	// STACKS
-	// ─────────────────────────────
-	if (ds_exists(global.gosub_stack, ds_type_stack)) ds_stack_destroy(global.gosub_stack);
-	if (ds_exists(global.for_stack, ds_type_stack)) ds_stack_destroy(global.for_stack);
-	if (ds_exists(global.while_stack, ds_type_stack)) ds_stack_destroy(global.while_stack);
-
-	// ─────────────────────────────
-	// TEMPORARY LIST (used in interpreter object)
-	// ─────────────────────────────
-	if (variable_global_exists("interpreter_current_program")) {
-	    if (ds_exists(interpreter_current_program, ds_type_list)) {
-	        ds_list_destroy(interpreter_current_program);
-	    }
-	}
-
-	// ─────────────────────────────
-	// Buffer & State Cleanup
-	// ─────────────────────────────
-	global.print_line_buffer = "";
-	global.editor_spawned = false;
-
-	   if (ds_exists(global.__inkey_queue, ds_type_queue)) {
-	        ds_queue_destroy(global.__inkey_queue);
-	    }
-	
-	// === 1. FIRST: Add this to your obj_globals Create event ===
-	// Initialize the key input queue with debugging
-	if (dbg_on(DBG_EXEC)) show_debug_message("INKEY$ INIT: Creating queue...");
-	global.__inkey_queue = ds_queue_create();
-	if (dbg_on(DBG_EXEC)) show_debug_message("INKEY$ INIT: Queue created, exists = " + string(ds_exists(global.__inkey_queue, ds_type_queue)));
-
 function basic_validate_program() {
     // Ensure structures exist
     if (!ds_exists(global.program_map, ds_type_map) || !ds_exists(global.line_list, ds_type_list)) return true;
@@ -3670,8 +3648,8 @@ for (var _y = 0; _y < rows; _y++) {
     }
 }
 
-    draw_set_color(c_white);
-	draw_text(4, room_height - 40, "FONT=" + global.active_font_name + "  spr=" + string(global.active_font_sprite) + "  num=" + string(sprite_get_number(global.active_font_sprite)));
+//    draw_set_color(c_white);
+//	draw_text(4, room_height - 40, "FONT=" + global.active_font_name + "  spr=" + string(global.active_font_sprite) + "  num=" + string(sprite_get_number(global.active_font_sprite)));
 	
 // Reset draw state after the loop
 draw_set_color(c_white);
@@ -4722,6 +4700,51 @@ function basic_cmd_while(arg) {
     }
 }
 
+// FILE: scripts/inkey_capture_keys.gml
+// FUNCTION: inkey_capture_keys
+// CHANGE: Expand key scan to ASCII 32-126, ensure queue initialization, add debug logs
+
+function inkey_capture_keys() {
+   // Initialize queue if not exists
+   if (!ds_exists(global.__inkey_queue, ds_type_queue)) {
+       global.__inkey_queue = ds_queue_create();
+       if (dbg_on(DBG_FLOW)) show_debug_message("INKEY$ CAPTURE: Initialized global.__inkey_queue");
+   }
+
+   // Scan for printable keys (ASCII 32-126)
+   for (var key = 32; key <= 126; key++) {
+        if (keyboard_check_pressed(key)) {
+            var ch = chr(key);
+            if (dbg_on(DBG_FLOW)) show_debug_message("INKEY$ CAPTURE: Key " + string(key) + " pressed, char = '" + ch + "'");
+           // Limit queue to 10 keys to prevent overflow
+           if (ds_queue_size(global.__inkey_queue) < 10) {
+                ds_queue_enqueue(global.__inkey_queue, ch);
+                if (dbg_on(DBG_FLOW)) show_debug_message("INKEY$ CAPTURE: '" + ch + "' queued. Queue size now = " + string(ds_queue_size(global.__inkey_queue)));
+           } else {
+               if (dbg_on(DBG_FLOW)) show_debug_message("INKEY$ CAPTURE: Queue full (10 keys), skipping enqueue of '" + ch + "'");
+           }
+            break; // Only capture one key per frame
+        }
+    }
+	
+	  // Handle touch input for Android (map screen regions to W/A/S/D)
+   if (os_type == os_android) {
+       var w = display_get_width(), h = display_get_height();
+       var region_w = w / 4; // Divide screen into four quadrants
+       if (device_mouse_check_button_pressed(0, mb_left)) {
+           var mx = device_mouse_x(0), my = device_mouse_y(0);
+           var ch = "";
+           if (my < h/2 && mx > w/4 && mx < 3*w/4) ch = "W"; // Top center: W
+           else if (my > h/2 && mx > w/4 && mx < 3*w/4) ch = "S"; // Bottom center: S
+           else if (mx < w/2 && my > h/4 && my < 3*h/4) ch = "A"; // Left center: A
+           else if (mx > w/2 && my > h/4 && my < 3*h/4) ch = "D"; // Right center: D
+           if (ch != "" && ds_queue_size(global.__inkey_queue) < 10) {
+               ds_queue_enqueue(global.__inkey_queue, ch);
+               if (dbg_on(DBG_FLOW)) show_debug_message("INKEY$ CAPTURE: Touch mapped to '" + ch + "', queued. Queue size now = " + string(ds_queue_size(global.__inkey_queue)));
+           }
+       }
+   }	
+}
 function basic_cmd_clschar(arg) {
     if (dbg_on(DBG_FLOW))  show_debug_message("=== CLSCHAR DEBUG START ===");
     if (dbg_on(DBG_FLOW))  show_debug_message("Raw arg: '" + string(arg) + "'");
@@ -5889,32 +5912,6 @@ function save_program_as(filename) {
     basic_show_message("SAVED: " + filename + " (working_directory)");
 }
 
-// === 2. SECOND: Add this function to your Step event (or call it from Step) ===
-function inkey_capture_keys() {
-    // Debug: Show that capture is running
-    if (keyboard_check_pressed(ord("A"))) {
-        if (dbg_on(DBG_FLOW)) show_debug_message("INKEY$ CAPTURE: A key detected!");
-    }
-    
-    // Scan for any newly pressed printable keys
-    for (var key = 65; key <= 90; key++) { // A-Z first for testing
-        if (keyboard_check_pressed(key)) {
-            var ch = chr(key);
-            if (dbg_on(DBG_FLOW)) show_debug_message("INKEY$ CAPTURE: Key " + string(key) + " pressed, char = '" + ch + "'");
-            
-            // Check if queue exists before adding
-            if (!ds_exists(global.__inkey_queue, ds_type_queue)) {
-                if (dbg_on(DBG_FLOW)) show_debug_message("INKEY$ CAPTURE ERROR: Queue doesn't exist!");
-                global.__inkey_queue = ds_queue_create();
-            }
-            
-            // Add to queue
-            ds_queue_enqueue(global.__inkey_queue, ch);
-            if (dbg_on(DBG_FLOW)) show_debug_message("INKEY$ CAPTURE: '" + ch + "' queued. Queue size now = " + string(ds_queue_size(global.__inkey_queue)));
-            break; // Only capture one key per frame
-        }
-    }
-}
 function basic_evaluate_expression(expr) {
     expr = string_trim(expr);
 
@@ -6158,6 +6155,33 @@ function basic_cmd_restore(arg) {
     }
 }
 
+function reset_interpreter_state() {
+    global.interpreter_running = false;
+    global.program_has_ended = false;
+    global.awaiting_input = false;
+    global.pause_in_effect = false;
+    global.pause_mode = false;
+    global.input_expected = false;
+    global.interpreter_input = "";
+    global.interpreter_cursor_pos = 0;
+    global.last_interpreter_string = "";
+    
+    // Reset mode if needed
+    if (global.current_mode != 0) {
+        global.current_mode = 0;
+        room_goto(rm_basic_interpreter);
+    }
+    
+    // Clear any program execution state
+    ds_stack_clear(global.gosub_stack);
+    ds_stack_clear(global.for_stack);
+    ds_stack_clear(global.while_stack);
+	// Clear INKEY$ queue
+    if (ds_exists(global.__inkey_queue, ds_type_queue)) {
+    ds_queue_clear(global.__inkey_queue);
+    if (dbg_on(DBG_FLOW)) show_debug_message("INKEY$ RESET: Cleared global.__inkey_queue");
+   }
+}
 /// @function string_is_number(str)
 /// @desc Returns true if the input string can be safely converted to a number.
 /// @param {string} str - The string to check
@@ -6475,28 +6499,6 @@ function mode1_grid_set(_x, _y, _char, _fg, _bg) {
     grid_obj.grid[idx] = cell;
 }
 
-function reset_interpreter_state() {
-    global.interpreter_running = false;
-    global.program_has_ended = false;
-    global.awaiting_input = false;
-    global.pause_in_effect = false;
-    global.pause_mode = false;
-    global.input_expected = false;
-    global.interpreter_input = "";
-    global.interpreter_cursor_pos = 0;
-    global.last_interpreter_string = "";
-    
-    // Reset mode if needed
-    if (global.current_mode != 0) {
-        global.current_mode = 0;
-        room_goto(rm_basic_interpreter);
-    }
-    
-    // Clear any program execution state
-    ds_stack_clear(global.gosub_stack);
-    ds_stack_clear(global.for_stack);
-    ds_stack_clear(global.while_stack);
-}
 // Script assets have changed for v2.3.0 see
 // https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
 function list_program() {
@@ -6735,7 +6737,7 @@ function mode1_grid_clear(char_index) {
 }
 
 // === 1. Add INKEY$ command handler ===
-function basic_cmd_INKEY() {
+/*function basic_cmd_INKEY() {
     if (dbg_on(DBG_FLOW)) show_debug_message("INKEY$: Pausing program, waiting for single keypress...");
     
     global.pause_in_effect = true;
@@ -6745,6 +6747,7 @@ function basic_cmd_INKEY() {
     global.input_expected = true; // We ARE expecting input
     global.inkey_mode = true; // Flag to indicate INKEY$ mode vs regular INPUT
 }
+*/
 /// @function interpreter_cmd_print(argument)
 /// @description Handles the BASIC PRINT command.
 /// @param arg - The string argument from the BASIC code

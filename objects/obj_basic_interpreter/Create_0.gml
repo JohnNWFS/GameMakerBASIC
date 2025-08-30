@@ -1,4 +1,4 @@
-/// obj_basic_interpreter → Create Event
+/// @event obj_basic_interpreter/Create
 
     global.debug_mask        = DBG_ALL;//0;//DBG_ALL;   // start verbose; you can trim later
     global.dbg_frame_quota   = 0;      // 1200 is ~20 logs per ms at 60fps is ok; tune as needed

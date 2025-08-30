@@ -1,5 +1,11 @@
-/// @description Editor Draw Event
-//- Fixed for 24pt font
+/// @event obj_editor/Draw
+// Pause regular editor drawing when screen editor is active
+if (global.screen_edit_mode) {
+    //if (dbg_on(DBG_FLOW)) show_debug_message("EDITOR: Screen edit mode active, pausing regular editor draw");
+    exit;
+}
+
+
 // Set font and calculate actual height
 draw_set_font(fnt_basic);
 var actual_font_height = string_height("A"); // Get real font height

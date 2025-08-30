@@ -1,0 +1,992 @@
+/// @file objects/obj_editor/Draw_0.gml
+
+/// @event obj_editor/Draw
+// Pause regular editor drawing when screen editor is active
+if (global.screen_edit_mode) {
+    if (dbg_on(DBG_FLOW)) show_debug_message("EDITOR: Screen edit mode active, pausing regular editor draw");
+    exit;
+}
+
+
+// Set font and calculate actual height
+draw_set_font(fnt_basic);
+var actual_font_height = string_height("A"); // Get real font height
+draw_set_color(make_color_rgb(255, 191, 64));
+draw_rectangle_color(0, 0, room_width, room_height, c_black, c_black, c_black, c_black, false);
+
+if (showing_dir_overlay) {
+    draw_set_color(c_black);
+    draw_rectangle(0, 0, room_width, room_height, false);
+
+    draw_set_color(c_lime);
+    draw_set_font(fnt_basic);
+    
+    var col_count = 3;
+    var row_height = actual_font_height; // Use actual font height
+    var col_width = room_width div col_count;
+    var x_pad = 16;
+    var y_pad = 16;
+
+    for (var i = 0; i < array_length(dir_listing); i++) {
+        var col = i mod col_count;
+        var row = i div col_count;
+
+        var _x = x_pad + col * col_width;
+        var _y = y_pad + row * row_height;
+
+        draw_text(_x, _y, dir_listing[i]);
+    }
+
+    draw_text(x_pad, room_height - 32, "Press ENTER or ESC to close");
+    return; // skip rest of Draw so editor doesn't draw underneath
+}
+
+// Draw program lines with proper spacing
+var y_pos = 32;
+var lines_shown = 0;
+var total_lines = ds_list_size(global.line_numbers);
+
+// Calculate how many lines fit on screen
+var available_height = room_height - 128; // Leave space for prompt and messages
+var max_lines = floor(available_height / actual_font_height);
+
+for (var i = display_start_line; i < total_lines && lines_shown < max_lines; i++) {
+    var line_num = ds_list_find_value(global.line_numbers, i);
+    var code = ds_map_find_value(global.program_lines, line_num);
+    var display_text = string(line_num) + " " + code;
+    
+    draw_text(16, y_pos, display_text);
+    y_pos += actual_font_height; // Use actual font height
+    lines_shown++;
+}
+
+// Draw input prompt with proper spacing
+draw_text(16, room_height - (actual_font_height * 2), "READY");
+draw_text(16, room_height - actual_font_height, "> " + current_input);
+
+// Draw cursor
+var cursor_x = 16 + string_width("> " + string_copy(current_input, 1, cursor_pos));
+if (current_time % 1000 < 500) { // Blinking cursor
+    draw_text(cursor_x, room_height - actual_font_height, "_");
+}
+
+// Draw message with proper spacing
+if (message_text != "") {
+    draw_set_color(c_yellow);
+    draw_text(16, room_height - (actual_font_height * 3), message_text);
+    draw_set_color(make_color_rgb(255, 191, 64)); // Reset color
+}
+
+================================================================================
+
+/// @file objects/obj_editor/Step_0.gml
+
+/// @event obj_editor/Step
+// Pause regular editor when screen editor is active
+if (global.screen_edit_mode) {
+    if (dbg_on(DBG_FLOW)) show_debug_message("EDITOR: Screen edit mode active, pausing regular editor");
+    exit;
+}
+
+if (global.justreturned == 1) {
+    current_input = "";
+    cursor_pos = 0;
+    keyboard_string = "";
+    global.justreturned = 0;
+    exit; // skip the rest of this Step event
+}
+
+if (showing_dir_overlay) {
+    if (keyboard_check_pressed(vk_enter) || keyboard_check_pressed(vk_escape)) {
+        showing_dir_overlay = false;
+        dir_listing = []; // Clear the array
+    }
+    exit; // prevent editor interaction while overlay is up
+}
+
+
+
+
+// Handle Enter key
+if (keyboard_check_pressed(vk_enter)) {
+    add_to_history(current_input);
+    process_input_line(current_input);
+    current_input = "";
+    cursor_pos = 0;
+    global.history_index = -1;
+    input_buffer = keyboard_string; // reset keyboard buffer
+}
+
+ else if (keyboard_check_released(vk_backspace)) {
+    if (cursor_pos > 0) {
+        current_input = string_delete(current_input, cursor_pos, 1);
+        cursor_pos--;
+    }
+ }
+ else if (keyboard_check_pressed(vk_left)) {
+    cursor_pos = max(0, cursor_pos - 1);
+ }
+ else if (keyboard_check_pressed(vk_right)) {
+    cursor_pos = min(string_length(current_input), cursor_pos + 1);
+ }
+ else if (keyboard_check_pressed(vk_up)) {
+    navigate_history_up();
+ }
+ else if (keyboard_check_pressed(vk_down)) {
+    navigate_history_down();
+ }
+ else if (keyboard_check_pressed(vk_pageup)) {
+    display_start_line = max(0, display_start_line - lines_per_screen);
+ }
+ else if (keyboard_check_pressed(vk_pagedown)) {
+    var max_start = max(0, ds_list_size(global.line_numbers) - lines_per_screen);
+    display_start_line = min(max_start, display_start_line + lines_per_screen);
+ }
+ else if (keyboard_check(vk_control) && keyboard_check_pressed(ord("Z"))) {
+    undo_last_change();
+ }
+ else if (keyboard_check(vk_f5)) {
+    dump_program_to_console();
+	basic_show_message("Dumped program to Console");	 
+ }
+ else {
+    // Handle character input with repeat
+    handle_character_input();
+ }
+ 
+  // In Step Event
+ if (message_timer > 0) {
+    message_timer--;
+    if (message_timer <= 0) {
+        message_text = "";
+    }
+ }
+ 
+/*  // Add to Step event
+ if (drag_enabled && drag_files > 0) {
+    var file_path = drag_file[0];
+    if (string_pos(".bas", string_lower(file_path)) > 0) {
+        // Extract filename without path and extension
+        var filename_start = 1;
+        for (var i = string_length(file_path); i >= 1; i--) {
+            if (string_char_at(file_path, i) == "/" || string_char_at(file_path, i) == "\\") {
+                filename_start = i + 1;
+                break;
+            }
+        }
+        var full_filename = string_copy(file_path, filename_start, string_length(file_path));
+        var dot_pos = string_pos(".", full_filename);
+        var filename = string_copy(full_filename, 1, dot_pos - 1);
+        
+        load_program_from_path(file_path, filename);
+    }
+    drag_clear();
+ }
+
+*/
+
+
+================================================================================
+
+/// @file objects/obj_globals/Create_0.gml
+
+/// @event obj_globals/Create
+// obj_globals → Create Event
+global.debug_mask = 0;
+global.dbg_dropped_count = 0;
+
+global.justreturned = 0;
+global.program_filename = "";
+global.username = "";
+global.editor_spawned = false;
+
+// Program and source management
+global.program_lines = ds_map_create();
+global.basic_program = ds_map_create();
+global.program_map  = ds_map_create();
+
+// Line tracking
+global.line_list    = ds_list_create();
+global.line_numbers = ds_list_create();
+global.undo_stack = ds_list_create();
+global.output_lines = ds_list_create();
+global.output_colors = ds_list_create();
+global.input_history = ds_list_create();
+
+// Interpreter control stacks
+global.gosub_stack = ds_stack_create();
+global.for_stack   = ds_stack_create();
+global.while_stack = ds_stack_create();
+global.history_index = -1;
+
+// IF…ELSE block handling
+global.if_block_map = ds_map_create();
+global.if_stack     = ds_stack_create();
+
+// Spawn the editor after globals are ready
+instance_create_layer(0, 0, "Instances", obj_editor);
+
+// Initialize variable store
+if (!variable_global_exists("basic_variables")) {
+    global.basic_variables = ds_map_create();
+}
+
+// Output buffer
+global.print_line_buffer = "";
+
+// Color settings
+global.basic_text_color = make_color_rgb(255, 191, 64);
+global.current_draw_color = c_green;
+global.background_draw_color = c_black;
+global.background_draw_enabled = false;
+
+// Input / Pause
+global.awaiting_input = false;
+global.input_target_var = "";
+global.interpreter_input = "";
+global.interpreter_cursor_pos = 0;
+global.interpreter_running = false;
+global.last_interpreter_string = "";
+global.program_has_ended = false;
+global.pause_in_effect = false;
+global.input_expected = false;
+global.pause_mode = false;
+
+// Scrolling control
+global.scroll_offset = 0;
+global.scroll_lock = false;
+
+// Named colors
+global.colors = ds_map_create();
+global.colors[? "RED"]     = c_red;
+global.colors[? "GREEN"]   = c_green;
+global.colors[? "BLUE"]    = c_blue;
+global.colors[? "CYAN"]    = c_teal;
+global.colors[? "MAGENTA"] = c_fuchsia;
+global.colors[? "YELLOW"]  = c_yellow;
+global.colors[? "WHITE"]   = c_white;
+global.colors[? "BLACK"]   = c_black;
+global.colors[? "GRAY"]    = c_gray;
+global.colors[? "ORANGE"]  = c_orange;
+global.colors[? "LIME"]    = c_lime;
+global.colors[? "NAVY"] = make_color_rgb(0, 0, 128);
+global.colors[? "DKGRAY"] = make_color_rgb(64, 64, 64);
+
+// MODE control
+global.current_mode = 0; // 0 = Text, 1 = Tile graphics, 2 = Pixel graphics
+global.mode_rooms = ds_map_create();
+global.mode_rooms[? 0] = rm_basic_interpreter; // Text
+global.mode_rooms[? 1] = rm_mode1_graphics;    // Tile graphics
+global.mode_rooms[? 2] = rm_mode2_pixel;       // Pixel graphics
+
+// MODE 1 sprite sheet container
+// FONT registry for MODE 1
+global.font_sheets = ds_map_create();
+
+// Base character sheet
+ds_map_add(global.font_sheets, "DEFAULT", spr_charactersheet);
+
+// Special 32×32 or alt glyphs
+ds_map_add(global.font_sheets, "SPECIAL", spr_charactersheet_special);
+
+// 16×16 set
+ds_map_add(global.font_sheets, "16x16", spr_charactersheet_16x16);
+ds_map_add(global.font_sheets, "16x16_SPECIAL", spr_charactersheet_16x16_special);
+
+// 8×8 set
+ds_map_add(global.font_sheets, "8x8", spr_charactersheet_8x8);
+ds_map_add(global.font_sheets, "DEFAULT_32", spr_charactersheet);
+ds_map_add(global.font_sheets, "DEFAULT_16", spr_charactersheet_16x16);
+ds_map_add(global.font_sheets, "DEFAULT_8",  spr_charactersheet_8x8);
+
+ds_map_add(global.font_sheets, "SPECIAL_16", spr_charactersheet_16x16_special);
+
+// Initialize active sheet
+global.mode1_active_sprite   = global.font_sheets[? "DEFAULT_32"];
+global.mode1_active_font_key = "DEFAULT_32";
+global.mode1_cell_px         = 32;
+
+global.active_font_name = "DEFAULT";
+global.active_font_sprite = global.font_sheets[? global.active_font_name];
+
+global.grid_refresh_needed = false;
+global.grid_refresh_char = 32;
+
+global.basic_arrays = ds_map_create(); // name (string) → ds_list
+
+global.interpreter_target_line = -1;
+global.interpreter_target_stmt = 0;
+global.interpreter_use_stmt_jump = false;
+global.interpreter_resume_stmt_index = 0;
+
+global.interpreter_current_stmt_index = 0;
+
+global.config = ds_map_create();
+global.config[? "max_line_number"] = 65535;
+global.config[? "max_history_size"] = 50;
+
+
+// === DATA/READ globals ===
+// Create once; the builder will clear/reuse it each run.
+if (!variable_global_exists("data_streams") || !ds_exists(global.data_streams, ds_type_map)) {
+    global.data_streams = ds_map_create();
+    if (dbg_on(DBG_FLOW)) show_debug_message("globals: created global.data_streams");
+}
+
+
+
+if (!variable_global_exists("__inkey_queue")) {
+    global.__inkey_queue = ds_queue_create();
+}
+
+global.inkey_mode = false; 
+global.pause_in_effect = false; 
+global.inkey_waiting    = false;
+global.inkey_captured   = "";
+global.inkey_target_var = "";
+global.interpreter_current_line_index = 0; 
+
+// Archival copy of line numbers used by run_program
+global.basic_line_numbers = ds_list_create();
+global._syntax_error_just_emitted = false;
+
+// optional, if you use these
+global._validator_header_emitted = false;
+global._abort_after_validation   = false;
+
+// Where to return when leaving the interpreter
+global.editor_return_room = room; // whatever room the editor lives in at startup
+
+global.config[? "show_error_hints"] = true; // show compact help lines under syntax errors
+
+global.screen_edit_mode = false; //for scree editing
+if (dbg_on(DBG_FLOW)) show_debug_message("GLOBALS: screen_edit_mode initialized to false");
+
+================================================================================
+
+/// @file objects/obj_screen_editor/Create_0.gml
+
+// FILE: objects/obj_screen_editor/Create_0.gml
+// CHANGE: Make screen dimensions dynamic based on room size
+
+show_debug_message("SCREEN_EDITOR: Create start");
+
+// Display settings - calculate from room dimensions
+char_width = 16;   // pixels per character
+char_height = 24;  // pixels per character  
+margin_x = 8;      // left margin
+margin_y = 8;      // top margin
+
+// NEW: Calculate screen dimensions dynamically from room size
+screen_cols = floor((room_width - (margin_x * 2)) / char_width);   // Dynamic width
+screen_rows = floor((room_height - (margin_y * 2) - 40) / char_height); // Dynamic height (40px for status)
+
+show_debug_message("SCREEN_EDITOR: Calculated screen size - " + string(screen_cols) + "x" + string(screen_rows) + 
+                  " (room: " + string(room_width) + "x" + string(room_height) + ")");
+
+// Create character buffer - 2D array stored as 1D
+screen_buffer = array_create(screen_cols * screen_rows, ord(" "));
+
+// Cursor position
+cursor_x = 0;
+cursor_y = 0;
+
+// Add scrolling support
+scroll_offset = 0;  // Which line is at the top of the display
+
+// Cursor blink
+blink_timer = 0;
+cursor_visible = true;
+
+// Load existing program into screen buffer using helper script
+screen_editor_load_program(id);
+
+show_debug_message("SCREEN_EDITOR: Create complete - " + string(screen_cols) + "x" + string(screen_rows) + " buffer");
+
+================================================================================
+
+/// @file objects/obj_screen_editor/Destroy_0.gml
+
+// FILE: objects/obj_screen_editor/Destroy_0.gml
+// REMOVE: Delete the entire Destroy event or replace with:
+
+/// @event Destroy
+// No cleanup needed - reverted to simple implementation
+show_debug_message("SCREEN_EDITOR: Destroying");
+
+================================================================================
+
+/// @file objects/obj_screen_editor/Draw_0.gml
+
+/// @file objects/obj_screen_editor/Draw_0.gml  
+/// @event Draw
+
+// Clear background to black
+draw_set_color(c_black);
+draw_rectangle(0, 0, room_width, room_height, false);
+
+// Set font and color
+draw_set_font(fnt_basic);
+draw_set_color(make_color_rgb(255, 191, 64)); // C64 yellow
+
+// Draw screen buffer
+for (var _y = 0; _y < screen_rows; _y++) {
+    for (var _x = 0; _x < screen_cols; _x++) {
+        var ch = chr(screen_editor_get_char_at(id, _x, _y));
+        if (ch != " ") {
+            var draw_x = margin_x + (_x * char_width);
+            var draw_y = margin_y + (_y * char_height);
+            draw_text(draw_x, draw_y, ch);
+        }
+    }
+}
+
+// Draw cursor
+if (cursor_visible) {
+    draw_set_color(c_white);
+    var cursor_draw_x = margin_x + (cursor_x * char_width);
+    var cursor_draw_y = margin_y + (cursor_y * char_height);
+    draw_text(cursor_draw_x, cursor_draw_y, "_");
+}
+
+// Draw status line
+draw_set_color(c_lime);
+draw_text(margin_x, room_height - 40, "SCREEN EDIT - ESC to exit, ENTER to commit line");
+
+// Reset draw color
+draw_set_color(c_white);
+
+================================================================================
+
+/// @file objects/obj_screen_editor/Step_0.gml
+
+/// @file objects/obj_screen_editor/Step_0.gml
+/// @event Step
+/// Revert to working version with simple 200-char limit only
+
+// Handle ESC key - exit screen editor
+if (keyboard_check_pressed(vk_escape)) {
+    show_debug_message("SCREEN_EDITOR: ESC pressed - exiting");
+    screen_editor_exit(id);
+    exit;
+}
+
+// Handle cursor movement with scrolling support (ORIGINAL WORKING CODE)
+if (keyboard_check_pressed(vk_left)) {
+    cursor_x = max(0, cursor_x - 1);
+    show_debug_message("SCREEN_EDITOR: Cursor left to (" + string(cursor_x) + "," + string(cursor_y) + ")");
+}
+
+if (keyboard_check_pressed(vk_right)) {
+    cursor_x = min(screen_cols - 1, cursor_x + 1);
+    show_debug_message("SCREEN_EDITOR: Cursor right to (" + string(cursor_x) + "," + string(cursor_y) + ")");
+}
+
+if (keyboard_check_pressed(vk_up)) {
+    if (cursor_y > 0) {
+        cursor_y = max(0, cursor_y - 1);
+    } else if (scroll_offset > 0) {
+        // At top of screen, scroll up
+        scroll_offset--;
+        screen_editor_load_program(id); // Refresh display
+        show_debug_message("SCREEN_EDITOR: Scrolled up - scroll_offset=" + string(scroll_offset));
+    }
+    show_debug_message("SCREEN_EDITOR: Cursor up to (" + string(cursor_x) + "," + string(cursor_y) + ")");
+}
+
+if (keyboard_check_pressed(vk_down)) {
+    var total_lines = ds_list_size(global.line_numbers);
+    var visible_lines = min(screen_rows, total_lines - scroll_offset);
+    
+    if (cursor_y < visible_lines - 1 && cursor_y < screen_rows - 1) {
+        cursor_y = min(screen_rows - 1, cursor_y + 1);
+    } else if (scroll_offset + screen_rows < total_lines) {
+        // At bottom of screen, scroll down
+        scroll_offset++;
+        screen_editor_load_program(id); // Refresh display
+        show_debug_message("SCREEN_EDITOR: Scrolled down - scroll_offset=" + string(scroll_offset));
+    }
+    show_debug_message("SCREEN_EDITOR: Cursor down to (" + string(cursor_x) + "," + string(cursor_y) + ")");
+}
+
+// Handle Page Up/Down for faster scrolling
+if (keyboard_check_pressed(vk_pageup)) {
+    var old_offset = scroll_offset;
+    scroll_offset = max(0, scroll_offset - screen_rows);
+    if (scroll_offset != old_offset) {
+        screen_editor_load_program(id);
+        show_debug_message("SCREEN_EDITOR: Page Up - scroll_offset " + string(old_offset) + " -> " + string(scroll_offset));
+    }
+}
+
+if (keyboard_check_pressed(vk_pagedown)) {
+    var old_offset = scroll_offset;
+    var total_lines = ds_list_size(global.line_numbers);
+    scroll_offset = min(max(0, total_lines - screen_rows), scroll_offset + screen_rows);
+    if (scroll_offset != old_offset) {
+        screen_editor_load_program(id);
+        show_debug_message("SCREEN_EDITOR: Page Down - scroll_offset " + string(old_offset) + " -> " + string(scroll_offset));
+    }
+}
+
+// Handle character input with SIMPLE 200-character limit
+if (keyboard_check_pressed(vk_anykey)) {
+    var ch = keyboard_lastchar;
+    
+    if (ch != "" && string_length(ch) == 1) {
+        var ascii_code = ord(ch);
+        show_debug_message("SCREEN_EDITOR: Key pressed - char '" + ch + "', ASCII " + string(ascii_code));
+        
+        if (ascii_code >= 32 && ascii_code <= 126) {
+            // Check current line length (simple version)
+            var current_line_text = screen_editor_get_row_text(id, cursor_y);
+            
+            if (string_length(current_line_text) < 200) {
+                // Valid printable character under limit
+                screen_editor_set_char_at(id, cursor_x, cursor_y, ascii_code);
+                
+                // Advance cursor normally (no horizontal scrolling)
+                if (cursor_x < screen_cols - 1) {
+                    cursor_x++;
+                }
+            } else {
+                show_debug_message("SCREEN_EDITOR: Line length limit reached (200 chars)");
+                basic_show_message("Line too long (max 200 chars)");
+            }
+        }
+    }
+}
+
+// Handle backspace (ORIGINAL WORKING CODE)
+if (keyboard_check_pressed(vk_backspace)) {
+    show_debug_message("SCREEN_EDITOR: Backspace pressed");
+    if (cursor_x > 0) {
+        cursor_x--;
+        screen_editor_set_char_at(id, cursor_x, cursor_y, ord(" "));
+    } else if (cursor_y > 0) {
+        cursor_y--;
+        cursor_x = screen_cols - 1;
+        screen_editor_set_char_at(id, cursor_x, cursor_y, ord(" "));
+    }
+}
+
+// Handle Enter - commit current row (ORIGINAL WORKING CODE)
+if (keyboard_check_pressed(vk_enter)) {
+    show_debug_message("SCREEN_EDITOR: Enter pressed - committing row " + string(cursor_y));
+    screen_editor_commit_row(id, cursor_y);
+    
+    // Refresh the display after committing (program may have changed)
+    screen_editor_load_program(id);
+    
+    // Move to next line
+    if (cursor_y < screen_rows - 1) {
+        cursor_y++;
+        cursor_x = 0;
+    }
+}
+
+// Update cursor blink
+blink_timer++;
+if (blink_timer >= 30) { // ~0.5 seconds at 60 FPS
+    cursor_visible = !cursor_visible;
+    blink_timer = 0;
+}
+
+================================================================================
+
+/// @file scripts/get_full_line_text/get_full_line_text.gml
+
+// ===============================================
+// FILE: scripts/get_full_line_text/get_full_line_text.gml
+// NEW: Helper function to get complete line text
+// ===============================================
+
+/// @function get_full_line_text(editor_inst, row)
+function get_full_line_text(editor_inst, row) {
+    with (editor_inst) {
+        if (ds_map_exists(extended_lines, row)) {
+            return extended_lines[? row];
+        }
+        return screen_editor_get_row_text(id, row);
+    }
+}
+
+================================================================================
+
+/// @file scripts/handle_command/handle_command.gml
+
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+function handle_command(command) {
+	
+var original_command = string_trim(command);
+    command = string_upper(original_command);
+    
+    // Split command from parameters to preserve case in filenames
+    var space_pos = string_pos(" ", command);
+    var cmd_word = "";
+    var cmd_params = "";
+    
+    if (space_pos > 0) {
+        cmd_word = string_copy(command, 1, space_pos - 1);
+        cmd_params = string_trim(string_copy(original_command, space_pos + 1, string_length(original_command)));
+    } else {
+        cmd_word = command;
+    }
+    
+    switch (cmd_word) {
+        case "LIST":
+            if (cmd_params == "") {
+                list_program();
+            } else {
+                list_program_range(cmd_params);
+            }
+            break;
+            
+        case "RUN":
+            run_program();
+            break;
+            
+        case "NEW":
+            new_program();
+            break;
+            
+        case "SAVE":
+            if (cmd_params == "") {
+                save_program();
+            } else {
+                save_program_as(cmd_params);
+            }
+            break;
+            
+        case "LOAD":
+            if (cmd_params == "") {
+                show_error_message("FILENAME REQUIRED");
+            } else {
+                load_program_from(cmd_params);
+            }
+            break;
+			
+		case "DIR":
+        list_saved_programs();
+        break;
+
+		case ":PASTE":
+		editor_handle_paste_command();
+		break;
+
+		case "QUIT":
+		case "Q":
+		quit_program()
+		break;
+
+        case "SCREENEDIT":
+        case "SE":
+            start_screen_editor();
+            break;
+			
+        default:
+            show_error_message("SYNTAX ERROR");
+            break;
+    }
+ }
+
+================================================================================
+
+/// @file scripts/refresh_current_line_display/refresh_current_line_display.gml
+
+// ===============================================
+// FILE: scripts/refresh_current_line_display/refresh_current_line_display.gml
+// NEW: Helper function to update display for current line
+// ===============================================
+
+/// @function refresh_current_line_display(editor_inst)
+function refresh_current_line_display(editor_inst) {
+    with (editor_inst) {
+        var full_text = get_full_line_text(id, cursor_y);
+        var display_text = string_copy(full_text, horizontal_offset + 1, screen_cols);
+        
+        show_debug_message("SCREEN_EDITOR: Refreshing display - full_text='" + full_text + "', display='" + display_text + "', h_offset=" + string(horizontal_offset));
+        
+        // Clear the row
+        screen_editor_clear_row(id, cursor_y);
+        
+        // Display the visible portion
+        for (var i = 1; i <= string_length(display_text); i++) {
+            var ch = string_char_at(display_text, i);
+            screen_editor_set_char_at(id, i - 1, cursor_y, ord(ch));
+        }
+    }
+}
+
+================================================================================
+
+/// @file scripts/screen_editor_clear_row/screen_editor_clear_row.gml
+
+// ===============================================
+// FILE: scripts/screen_editor_clear_row/screen_editor_clear_row.gml
+// NEW: Helper function to clear a display row
+// ===============================================
+
+/// @function screen_editor_clear_row(editor_inst, _row)
+function screen_editor_clear_row(editor_inst, _row) {
+    with (editor_inst) {
+        if (_row < 0 || _row >= screen_rows) return;
+        for (var _x = 0; _x < screen_cols; _x++) {
+            screen_editor_set_char_at(id, _x, _row, ord(" "));
+        }
+        show_debug_message("SCREEN_EDITOR: Cleared row " + string(_row));
+    }
+}
+
+================================================================================
+
+/// @file scripts/screen_editor_commit_row/screen_editor_commit_row.gml
+
+// FILE: scripts/screen_editor_commit_row/screen_editor_commit_row.gml
+/// @function screen_editor_commit_row(editor_inst, _row)
+function screen_editor_commit_row(editor_inst, _row) {
+    with (editor_inst) {
+        var line_text = string_trim(screen_editor_get_row_text(id, _row));
+        show_debug_message("SCREEN_EDITOR: Committing row " + string(_row) + ": '" + line_text + "'");
+        
+        if (line_text == "") return;
+        
+        // Check for EXIT command
+        if (string_upper(line_text) == "EXIT") {
+            screen_editor_exit(id);
+            return;
+        }
+        
+        // Parse line number and code
+        var space_pos = string_pos(" ", line_text);
+        var line_num_str = "";
+        var code = "";
+        
+        if (space_pos > 0) {
+            line_num_str = string_copy(line_text, 1, space_pos - 1);
+            code = string_trim(string_copy(line_text, space_pos + 1, string_length(line_text)));
+        } else {
+            line_num_str = line_text;
+        }
+        
+        // Check if it's a valid line number
+        var line_num = real(line_num_str);
+        if (line_num_str != "" && is_real(line_num) && line_num > 0) {
+            if (code == "") {
+                // Delete line
+                delete_program_line(line_num);
+                show_debug_message("SCREEN_EDITOR: Deleted line " + string(line_num));
+            } else {
+                // Add/update line
+                add_or_update_program_line(line_num, code);
+                show_debug_message("SCREEN_EDITOR: Added/updated line " + string(line_num) + ": " + code);
+            }
+        }
+    }
+}
+
+================================================================================
+
+/// @file scripts/screen_editor_commit_row_extended/screen_editor_commit_row_extended.gml
+
+// ===============================================
+// FILE: scripts/screen_editor_commit_row_extended/screen_editor_commit_row_extended.gml
+// NEW: Modified commit function that accepts full line text
+// ===============================================
+
+/// @function screen_editor_commit_row_extended(editor_inst, _row, line_text)
+function screen_editor_commit_row_extended(editor_inst, _row, line_text) {
+    with (editor_inst) {
+        var trimmed_text = string_trim(line_text);
+        show_debug_message("SCREEN_EDITOR: Committing row " + string(_row) + ": '" + trimmed_text + "'");
+        
+        if (trimmed_text == "") return;
+        
+        if (string_upper(trimmed_text) == "EXIT") {
+            screen_editor_exit(id);
+            return;
+        }
+        
+        var space_pos = string_pos(" ", trimmed_text);
+        var line_num_str = "";
+        var code = "";
+        
+        if (space_pos > 0) {
+            line_num_str = string_copy(trimmed_text, 1, space_pos - 1);
+            code = string_trim(string_copy(trimmed_text, space_pos + 1, string_length(trimmed_text)));
+        } else {
+            line_num_str = trimmed_text;
+        }
+        
+        var line_num = real(line_num_str);
+        if (line_num_str != "" && is_real(line_num) && line_num > 0) {
+            if (code == "") {
+                delete_program_line(line_num);
+                show_debug_message("SCREEN_EDITOR: Deleted line " + string(line_num));
+            } else {
+                add_or_update_program_line(line_num, code);
+                show_debug_message("SCREEN_EDITOR: Added/updated line " + string(line_num) + ": " + code);
+            }
+        }
+    }
+}
+
+================================================================================
+
+/// @file scripts/screen_editor_exit/screen_editor_exit.gml
+
+function screen_editor_exit(editor_inst) {
+    with (editor_inst) {
+        show_debug_message("SCREEN_EDITOR: Exiting screen editor");
+        global.screen_edit_mode = false;
+        
+        // CRITICAL: Clear keyboard_string to prevent leakage to obj_editor
+        keyboard_string = "";
+        show_debug_message("SCREEN_EDITOR: Cleared keyboard_string");
+        
+        instance_destroy();
+    }
+}
+
+================================================================================
+
+/// @file scripts/screen_editor_get_char_at/screen_editor_get_char_at.gml
+
+// FILE: scripts/screen_editor_get_char_at/screen_editor_get_char_at.gml
+/// @function screen_editor_get_char_at(editor_inst, _x, _y)
+function screen_editor_get_char_at(editor_inst, _x, _y) {
+    with (editor_inst) {
+        if (_x < 0 || _x >= screen_cols || _y < 0 || _y >= screen_rows) return ord(" ");
+        var idx = _y * screen_cols + _x;
+        return screen_buffer[idx];
+    }
+}
+
+================================================================================
+
+/// @file scripts/screen_editor_get_row_text/screen_editor_get_row_text.gml
+
+// FILE: scripts/screen_editor_get_row_text/screen_editor_get_row_text.gml
+/// @function screen_editor_get_row_text(editor_inst, _row)
+function screen_editor_get_row_text(editor_inst, _row) {
+    with (editor_inst) {
+        if (_row < 0 || _row >= screen_rows) return "";
+        
+        var text = "";
+        var last_non_space = -1;
+        
+        for (var _x = 0; _x < screen_cols; _x++) {
+            var ch = chr(screen_editor_get_char_at(id, _x, _row));
+            text += ch;
+            if (ch != " ") last_non_space = _x;
+        }
+        
+        return (last_non_space >= 0) ? string_copy(text, 1, last_non_space + 1) : "";
+    }
+}
+
+================================================================================
+
+/// @file scripts/screen_editor_load_program/screen_editor_load_program.gml
+
+// FILE: scripts/screen_editor_load_program/screen_editor_load_program.gml
+/// @function screen_editor_load_program(editor_inst)
+function screen_editor_load_program(editor_inst) {
+    with (editor_inst) {
+        show_debug_message("SCREEN_EDITOR: Loading program to screen (scroll_offset=" + string(scroll_offset) + ")");
+        
+        // Clear screen first
+        for (var i = 0; i < array_length(screen_buffer); i++) {
+            screen_buffer[i] = ord(" ");
+        }
+        
+        // Load program lines with scroll offset
+        var total_lines = ds_list_size(global.line_numbers);
+        var screen_row = 0;
+        
+        // Start from scroll_offset instead of 0
+        for (var i = scroll_offset; i < total_lines && screen_row < screen_rows; i++) {
+            var line_num = ds_list_find_value(global.line_numbers, i);
+            var code = ds_map_find_value(global.program_lines, line_num);
+            var line_text = string(line_num) + " " + code;
+            
+            // Place line text on screen
+            var text_len = min(string_length(line_text), screen_cols);
+            for (var j = 1; j <= text_len; j++) {
+                var ch = string_char_at(line_text, j);
+                screen_editor_set_char_at(id, j - 1, screen_row, ord(ch));
+            }
+            
+            screen_row++;
+        }
+        
+        show_debug_message("SCREEN_EDITOR: Loaded " + string(screen_row) + " lines starting from offset " + string(scroll_offset));
+    }
+}
+
+================================================================================
+
+/// @file scripts/screen_editor_set_char_at/screen_editor_set_char_at.gml
+
+// FILE: scripts/screen_editor_set_char_at/screen_editor_set_char_at.gml
+/// @function screen_editor_set_char_at(editor_inst, _x, _y, _char)
+function screen_editor_set_char_at(editor_inst, _x, _y, _char) {
+    with (editor_inst) {
+        if (_x < 0 || _x >= screen_cols || _y < 0 || _y >= screen_rows) return;
+        var idx = _y * screen_cols + _x;
+        screen_buffer[idx] = _char;
+        show_debug_message("SCREEN_EDITOR: Set char '" + chr(_char) + "' at (" + string(_x) + "," + string(_y) + ")");
+    }
+}
+
+================================================================================
+
+/// @file scripts/set_full_line_text/set_full_line_text.gml
+
+// ===============================================
+// FILE: scripts/set_full_line_text/set_full_line_text.gml  
+// NEW: Helper function to store complete line text
+// ===============================================
+
+/// @function set_full_line_text(editor_inst, row, text)
+function set_full_line_text(editor_inst, row, text) {
+    with (editor_inst) {
+        if (string_length(text) > screen_cols) {
+            extended_lines[? row] = text;
+            show_debug_message("SCREEN_EDITOR: Stored extended line " + string(row) + ": '" + text + "'");
+        } else {
+            // Remove from extended storage if line is now short
+            if (ds_map_exists(extended_lines, row)) {
+                ds_map_delete(extended_lines, row);
+                show_debug_message("SCREEN_EDITOR: Removed extended line " + string(row) + " (now fits on screen)");
+            }
+        }
+    }
+}
+
+================================================================================
+
+/// @file scripts/start_screen_editor/start_screen_editor.gml
+
+// FILE: scripts/start_screen_editor/start_screen_editor.gml
+/// @function start_screen_editor()
+/// @description Launch the full-screen C64-style editor
+
+function start_screen_editor() {
+    show_debug_message("COMMAND: start_screen_editor called");
+    
+    if (global.screen_edit_mode) {
+        show_debug_message("COMMAND: Screen editor already active");
+        basic_show_message("Screen editor already active");
+        return;
+    }
+    
+    show_debug_message("COMMAND: Setting screen_edit_mode = true and creating obj_screen_editor");
+    global.screen_edit_mode = true;
+    instance_create_layer(0, 0, "Instances", obj_screen_editor);
+    
+    basic_show_message("Entering screen edit mode...");
+}
+
+================================================================================

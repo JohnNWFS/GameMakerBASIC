@@ -19,4 +19,9 @@ function reset_interpreter_state() {
     ds_stack_clear(global.gosub_stack);
     ds_stack_clear(global.for_stack);
     ds_stack_clear(global.while_stack);
+	// Clear INKEY$ queue
+    if (ds_exists(global.__inkey_queue, ds_type_queue)) {
+    ds_queue_clear(global.__inkey_queue);
+    if (dbg_on(DBG_FLOW)) show_debug_message("INKEY$ RESET: Cleared global.__inkey_queue");
+   }
 }

@@ -1,6 +1,6 @@
-/// @description All Global Variables
+/// @event obj_globals/Create
 // obj_globals → Create Event
-global.debug_mask = 0;
+global.debug_mask = DBG_ALL;//0;
 global.dbg_dropped_count = 0;
 
 global.justreturned = 0;
@@ -167,3 +167,5 @@ global.editor_return_room = room; // whatever room the editor lives in at startu
 
 global.config[? "show_error_hints"] = true; // show compact help lines under syntax errors
 
+global.screen_edit_mode = false; //for scree editing
+if (dbg_on(DBG_FLOW)) show_debug_message("GLOBALS: screen_edit_mode initialized to false");

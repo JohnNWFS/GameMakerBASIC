@@ -1,3 +1,10 @@
+/// @event obj_editor/Step
+// Pause regular editor when screen editor is active
+if (global.screen_edit_mode) {
+    //if (dbg_on(DBG_FLOW)) show_debug_message("EDITOR: Screen edit mode active, pausing regular editor");
+    exit;
+}
+
 if (global.justreturned == 1) {
     current_input = "";
     cursor_pos = 0;

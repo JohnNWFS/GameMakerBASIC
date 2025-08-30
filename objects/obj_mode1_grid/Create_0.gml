@@ -1,4 +1,4 @@
-// @description obj_mode1_grid Create Event
+/// @event obj_mode1_grid/Create
 //Create 40x25 grid for 32x32 character tiles
 grid_cols = 40;
 grid_rows = 25;

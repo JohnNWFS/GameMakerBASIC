@@ -1,4 +1,4 @@
-/// @description Insert description here
+/// @event obj_mode1_grid/Destroy
 // You can write your code in this editor
 reset_interpreter_state();
 global.current_mode = 0;

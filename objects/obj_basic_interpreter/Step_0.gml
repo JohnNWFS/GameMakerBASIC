@@ -1,4 +1,4 @@
-// === BEGIN: obj_basic_interpreter.Step ===
+/// @event obj_basic_interpreter/Step
 // obj_basic_interpreter → Step Event
 
 // Add this at the very start of obj_basic_interpreter Step event for debugging
@@ -8,6 +8,8 @@
                       ", pause_mode: " + string(global.pause_mode));
 }*/
 
+// Capture keys for INKEY$ every frame
+inkey_capture_keys();
 
 global.dbg_frame_count = 0;
 if (global.dbg_dropped_count > 0) {
@@ -69,7 +71,7 @@ if (global.awaiting_input) {
     return;
 }
 
-// ------------------------------------------------------------------
+/*// ------------------------------------------------------------------
 // INKEY$ modal wait handler (blocking GET-style for LET ... = INKEY$)
 // Armed by basic_cmd_let: pause_in_effect=true & inkey_waiting=true
 // Captures ONE printable key (ASCII 32..126) on pressed edge, then resumes.
@@ -93,7 +95,7 @@ if (global.pause_in_effect && global.inkey_waiting) {
         //show_debug_message("INKEY_WAIT: paused, waiting for printable key");
     }
     return; // don't advance interpreter while waiting / just after capture
-}
+}*/
 
 // ==============================
 // === Synchronize for structured IF…ELSE handling ===

@@ -215,25 +215,21 @@ function evaluate_postfix(postfix) {
                 }
 				
 				
-// === 3. Modify your INKEY$ function case to just return the stored result ===
-case "INKEY$": {
-    var result = "";
-    
-    // Check if we have a stored result from the blocking input
-    if (ds_map_exists(global.basic_variables, "__INKEY_RESULT")) {
-        result = global.basic_variables[? "__INKEY_RESULT"];
-        // Clear the result after reading it
-        ds_map_delete(global.basic_variables, "__INKEY_RESULT");
-        if (dbg_on(DBG_PARSE)) show_debug_message("INKEY$ function: Returning stored result '" + result + "'");
-    } else {
-        if (dbg_on(DBG_PARSE)) show_debug_message("INKEY$ function: No stored result, returning empty");
-    }
-    
-    array_push(stack, result);
-    break;
-}
+                case "INKEY$": {
+                if (dbg_on(DBG_PARSE)) show_debug_message("INKEY$ function: Processing INKEY$ token");
+ 
+                   var result = "";
+                   if (ds_exists(global.__inkey_queue, ds_type_queue) && !ds_queue_empty(global.__inkey_queue)) {
+                       result = ds_queue_dequeue(global.__inkey_queue);
+                       if (dbg_on(DBG_PARSE)) show_debug_message("INKEY$ function: Dequeued '" + result + "', queue size now = " + string(ds_queue_size(global.__inkey_queue)));
+                   } else {
+                       if (dbg_on(DBG_PARSE)) show_debug_message("INKEY$ function: Queue empty or not initialized, returning empty string");
+                   }
+                    array_push(stack, result);
+                    break;
+                }
 
-                // ---- Math
+				// ---- Math
                 case "ABS": array_push(stack, abs(safe_real_pop(stack))); break;
                 case "EXP": array_push(stack, exp(safe_real_pop(stack))); break;
 

@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"start_screen_editor",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"start_screen_editor",
+  "parent":{
+    "name":"EDITOR_SCRIPTS",
+    "path":"folders/Scripts/EDITOR_SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

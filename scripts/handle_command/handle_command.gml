@@ -59,8 +59,14 @@ var original_command = string_trim(command);
 		break;
 
 		case "QUIT":
+		case "Q":
 		quit_program()
 		break;
+
+        case "SCREENEDIT":
+        case "SE":
+            start_screen_editor();
+            break;
 			
         default:
             show_error_message("SYNTAX ERROR");

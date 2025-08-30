@@ -1,4 +1,4 @@
-/// @description obj_basic_interpreter Draw interpreter output and current input
+/// @event obj_basic_interpreter/Draw
 draw_set_font(fnt_basic);
 
     draw_set_color(c_white);

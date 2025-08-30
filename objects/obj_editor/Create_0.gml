@@ -1,4 +1,4 @@
-/// @description Insert description here
+/// @event obj_editor/Create
 // You can write your code in this editor
  // Program storage
 
