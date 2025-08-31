@@ -1,0 +1,16 @@
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\objects\obj_basic_interpreter\Step_0.gml:137:    global.interpreter_running = false;
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\objects\obj_basic_interpreter\Step_0.gml:221:    global.interpreter_running = false;
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\objects\obj_globals\Create_0.gml:56:global.interpreter_running = false;
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_cmd_end\basic_cmd_end.gml:4:    global.interpreter_running = false;
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_cmd_for\basic_cmd_for.gml:25:        global.interpreter_running = false;
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_cmd_for\basic_cmd_for.gml:34:        global.interpreter_running = false;
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_cmd_for\basic_cmd_for.gml:56:        global.interpreter_running = false;
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_cmd_for\basic_cmd_for.gml:66:        global.interpreter_running = false;
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_cmd_for\basic_cmd_for.gml:121:        global.interpreter_running = false;
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_cmd_gosub\basic_cmd_gosub.gml:36:        global.interpreter_running = false;
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_cmd_next\basic_cmd_next.gml:22:        global.interpreter_running = false;
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_cmd_next\basic_cmd_next.gml:60:        global.interpreter_running = false;
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_cmd_return\basic_cmd_return.gml:5:        global.interpreter_running = false;
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_stop_execution\basic_stop_execution.gml:9:    global.interpreter_running = false;
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_syntax_error\basic_syntax_error.gml:41:    global.interpreter_running = false;
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\reset_interpreter_state\reset_interpreter_state.gml:2:    global.interpreter_running = false;

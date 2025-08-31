@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"get_save_directory",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"get_save_directory",
+  "parent":{
+    "name":"EDITOR_SCRIPTS",
+    "path":"folders/Scripts/EDITOR_SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

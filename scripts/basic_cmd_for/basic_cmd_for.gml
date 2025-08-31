@@ -19,21 +19,24 @@ function basic_cmd_for(arg) {
     // --------------------------
     var raw   = string_trim(string(arg));
     var eqpos = string_pos("=", raw);
-    if (eqpos <= 0) {
-        if (dbg_on(DBG_FLOW)) show_debug_message("FOR: SYNTAX ERROR — missing '=' in header: '" + raw + "'");
-        basic_system_message("SYNTAX ERROR IN FOR: " + raw); // CHANGED
-        global.interpreter_running = false;
-        return;
-    }
+	
+	if (eqpos <= 0) {
+	    basic_syntax_error("FOR missing '=' - use FOR I=1 TO 10", 
+	        global.current_line_number, 
+	        global.interpreter_current_stmt_index, 
+	        "FOR_SYNTAX");
+	    return;
+}
 
     // Left of '=' is the loop variable name
     var varname = string_upper(string_trim(string_copy(raw, 1, eqpos - 1)));
-    if (varname == "") {
-        if (dbg_on(DBG_FLOW)) show_debug_message("FOR: SYNTAX ERROR — empty variable name before '='");
-        basic_system_message("SYNTAX ERROR IN FOR (empty variable): " + raw); // CHANGED
-        global.interpreter_running = false;
-        return;
-    }
+	if (varname == "") {
+	    if (dbg_on(DBG_FLOW)) show_debug_message("FOR: SYNTAX ERROR — empty variable name before '='");
+	    // CHANGE TO:
+	    basic_syntax_error("FOR missing variable name before '='", 
+	        global.current_line_number, global.interpreter_current_stmt_index, "FOR_SYNTAX");
+	    return;
+	}
 
     // Right side after '=' should contain: start_expr  TO  to_expr  [ STEP step_expr ]
     var rhs  = string_trim(string_copy(raw, eqpos + 1, string_length(raw) - eqpos));
@@ -50,12 +53,14 @@ function basic_cmd_for(arg) {
             break;
         }
     }
-    if (to_at < 0) {
-        if (dbg_on(DBG_FLOW)) show_debug_message("FOR: SYNTAX ERROR — missing 'TO' in: '" + rhs + "'");
-        basic_system_message("SYNTAX ERROR IN FOR (missing TO): " + raw); // CHANGED
-        global.interpreter_running = false;
-        return;
-    }
+
+	if (to_at < 0) {
+	    if (dbg_on(DBG_FLOW)) show_debug_message("FOR: SYNTAX ERROR — missing 'TO' in: '" + rhs + "'");
+	    // CHANGE TO:
+	    basic_syntax_error("FOR missing TO - use FOR I=1 TO 10", 
+	        global.current_line_number, global.interpreter_current_stmt_index, "FOR_SYNTAX");  
+	    return;
+	}
 
     var start_expr = string_trim(string_copy(rhs, 1, to_at - 1));
     var after_to   = string_trim(string_copy(rhs, to_at + 2, string_length(rhs) - (to_at + 1)));

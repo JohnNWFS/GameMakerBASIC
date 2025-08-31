@@ -1,10 +1,9 @@
 function basic_cmd_return() {
-    if (ds_stack_empty(global.gosub_stack)) {
-        if (dbg_on(DBG_FLOW)) show_debug_message("RETURN: ERROR — gosub_stack is empty");
-        basic_show_error_message("RETURN called with empty stack.");
-        global.interpreter_running = false;
-        return;
-    }
+	if (ds_stack_empty(global.gosub_stack)) {
+	    basic_syntax_error("RETURN without matching GOSUB", 
+	        global.current_line_number, global.interpreter_current_stmt_index, "GOSUB_MISMATCH");
+	    return;
+	}
 
     var return_index = ds_stack_pop(global.gosub_stack);
     global.interpreter_next_line = return_index;

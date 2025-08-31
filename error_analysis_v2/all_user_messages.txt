@@ -1,0 +1,21 @@
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\objects\obj_editor\Step_0.gml:67:	basic_show_message("Dumped program to Console");	 
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\objects\obj_screen_editor\Step_0.gml:254:                    basic_show_message("Line too long (max 200 chars)");
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_cmd_mode\basic_cmd_mode.gml:19:        basic_show_message("Invalid MODE: " + string(mode));
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_cmd_wend\basic_cmd_wend.gml:6:        basic_show_message("WEND without matching WHILE");
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_cmd_wend\basic_cmd_wend.gml:12:        basic_show_message("WEND without matching WHILE");
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_show_error_message\basic_show_error_message.gml:4:    basic_show_message("?" + err);
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\basic_show_message\basic_show_message.gml:2:function basic_show_message(msg) {
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\editor_handle_paste_command\editor_handle_paste_command.gml:50:    basic_show_message("Program pasted successfully.");
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\handle_basic_command\handle_basic_command.gml:260:                    basic_show_message("UNKNOWN COMMAND: " + _verb);
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\load_program_from\load_program_from.gml:38:    basic_show_message("LOADED: " + filename);
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\load_program_from_path\load_program_from_path.gml:34:        basic_show_message("LOADED via DRAG: " + filename);
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\load_program_json\load_program_json.gml:29:        basic_show_message("LOADED JSON: " + filename);
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\new_program\new_program.gml:14:    basic_show_message("NEW PROGRAM");
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\save_program_as\save_program_as.gml:33:    basic_show_message("SAVED: " + filename + " (working_directory)");
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\save_program_json\save_program_json.gml:15:        basic_show_message("SAVED: " + filename + " (JSON)");
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\set_color_scheme\set_color_scheme.gml:25:    basic_show_message("COLOR SCHEME: " + scheme);
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\show_current_colors\show_current_colors.gml:4:    basic_show_message("CURRENT SCHEME - USE: COLOR GREEN/BLUE/AMBER");
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\show_error_message\show_error_message.gml:4:    basic_show_message("?" + error);
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\start_screen_editor\start_screen_editor.gml:10:        basic_show_message("Screen editor already active");
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\start_screen_editor\start_screen_editor.gml:18:    basic_show_message("Entering screen edit mode...");
+C:\Users\hoffe\GameMakerProjects\A_NEW_BASIC_3\scripts\toggle_syntax_highlighting\toggle_syntax_highlighting.gml:5:    basic_show_message("SYNTAX HIGHLIGHTING: " + (syntax_highlighting ? "ON" : "OFF"));

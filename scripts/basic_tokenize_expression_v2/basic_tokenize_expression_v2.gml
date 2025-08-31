@@ -52,7 +52,10 @@ function basic_tokenize_expression_v2(expr) {
                 current = "";
             }
             if (c == "(" && array_length(tokens) > 0) {
-                var last = string_upper(tokens[array_length(tokens) - 1]);
+				var last = "";
+				if (variable_instance_exists(id, "tokens") && is_array(tokens) && array_length(tokens) > 0) {
+				    last = string_upper(string(tokens[array_length(tokens) - 1]));
+				}
                 if (array_contains(function_names, last)) {
                     array_push(tokens, "(");
                     if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Function call detected: " + last + "(");

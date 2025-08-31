@@ -16,13 +16,11 @@ function basic_cmd_next(arg) {
     // --------------------------
     // 0) Validate FOR stack
     // --------------------------
-    if (!ds_exists(global.for_stack, ds_type_stack) || ds_stack_empty(global.for_stack)) {
-        if (dbg_on(DBG_FLOW))  show_debug_message("NEXT: ERROR — NEXT without matching FOR");
-        basic_system_message("NEXT without FOR");
-        global.interpreter_running = false;
-        return;
-    }
-
+	if (!ds_exists(global.for_stack, ds_type_stack) || ds_stack_empty(global.for_stack)) {
+	    basic_syntax_error("NEXT without matching FOR", 
+	        global.current_line_number, global.interpreter_current_stmt_index, "FOR_MISMATCH");
+	    return;
+	}
     // Peek the current FOR frame
     var frame = ds_stack_top(global.for_stack);
 

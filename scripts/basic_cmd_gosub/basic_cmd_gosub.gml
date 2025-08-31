@@ -30,9 +30,11 @@ function basic_cmd_gosub(arg) {
     }
 
     // 5) Error if not found
-    if (global.interpreter_next_line == -1) {
-        if (dbg_on(DBG_FLOW)) show_debug_message("GOSUB: ERROR — Target line " + string(target) + " not found");
-        basic_show_error_message("GOSUB target line not found: " + string(target));
-        global.interpreter_running = false;
-    }
+	if (global.interpreter_next_line == -1) {
+	    basic_syntax_error("GOSUB target line not found: " + string(target), 
+	        global.current_line_number,
+	        global.interpreter_current_stmt_index, 
+	        "GOSUB_TARGET");
+	    return;
+	}
 }

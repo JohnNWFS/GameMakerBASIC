@@ -3,12 +3,14 @@
 ///       Pulls values from pre-scanned DATA streams into variables (incl. arrays).
 function basic_cmd_read(arg) {
     var s = strip_basic_remark(string_trim(arg));
-    if (s == "") { show_debug_message("?READ ERROR: missing arguments"); return; }
-
+    if (s == "") { 
+    basic_syntax_error("READ requires variable names", 
+        global.current_line_number, global.interpreter_current_stmt_index, "READ_SYNTAX");
+    return; 
+	}	
     // Optional @stream prefix: READ @name, A, B$
     var stream_name = "";
     var dest_text   = s;
-
     if (string_char_at(s, 1) == "@") {
         var _depth = 0, inq = false, cut = 0, L = string_length(s);
         for (var i = 1; i <= L; i++) {
@@ -23,18 +25,21 @@ function basic_cmd_read(arg) {
             if (ch == ")") { _depth = max(0, _depth - 1); continue; }
             if (ch == ",") { cut = i; break; }
         }
-        if (cut <= 0) { show_debug_message("?READ ERROR: expected ',' after @name in '" + s + "'"); return; }
+        if (cut <= 0) { 
+            basic_syntax_error("READ expected ',' after @name in '" + s + "'", 
+                global.current_line_number, global.interpreter_current_stmt_index, "READ_SYNTAX");
+            return; 
+        }
         stream_name = string_trim(string_copy(s, 2, cut - 2)); // exclude '@'
         dest_text   = string_trim(string_copy(s, cut + 1, L - cut));
     }
-
     if (!ds_exists(global.data_streams, ds_type_map) || !ds_map_exists(global.data_streams, stream_name)) {
-        show_debug_message("?READ ERROR: stream '" + stream_name + "' not found");
+        basic_syntax_error("READ stream not found: '" + stream_name + "'", 
+            global.current_line_number, global.interpreter_current_stmt_index, "READ_SYNTAX");
         return;
     }
     var stream = ds_map_find_value(global.data_streams, stream_name);
     var lst    = stream.list;
-
     var dests = split_on_unquoted_commas(dest_text);
     for (var di = 0; di < array_length(dests); di++) {
         if (stream.ptr >= ds_list_size(lst)) {
@@ -44,11 +49,17 @@ function basic_cmd_read(arg) {
             handle_basic_command("END", "");
             return;
         }
-
         var v = lst[| stream.ptr];
         stream.ptr++;
-
         var dest = string_trim(dests[di]);
+        
+        // NEW: Validate variable name
+        if (dest == "" || !is_letter(string_char_at(dest, 1))) {
+            basic_syntax_error("Invalid variable name in READ: " + dest, 
+                global.current_line_number, global.interpreter_current_stmt_index, "READ_SYNTAX");
+            return;
+        }
+        
         var rhs;
         if (is_string(v)) {
             var escaped = string_replace_all(v, "\"", "\"\"");
@@ -56,7 +67,6 @@ function basic_cmd_read(arg) {
         } else {
             rhs = string(v);
         }
-
         if (dbg_on(DBG_FLOW)) show_debug_message("READ: stream='" + stream_name + "' → " + dest + "=" + rhs);
         // Route through the existing LET path so arrays etc. work
         basic_cmd_let(dest + "=" + rhs);

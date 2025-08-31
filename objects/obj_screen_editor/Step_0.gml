@@ -200,68 +200,97 @@ if (keyboard_check_pressed(vk_end)) {
     show_debug_message("SCREEN_EDITOR: End pressed - jump to end, cursor=" + string(cursor_x) + ", h_offset=" + string(horizontal_offset));
 }
 
+
 // Character input
 if (keyboard_check_pressed(vk_anykey)) {
+    var k  = keyboard_lastkey;
     var ch = keyboard_lastchar;
-    
+
+    // Is this a printable keystroke (not pure modifier / not control)?
+    var _is_printable =
+        (k != vk_shift && k != vk_control && k != vk_alt) &&
+        (!is_undefined(ch)) && (ch != "") && (ord(ch) >= 32);
+
     // CRITICAL: Ignore arrow keys and other navigation keys to prevent interference
-    if (!keyboard_check(vk_left) && !keyboard_check(vk_right) && 
-        !keyboard_check(vk_up) && !keyboard_check(vk_down) &&
-        !keyboard_check_pressed(vk_left) && !keyboard_check_pressed(vk_right) && 
-        !keyboard_check_pressed(vk_up) && !keyboard_check_pressed(vk_down) &&
-        !keyboard_check_pressed(vk_home) && !keyboard_check_pressed(vk_end) &&
-        !keyboard_check_pressed(vk_pageup) && !keyboard_check_pressed(vk_pagedown) &&
-        !keyboard_check_pressed(vk_enter) && !keyboard_check_pressed(vk_backspace) &&
-        !keyboard_check_pressed(vk_escape)) {
-        
-        if (ch != "" && string_length(ch) == 1) {
+    var _is_nav =
+        keyboard_check(vk_left) || keyboard_check(vk_right) ||
+        keyboard_check(vk_up)   || keyboard_check(vk_down)  ||
+        keyboard_check_pressed(vk_left) || keyboard_check_pressed(vk_right) ||
+        keyboard_check_pressed(vk_up)   || keyboard_check_pressed(vk_down)  ||
+        keyboard_check_pressed(vk_home) || keyboard_check_pressed(vk_end)   ||
+        keyboard_check_pressed(vk_pageup) || keyboard_check_pressed(vk_pagedown) ||
+        keyboard_check_pressed(vk_enter) || keyboard_check_pressed(vk_backspace) ||
+        keyboard_check_pressed(vk_escape);
+
+    // Only run the INSERT path for printable, non-nav keys.
+    if (_is_printable && !_is_nav) {
+
+        if (string_length(ch) == 1) {
             var ascii_code = ord(ch);
             show_debug_message("SCREEN_EDITOR: Key pressed - char '" + ch + "', ASCII " + string(ascii_code));
-            
+
             if (ascii_code >= 32 && ascii_code <= 126) {
                 var current_line_text = screen_editor_get_row_text(id, cursor_y);
                 var actual_cursor_pos = cursor_x + horizontal_offset;
-                
+
+                // Preserve intentional trailing spaces up to cursor (since get_row_text trims)
+                if (string_length(current_line_text) < actual_cursor_pos) {
+                    var pad = actual_cursor_pos - string_length(current_line_text);
+                    repeat (pad) { current_line_text += " "; }
+                }
+
                 if (string_length(current_line_text) < 200) {
                     // Insert character at actual position
                     var before_cursor = string_copy(current_line_text, 1, actual_cursor_pos);
-                    var after_cursor = string_copy(current_line_text, actual_cursor_pos + 1, string_length(current_line_text));
-                    var new_line = before_cursor + ch + after_cursor;
-                    
+                    var after_cursor  = string_copy(current_line_text, actual_cursor_pos + 1, string_length(current_line_text));
+                    var new_line      = before_cursor + ch + after_cursor;
+
                     // Update the actual BASIC program line
                     var line_index = cursor_y + scroll_offset;
                     if (line_index < ds_list_size(global.line_numbers)) {
-                        var line_num = ds_list_find_value(global.line_numbers, line_index);
+                        var line_num  = ds_list_find_value(global.line_numbers, line_index);
                         var space_pos = string_pos(" ", new_line);
                         if (space_pos > 0) {
                             var code_part = string_copy(new_line, space_pos + 1, string_length(new_line));
                             ds_map_set(global.program_lines, line_num, code_part);
                         }
                     }
-                    
+
                     // Mark line as modified
                     line_modified = true;
-                    
+
                     // Advance cursor
                     if (cursor_x < 79) {
                         cursor_x++;
                     } else {
                         horizontal_offset++;
                     }
-                    
+
                     screen_editor_load_program(id);
+                    // keep the live edit visible even if this is a not-yet-committed/new line
+                    screen_editor_display_line(id, new_line, cursor_y);
+
                 } else {
                     basic_show_message("Line too long (max 200 chars)");
                 }
             }
         }
     }
+    // IMPORTANT: do not exit here — lets Enter/Backspace handlers run later in Step
 }
+
+
 
 // Backspace
 if (keyboard_check_pressed(vk_backspace)) {
     var current_line_text = screen_editor_get_row_text(id, cursor_y);
     var actual_cursor_pos = cursor_x + horizontal_offset;
+	
+	// ADD this padding block (so backspace can delete spaces you just typed):
+	if (string_length(current_line_text) < actual_cursor_pos) {
+	    var pad = actual_cursor_pos - string_length(current_line_text);
+	    repeat (pad) { current_line_text += " "; }
+	}
     
     if (actual_cursor_pos > 0) {
         // Delete character
@@ -291,6 +320,9 @@ if (keyboard_check_pressed(vk_backspace)) {
         }
         
         screen_editor_load_program(id);
+		
+		// re-assert the edited row on screen after the reload
+		screen_editor_display_line(id, new_line, cursor_y);
     }
 }
 

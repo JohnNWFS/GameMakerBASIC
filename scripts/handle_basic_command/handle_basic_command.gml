@@ -252,14 +252,17 @@ if (has_content_after_then || has_colon_tail || has_action_no_then) {
 			case "FONTSET":  basic_cmd_fontset(_rest); 
 			break;
 
-            default:
-                // implicit LET?  e.g.  "X = 5"
-                if (string_pos("=", _verb + " " + _rest) > 0) {
-                    basic_cmd_let(_verb + " " + _rest);
-                } else {
-                    basic_show_message("UNKNOWN COMMAND: " + _verb);
-                }
-                break;
+			default:
+			    // implicit LET?  e.g.  "X = 5"
+			    if (string_pos("=", _verb + " " + _rest) > 0) {
+			        basic_cmd_let(_verb + " " + _rest);
+			    } else {
+			        basic_syntax_error("Unknown command: " + _verb, 
+			            global.current_line_number,
+			            global.interpreter_current_stmt_index,
+			            "UNKNOWN_COMMAND");
+			    }
+			    break;
         }
     }
 }

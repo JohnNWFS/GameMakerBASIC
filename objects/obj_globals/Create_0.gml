@@ -1,6 +1,15 @@
 /// @event obj_globals/Create
 // obj_globals → Create Event
-global.debug_mask = DBG_ALL;//0;
+
+// In obj_globals Create or similar initialization
+var save_dir = get_save_directory();
+if (save_dir != "" && !directory_exists(save_dir)) {
+    directory_create(save_dir);
+}
+
+global.debug_mask = DBG_ALL;// allow all debug;
+//global.debug_mask = 0; //No Debug
+
 global.dbg_dropped_count = 0;
 
 global.justreturned = 0;
