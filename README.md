@@ -136,6 +136,14 @@ Use colons (`:`) to separate multiple statements on one line.
 70   PRINT "X is small"
 80 ENDIF
 ```
+```Advanced IF constructs
+10 IF condition1 AND condition2 OR condition3 THEN
+20   PRINT "Complex logic"
+30 ENDIF
+
+```Nested conditions supported
+40 IF X > 0 THEN IF Y > 0 THEN PRINT "Both positive"
+
 
 #### Logical Operators
 ```basic
@@ -233,6 +241,12 @@ Get information about screen contents:
 20 CLR = mode1_get_color(10, 5) ' Get foreground color at position
 ```
 
+```Additional MODE 1 features
+10 FONTSET "DEFAULT_8"     ' Lock font (prevents MODE changes)
+20 ' Grid refresh and management
+30 ' Automatic cursor tracking
+40 ' Character-based graphics with full color control
+
 ---
 
 ## Math Functions
@@ -245,6 +259,7 @@ Get information about screen contents:
 40 PRINT EXP(1)        ' e^1
 50 PRINT LOG(100)      ' Base-10 logarithm
 60 PRINT LOG10(1000)   ' Base-10 logarithm: 3
+70 PRINT 17 \ 5        ' Integer division: 3 (truncates toward zero)
 ```
 
 ### Trigonometric Functions
@@ -298,10 +313,27 @@ Get information about screen contents:
 20 LAST$ = "World"
 30 FULL$ = FIRST$ + " " + LAST$   ' "Hello World"
 ```
+### String length and character functions
+10 L = LEN(A$)             ' String length (if implemented)
+20 PRINT ASC("A")          ' ASCII value: 65
+30 PRINT CHR$(65)          ' Character from ASCII: "A"
+
+### Advanced string functions  
+40 S$ = SPACE$(10)         ' String of 10 spaces (if implemented)
+50 S$ = STRING$(5, "X")    ' Repeat character (if implemented)
 
 ---
 
 ## System Functions
+
+''' INKEY$ - Advanced keyboard input
+10 K$ = INKEY$         ' Get keypress without waiting (returns "" if none)
+20 IF K$ <> "" THEN PRINT "Key pressed: "; K$
+30 ' INKEY$ captures extended keys as 2-character sequences:
+40 ' Arrow keys return CHR$(0) + scan code
+50 ' Supports full printable ASCII range (32-126)
+60 ' Queue-based system prevents key loss
+
 
 ### Time and Date
 ```basic
@@ -352,6 +384,13 @@ Get information about screen contents:
 60 FOR I = 0 TO 10     ' Loop through array
 70   A(I) = I * 2      ' Set each element
 80 NEXT I
+
+and
+
+```Advanced array operations
+10 DIM A(X+5)          ' Dynamic sizing with expressions
+20 A(I*2+1) = VALUE    ' Complex index expressions
+30 A(RND(1,10)) = 42   ' Random index access
 ```
 
 **Note:** Only 1-dimensional arrays are supported. Arrays use 0-based indexing.
@@ -371,7 +410,14 @@ Get information about screen contents:
 ### Available Colors
 - RED, GREEN, BLUE, CYAN, MAGENTA, YELLOW
 - WHITE, BLACK, GRAY, DKGRAY, ORANGE, LIME, NAVY
+```
 
+### Advanced color specifications
+10 COLOR &HFF8000       ' Hexadecimal color (orange)
+20 COLOR #FF8000        ' Web-style hex color
+30 COLOR $FF8000        ' Dollar-prefix hex
+40 COLOR 16711680       ' Decimal color value
+50 COLOR LIGHTGRAY      ' Additional color names supported
 ---
 
 ## Comparison Operators
@@ -402,6 +448,23 @@ All editor commands are typed on a line that **does not begin with a number**:
 | `LIST 10-50` | List lines 10 through 50 |
 | `F5` | Output the full program as a raw BASIC listing to console |
 | `:PASTE` | Pastes a multi-line BASIC program from clipboard (as if typing `Ctrl+V` in Windows) |
+
+### File Operations (Enhanced)
+SAVE "filename"       - Auto-adds .bas extension
+LOAD "filename"       - Supports drag-and-drop loading
+DIR                   - Interactive file browser with:
+                       * Arrow key navigation
+                       * Enter to load
+                       * D/X to delete (desktop only)
+                       * ESC to close
+:PASTE               - Paste multi-line programs from clipboard
+
+
+SCREENEDIT or SE      - Enter full-screen C64 (and other 8bit computer) style editor
+                      - Use arrow keys to navigate
+                      - Type directly to edit lines
+                      - ENTER commits current line
+                      - ESC exits back to line editor
 
 ### File Operations
 ```
@@ -478,6 +541,40 @@ The interpreter provides helpful error messages:
 160 END
 ```
 
+## Debug Features
+Debug Control (Advanced users)
+- F5 in interpreter: Dump program to console
+- Extensive debug logging with categories
+- Performance monitoring with frame quotas
+- Error tracing and validation
+```
+
+## Error Handling
+- Syntax errors show exact line and position
+- Runtime errors with helpful hints
+- INKEY$ usage validation (must be in assignments)
+- Comprehensive validation before program execution
+- Graceful error recovery with program state preservation
+```
+
+## Memory and Performance
+```
+Performance Features
+- Automatic memory management
+- Efficient data structure usage
+- Queue-based input handling
+- Optimized expression evaluation
+- Configurable debug output quotas
+'''
+## Code Architecture Notes
+--Quote-aware parsing throughout
+--Proper operator precedence
+--Statement-level jumping for complex control flow
+--Comprehensive validation pipeline
+--Multiple font support systems
+--Advanced expression evaluation with function calls
+
+```
 This manual covers all the major features of this BASIC interpreter. The language supports both traditional line-by-line BASIC programming and more modern structured programming with block IF statements and proper variable scoping.
 
 
