@@ -55,6 +55,43 @@ function save_program_as(filename)
             if (n > 0) source_used = "obj_editor.program_lines (ds_list)";
         }
 
+/// >>> INSERT START: 2c) obj_editor.program_lines (ds_map) <<<
+        if (source_used == "NONE" && variable_instance_exists(ed, "program_lines") &&
+            ds_exists(ed.program_lines, ds_type_map)) {
+
+            // Gather keys
+            var epl_keys = ds_list_create();
+            var epl_k = ds_map_find_first(ed.program_lines);
+            while (epl_k != undefined) {
+                ds_list_add(epl_keys, epl_k);
+                epl_k = ds_map_find_next(ed.program_lines, epl_k);
+            }
+
+            // Sort numerically if keys are numbers
+            var epl_numeric = true;
+            for (var ei = 0; ei < ds_list_size(epl_keys); ei++) {
+                if (!is_real(ds_list_find_value(epl_keys, ei))) { epl_numeric = false; break; }
+            }
+            if (epl_numeric) ds_list_sort(epl_keys, true); // ascending
+
+            // Emit "lineNum content" in key order
+            for (var ej = 0; ej < ds_list_size(epl_keys); ej++) {
+                var _ln  = ds_list_find_value(epl_keys, ej);
+                var _val = ds_map_find_value(ed.program_lines, _ln);
+                ds_list_add(lines_list, string(_ln) + " " + string(_val));
+            }
+
+            if (ds_list_size(lines_list) > 0) {
+                source_used = "obj_editor.program_lines (ds_map)";
+                if (dbg_on(DBG_IO)) show_debug_message("SAVE: pulled " + string(ds_list_size(lines_list)) + " lines from obj_editor.program_lines (map)");
+            }
+            ds_list_destroy(epl_keys);
+        }
+        /// <<< INSERT END <<<
+
+
+
+
         // 3) Common ds_map containers keyed by line numbers (we’ll join "lineNum + space + content")
         if (source_used == "NONE") {
             var map_names = [
@@ -112,6 +149,35 @@ function save_program_as(filename)
             if (gn > 0) source_used = "global.program_lines (ds_list)";
         }
     }
+	
+	/// >>> INSERT START: support global.program_lines when it's a MAP <<<
+    if (source_used == "NONE" && variable_global_exists("program_lines") && ds_exists(global.program_lines, ds_type_map)) {
+        var gpl_keys = ds_list_create();
+        var gpl_k = ds_map_find_first(global.program_lines);
+        while (gpl_k != undefined) {
+            ds_list_add(gpl_keys, gpl_k);
+            gpl_k = ds_map_find_next(global.program_lines, gpl_k);
+        }
+        // numeric-sort keys if they’re numbers
+        var gpl_numeric = true;
+        for (var gpi = 0; gpi < ds_list_size(gpl_keys); gpi++) {
+            if (!is_real(ds_list_find_value(gpl_keys, gpi))) { gpl_numeric = false; break; }
+        }
+        if (gpl_numeric) ds_list_sort(gpl_keys, true);
+
+        for (var gpj = 0; gpj < ds_list_size(gpl_keys); gpj++) {
+            var gln  = ds_list_find_value(gpl_keys, gpj); // line number
+            var gval = ds_map_find_value(global.program_lines, gln); // code
+            ds_list_add(lines_list, string(gln) + " " + string(gval));
+        }
+        if (ds_list_size(lines_list) > 0) {
+            source_used = "global.program_lines (ds_map)";
+            if (dbg_on(DBG_IO)) show_debug_message("SAVE: pulled " + string(ds_list_size(lines_list)) + " lines from global.program_lines (map)");
+        }
+        ds_list_destroy(gpl_keys);
+    }
+    /// <<< INSERT END <<<
+	
     if (source_used == "NONE" && variable_global_exists("program_map") && ds_exists(global.program_map, ds_type_map)) {
         var gkeys = ds_list_create();
         var gk = ds_map_find_first(global.program_map);

@@ -13,13 +13,93 @@ if (global.justreturned == 1) {
     exit; // skip the rest of this Step event
 }
 
+// === DIRECTORY OVERLAY INPUT (ASCII) ===
 if (showing_dir_overlay) {
-    if (keyboard_check_pressed(vk_enter) || keyboard_check_pressed(vk_escape)) {
+
+    // Close overlay on ESC (unless confirm is up)
+    if (!dir_confirm_active && keyboard_check_pressed(vk_escape)) {
         showing_dir_overlay = false;
-        dir_listing = []; // Clear the array
+        dir_listing = [];
+        if (dbg_on(DBG_FLOW)) show_debug_message("[DIR] close overlay (ESC)");
+        exit;
     }
-    exit; // prevent editor interaction while overlay is up
+
+    // Guard page_size (Draw recalculates each frame)
+    if (dir_page_size < 1) dir_page_size = 1;
+
+    var _count = array_length(dir_listing);
+    if (_count <= 0) { exit; } // nothing to do
+
+    // Clamp selection to list
+    dir_sel = clamp(dir_sel, 0, max(0, _count - 1));
+
+    // If confirm dialog active: handle Y/N only; block other inputs
+    if (dir_confirm_active) {
+        if (keyboard_check_pressed(ord("Y"))) {
+            // Delete (desktop only)
+            if (os_type != os_browser) {
+                var _name = dir_listing[dir_confirm_index];
+                var _path = dir_save_dir + _name;
+                if (file_exists(_path)) {
+                    if (dbg_on(DBG_IO)) show_debug_message("[DIR] delete " + _path);
+                    file_delete(_path);
+                }
+                // refresh list
+                list_saved_programs(); // re-enter overlay with fresh state
+            } else {
+                if (dbg_on(DBG_IO)) show_debug_message("[DIR] delete disabled on HTML5");
+                dir_confirm_active = false;
+            }
+        }
+        if (keyboard_check_pressed(ord("N")) || keyboard_check_pressed(vk_escape)) {
+            if (dbg_on(DBG_FLOW)) show_debug_message("[DIR] delete cancelled");
+            dir_confirm_active = false;
+        }
+        exit; // modal consumes input
+    }
+
+    // NAVIGATION
+    if (keyboard_check_pressed(vk_home))  dir_sel = 0;
+    else if (keyboard_check_pressed(vk_end))   dir_sel = max(0, _count - 1);
+    else if (keyboard_check_pressed(vk_up))    dir_sel = max(0, dir_sel - 1);
+    else if (keyboard_check_pressed(vk_down))  dir_sel = min(_count - 1, dir_sel + 1);
+    else if (keyboard_check_pressed(vk_pageup))   dir_sel = max(0, dir_sel - dir_page_size);
+    else if (keyboard_check_pressed(vk_pagedown)) dir_sel = min(_count - 1, dir_sel + dir_page_size);
+
+    // ACTIONS
+    // Load on ENTER or '>' key
+    if (keyboard_check_pressed(vk_enter) || keyboard_check_pressed(ord(">"))) {
+        var _name = dir_listing[dir_sel];
+        if (_name != "No .bas files found.") {
+            var _path = dir_save_dir + _name;
+            if (file_exists(_path)) {
+                if (dbg_on(DBG_IO)) show_debug_message("[DIR] load " + _path);
+                load_program_from_path(_path, _name);
+                showing_dir_overlay = false;
+                dir_listing = [];
+                global.justreturned = 1; // optional: bump back to prompt cleanly
+                exit;
+            } else {
+                basic_show_message("File not found");
+            }
+        }
+    }
+
+    // Delete on 'D', 'X', or Delete key (desktop only)
+    if (os_type != os_browser) {
+        if (keyboard_check_pressed(ord("D")) || keyboard_check_pressed(ord("X")) || keyboard_check_pressed(vk_delete)) {
+            if (_count > 0 && dir_listing[dir_sel] != "No .bas files found.") {
+                dir_confirm_active = true;
+                dir_confirm_index  = dir_sel;
+                if (dbg_on(DBG_FLOW)) show_debug_message("[DIR] confirm delete idx=" + string(dir_sel));
+            }
+        }
+    }
+
+    // NOTE: Do not let base editor input run while overlay is active
+    exit;
 }
+
 
 
 

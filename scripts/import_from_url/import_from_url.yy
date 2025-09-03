@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"import_from_url",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"import_from_url",
+  "parent":{
+    "name":"EDITOR_SCRIPTS",
+    "path":"folders/Scripts/EDITOR_SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

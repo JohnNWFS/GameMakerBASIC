@@ -1,12 +1,12 @@
 {
   "$GMScript":"v1",
-  "%Name":"basic_cmd_INKEY",
+  "%Name":"pm_paste_handler",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"basic_cmd_INKEY",
+  "name":"pm_paste_handler",
   "parent":{
-    "name":"BASIC_COMMANDS",
-    "path":"folders/Scripts/BASIC_COMMANDS.yy",
+    "name":"PASTE FUNCTIONS",
+    "path":"folders/Scripts/PASTE FUNCTIONS.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

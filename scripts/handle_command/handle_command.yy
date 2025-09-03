@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"handle_command",
   "parent":{
-    "name":"EDITOR_SCRIPTS",
-    "path":"folders/Scripts/EDITOR_SCRIPTS.yy",
+    "name":"Scripts",
+    "path":"folders/Scripts.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

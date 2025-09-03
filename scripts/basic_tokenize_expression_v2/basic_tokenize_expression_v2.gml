@@ -6,7 +6,7 @@ function basic_tokenize_expression_v2(expr) {
     var len = string_length(expr);
     var current = "";
 
-    var function_names = ["RND", "ABS", "EXP", "LOG", "LOG10", "SGN", "INT", "SIN", "COS", "TAN", "STR$", "CHR$", "REPEAT$"];
+    var function_names = ["RND", "ABS", "EXP", "LOG", "LOG10", "SGN", "INT", "SIN", "COS", "TAN", "STR$", "CHR$", "REPEAT$", "ASC"];
 
     while (i <= len) {
         var c = string_char_at(expr, i);
@@ -44,7 +44,9 @@ function basic_tokenize_expression_v2(expr) {
 
 
         // --- Handle operators ---
-			if (c == "+" || c == "*" || c == "/" || c == "(" || c == ")" || c == "%" || c == "^") {
+		// --- Handle operators ---
+		// add "\" (integer division) as a real operator
+		if (c == "+" || c == "*" || c == "/" || c == "\\" || c == "(" || c == ")" || c == "%" || c == "^") {
             if (current != "") {
                 if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Finalizing token before operator: '" + current + "'");
                 array_push(tokens, string_upper(current) == "MOD" ? "MOD" : current);

@@ -110,6 +110,33 @@ function evaluate_postfix(postfix) {
                     if (is_string(a)) a = real(a);
                     if (is_string(b)) b = real(b);
                     result = (b != 0) ? a / b : 0; break;
+				
+				case "\\": { // integer division → truncate toward ZERO
+				    // a and b were already popped above
+				    if (is_string(a) && is_numeric_string(a)) a = real(a);
+				    if (is_string(b) && is_numeric_string(b)) b = real(b);
+
+				    if (!is_real(a) || !is_real(b)) {
+				        basic_syntax_error("Integer division '\\' expects numbers; got a=" + string(a) + ", b=" + string(b),
+				            global.current_line_number, global.interpreter_current_stmt_index, "TYPE_MISMATCH");
+				        result = 0;
+				        break;
+				    }
+				    if (b == 0) {
+				        basic_syntax_error("Division by zero in '\\'",
+				            global.current_line_number, global.interpreter_current_stmt_index, "DIV_ZERO");
+				        result = 0;
+				        break;
+				    }
+
+				    var q = a / b;
+				    q = (q >= 0) ? floor(q) : ceil(q); // trunc-to-zero
+				    result = q; // <<< set result; DO NOT push here
+				    break;
+				}
+
+
+				
                 case "%":
                 case "MOD":
                     if (is_string(a)) a = real(a);
@@ -137,15 +164,25 @@ function evaluate_postfix(postfix) {
             if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: Dispatching function → '" + token_upper + "'");
 
             switch (token_upper) {
-                // ---- Random
-                case "RND1": {
-                    var n = safe_real_pop(stack);
-                    if (n <= 0) n = 1;
-                    var r1 = irandom(n - 1) + 1;
-                    array_push(stack, r1);
-                    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: RND1(" + string(n) + ") → " + string(r1));
-                    break;
-                }
+                
+				// ---- Random
+			case "RND1": {
+			    var n = safe_real_pop(stack);
+			    if (n <= 0) n = 1;
+			    var r1;
+			    if (n == 1) {
+			        // Classic BASIC: RND(1) returns 0.0 to 0.999...
+			        r1 = random(1);
+			    } else {
+			        // Integer range: RND(6) returns 1-6
+			        r1 = irandom(n - 1) + 1;
+			    }
+			    array_push(stack, r1);
+			    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: RND1(" + string(n) + ") → " + string(r1));
+			    break;
+			}
+				
+				
                 case "RND2": {
                     var max_val_raw = array_pop(stack);
                     var min_val_raw = array_pop(stack);
@@ -215,19 +252,45 @@ function evaluate_postfix(postfix) {
                 }
 				
 				
-                case "INKEY$": {
-                if (dbg_on(DBG_PARSE)) show_debug_message("INKEY$ function: Processing INKEY$ token");
- 
-                   var result = "";
-                   if (ds_exists(global.__inkey_queue, ds_type_queue) && !ds_queue_empty(global.__inkey_queue)) {
-                       result = ds_queue_dequeue(global.__inkey_queue);
-                       if (dbg_on(DBG_PARSE)) show_debug_message("INKEY$ function: Dequeued '" + result + "', queue size now = " + string(ds_queue_size(global.__inkey_queue)));
-                   } else {
-                       if (dbg_on(DBG_PARSE)) show_debug_message("INKEY$ function: Queue empty or not initialized, returning empty string");
-                   }
-                    array_push(stack, result);
-                    break;
-                }
+
+			 case "INKEY$": {
+			    if (dbg_on(DBG_PARSE)) show_debug_message("INKEY$ function: Processing INKEY$ token");
+
+			    // Ensure the queue exists
+			    if (!variable_global_exists("inkey_queue") || is_undefined(global.inkey_queue)) {
+			        if (dbg_on(DBG_PARSE)) show_debug_message("INKEY$ function: creating global.inkey_queue");
+			        global.inkey_queue = ds_queue_create();
+			    }
+
+			    // Dequeue one key (string) if available
+			    var _res = "";
+			    if (ds_queue_size(global.inkey_queue) > 0) {
+			        var _ch = ds_queue_dequeue(global.inkey_queue);
+			        if (is_real(_ch)) _ch = chr(_ch); // normalize numeric to 1-char string
+			        _res = string(_ch);
+			        if (dbg_on(DBG_PARSE)) show_debug_message(
+			            "INKEY$ function: Dequeued '" + _res + "', queue size now = " + string(ds_queue_size(global.inkey_queue))
+			        );
+			    } else {
+			        if (dbg_on(DBG_PARSE)) show_debug_message("INKEY$ function: Queue empty → returning empty string");
+			    }
+
+			    // Console beacon for targeted tracing
+			    if (dbg_on(DBG_PARSE)) {
+			        var _len = string_length(_res);
+			        var _a1  = (_len >= 1) ? ord(string_char_at(_res, 1)) : -1;
+			        var _a2  = (_len >= 2) ? ord(string_char_at(_res, 2)) : -1;
+			        show_debug_message("##INK## LEN=" + string(_len)
+			            + " A1=" + string(_a1)
+			            + " A2=" + string(_a2)
+			            + " K$='" + _res + "'");
+			    }
+
+			    array_push(stack, _res);
+			    break;
+			}
+
+
 
 				// ---- Math
                 case "ABS": array_push(stack, abs(safe_real_pop(stack))); break;
@@ -327,6 +390,15 @@ function evaluate_postfix(postfix) {
                     if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: MID$('"+strm+"', "+string(smid)+", "+string(lmid)+") → '"+outm+"'");
                     break;
                 }
+
+				case "ASC": {
+				    var s = string(array_pop(stack));            // ensure string
+				    var r = (string_length(s) >= 1) ? ord(string_char_at(s, 1)) : 0;
+				    array_push(stack, r);
+				    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: ASC('" + s + "') → " + string(r));
+				    break;
+				}
+
 
                 default:
                     if (dbg_on(DBG_PARSE)) show_debug_message("? POSTFIX WARNING: Unknown function = " + token_upper + " — pushing last real as fallback");

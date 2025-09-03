@@ -1,10 +1,13 @@
 /// @event obj_globals/Create
 // obj_globals → Create Event
 
-// In obj_globals Create or similar initialization
+
+
 var save_dir = get_save_directory();
-if (save_dir != "" && !directory_exists(save_dir)) {
-    directory_create(save_dir);
+if (save_dir != "") {
+    if (!directory_exists(save_dir)) {
+        directory_create(save_dir);
+    }
 }
 
 global.debug_mask = DBG_ALL;// allow all debug;
@@ -151,7 +154,6 @@ if (!variable_global_exists("data_streams") || !ds_exists(global.data_streams, d
 }
 
 
-
 if (!variable_global_exists("__inkey_queue")) {
     global.__inkey_queue = ds_queue_create();
 }
@@ -178,3 +180,5 @@ global.config[? "show_error_hints"] = true; // show compact help lines under syn
 
 global.screen_edit_mode = false; //for scree editing
 if (dbg_on(DBG_FLOW)) show_debug_message("GLOBALS: screen_edit_mode initialized to false");
+
+

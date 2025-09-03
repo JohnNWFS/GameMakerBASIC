@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"gm_receive_paste",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"gm_receive_paste",
+  "parent":{
+    "name":"EDITOR_SCRIPTS",
+    "path":"folders/Scripts/EDITOR_SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

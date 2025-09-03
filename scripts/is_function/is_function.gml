@@ -23,6 +23,7 @@ function is_function(t) {
          || fn == "TIMER"
          || fn == "TIME$"
          || fn == "DATE$"
-         || fn == "INKEY$";
+         || fn == "INKEY$"
+         || fn == "ASC";   // <-- added
 }
 // === END: is_function ===

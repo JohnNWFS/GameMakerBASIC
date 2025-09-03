@@ -7,9 +7,17 @@
                       ", awaiting_input: " + string(global.awaiting_input) + 
                       ", pause_mode: " + string(global.pause_mode));
 }*/
+// Ensure global INKEY queue exists
+if (!variable_global_exists("inkey_queue") || is_undefined(global.inkey_queue)) {
+    global.inkey_queue = ds_queue_create();
+}
 
-// Capture keys for INKEY$ every frame
-inkey_capture_keys();
+ // Ensure global INKEY queue exists (safe if already present)
+ if (!variable_global_exists("inkey_queue") || is_undefined(global.inkey_queue)) {
+     global.inkey_queue = ds_queue_create();
+ }
+ // Capture keys for INKEY$ every frame
+ inkey_capture_keys();
 
 global.dbg_frame_count = 0;
 if (global.dbg_dropped_count > 0) {
@@ -253,3 +261,4 @@ if (global.pause_in_effect && global.inkey_mode) {
     handle_inkey_input();
 }
 // === END: obj_basic_interpreter.Step ===
+
