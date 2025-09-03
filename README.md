@@ -1,4 +1,4 @@
-# GameMakerBASIC
+# NW-BASIC
 
 A lightweight, custom-built BASIC interpreter and code editor created using **GameMaker Studio**. This project aims to recreate the feel of early home computer BASIC environments—reimagined for modern use and ultimately targeting **Android deployment**.
 
@@ -15,7 +15,16 @@ A lightweight, custom-built BASIC interpreter and code editor created using **Ga
 
 ---
 
-## 🧠 Features Overview
+## System Requirements
+
+- **GameMaker Studio 2.3+** required for development
+- **Target platforms**: Windows, Android, HTML5
+- **Save files location**: Documents/BasicInterpreter/ (desktop)
+- **Line number range**: 1-65535
+- **Memory**: Automatic garbage collection
+- **Touch support**: Android optimized with directional regions
+
+---
 
 # BASIC Language Reference Manual
 
@@ -33,6 +42,10 @@ A lightweight, custom-built BASIC interpreter and code editor created using **Ga
 - [Array Operations](#array-operations)
 - [Color Control](#color-control)
 - [Editor Commands](#editor-commands)
+- [Advanced Features](#advanced-features)
+- [Error Handling](#error-handling)
+- [Programming Tips](#programming-tips)
+- [Advanced Topics](#advanced-topics)
 
 ---
 
@@ -85,18 +98,14 @@ Use colons (`:`) to separate multiple statements on one line.
 40 PRINT A, B, C    ' Multiple values (comma-separated)
 ```
 
-**➕ Special Print Behavior**
-* `;` at the end of a `PRINT` line **suppresses the newline**, continuing on the next `PRINT`.
+**Special Print Behavior:**
+- `;` at the end of a `PRINT` line **suppresses the newline**, continuing on the next `PRINT`.
+- `+` is used to concatenate strings and variables:
 
 ```basic
 10 PRINT "HELLO ";
 20 PRINT name$
-```
-
-* `+` is used to concatenate strings and variables:
-
-```basic
-10 PRINT "HELLO " + name$
+30 PRINT "HELLO " + name$
 ```
 
 ### INPUT
@@ -135,6 +144,16 @@ Use colons (`:`) to separate multiple statements on one line.
 60 ELSE
 70   PRINT "X is small"
 80 ENDIF
+```
+
+#### Advanced IF Constructs
+```basic
+10 IF condition1 AND condition2 OR condition3 THEN
+20   PRINT "Complex logic"
+30 ENDIF
+
+' Nested conditions supported
+40 IF X > 0 THEN IF Y > 0 THEN PRINT "Both positive"
 ```
 
 #### Logical Operators
@@ -195,6 +214,8 @@ Use colons (`:`) to separate multiple statements on one line.
 50 MODE 1, 32       ' Tile mode with 32x32 pixel tiles (default)
 ```
 
+---
+
 ## MODE 1 Commands (Tile Graphics)
 
 ### Character/Tile Graphics
@@ -233,6 +254,14 @@ Get information about screen contents:
 20 CLR = mode1_get_color(10, 5) ' Get foreground color at position
 ```
 
+### Additional MODE 1 Features
+```basic
+10 FONTSET "DEFAULT_8"     ' Lock font (prevents MODE changes)
+20 ' Grid refresh and management
+30 ' Automatic cursor tracking
+40 ' Character-based graphics with full color control
+```
+
 ---
 
 ## Math Functions
@@ -258,7 +287,8 @@ Get information about screen contents:
 ```basic
 10 PRINT RND(6)        ' Random 1-6
 20 PRINT RND(1, 10)    ' Random between 1-10
-30 X = RND * 100       ' Random 0-99 (RND without args)
+30 X = RND(1)          ' Random 0-1 (floating point)
+40 Y = RND             ' Same as RND(1)
 ```
 
 ### Operators
@@ -267,9 +297,10 @@ Get information about screen contents:
 20 PRINT 10 - 4        ' Subtraction: 6
 30 PRINT 6 * 7         ' Multiplication: 42
 40 PRINT 15 / 3        ' Division: 5
-50 PRINT 2 ^ 3         ' Exponentiation: 8
-60 PRINT 17 MOD 5      ' Modulo: 2
-70 PRINT 17 % 5        ' Modulo (alternate): 2
+50 PRINT 17 \ 5        ' Integer division: 3 (truncates toward zero)
+60 PRINT 2 ^ 3         ' Exponentiation: 8
+70 PRINT 17 MOD 5      ' Modulo: 2
+80 PRINT 17 % 5        ' Modulo (alternate): 2
 ```
 
 ---
@@ -282,7 +313,8 @@ Get information about screen contents:
 20 PRINT LEFT$(A$, 5)      ' "HELLO"
 30 PRINT RIGHT$(A$, 5)     ' "WORLD"
 40 PRINT MID$(A$, 7, 5)    ' "WORLD" (start pos, length)
-50 PRINT REPEAT$("#", 10)   ' "##########"
+50 PRINT REPEAT$("#", 10)  ' "##########"
+60 L = LEN(A$)             ' String length: 11
 ```
 
 ### String Conversion
@@ -303,17 +335,27 @@ Get information about screen contents:
 
 ## System Functions
 
+### INKEY$ - Advanced Keyboard Input
+```basic
+10 K$ = INKEY$         ' Get keypress without waiting (returns "" if none)
+20 IF K$ <> "" THEN PRINT "Key pressed: "; K$
+30 ' INKEY$ captures extended keys as 2-character sequences:
+40 ' Arrow keys return CHR$(0) + scan code
+50 ' Supports full printable ASCII range (32-126)
+60 ' Queue-based system prevents key loss
+```
+
+### Mobile/Touch Support (Android)
+- Screen divided into directional regions for INKEY$ input
+- Touch top-center: "W", bottom-center: "S" 
+- Touch left-center: "A", touch right-center: "D"
+- Enables mobile-friendly game control schemes
+
 ### Time and Date
 ```basic
 10 PRINT TIME$         ' Current time: "HH:MM:SS"
 20 PRINT DATE$         ' Current date: "YYYY-MM-DD"
 30 T = TIMER           ' Seconds since program start
-```
-
-### Keyboard Input
-```basic
-10 K$ = INKEY$         ' Get single keypress (waits for key)
-20 IF K$ = "Q" THEN END
 ```
 
 ---
@@ -354,6 +396,13 @@ Get information about screen contents:
 80 NEXT I
 ```
 
+### Advanced Array Operations
+```basic
+10 DIM A(X+5)          ' Dynamic sizing with expressions
+20 A(I*2+1) = VALUE    ' Complex index expressions
+30 A(RND(1,10)) = 42   ' Random index access
+```
+
 **Note:** Only 1-dimensional arrays are supported. Arrays use 0-based indexing.
 
 ---
@@ -368,9 +417,18 @@ Get information about screen contents:
 40 COLOR RGB(255,128,0)' Custom color (orange)
 ```
 
+### Advanced Color Specifications
+```basic
+10 COLOR &HFF8000       ' Hexadecimal color (orange)
+20 COLOR #FF8000        ' Web-style hex color
+30 COLOR $FF8000        ' Dollar-prefix hex
+40 COLOR 16711680       ' Decimal color value
+50 COLOR LIGHTGRAY      ' Additional color names supported
+```
+
 ### Available Colors
 - RED, GREEN, BLUE, CYAN, MAGENTA, YELLOW
-- WHITE, BLACK, GRAY, DKGRAY, ORANGE, LIME, NAVY
+- WHITE, BLACK, GRAY, DKGRAY, LIGHTGRAY, ORANGE, LIME, NAVY
 
 ---
 
@@ -390,7 +448,7 @@ Get information about screen contents:
 ## Editor Commands
 (Entered in immediate mode, not in programs)
 
-**🖊️ Built-in Editor Commands**  
+### Built-in Editor Commands
 All editor commands are typed on a line that **does not begin with a number**:
 
 | Command | Action |
@@ -401,21 +459,37 @@ All editor commands are typed on a line that **does not begin with a number**:
 | `LIST` | Display all currently stored BASIC lines |
 | `LIST 10-50` | List lines 10 through 50 |
 | `F5` | Output the full program as a raw BASIC listing to console |
-| `:PASTE` | Pastes a multi-line BASIC program from clipboard (as if typing `Ctrl+V` in Windows) |
+| `:PASTE` | Paste multi-line programs from clipboard |
+| `SCREENEDIT` or `SE` | Enter full-screen C64-style editor |
+| `QUIT` | Exit BASIC |
 
-### File Operations
+### File Operations (Enhanced)
 ```
-SAVE "MYPROGRAM"      - Save program
-LOAD "MYPROGRAM"      - Load program  
-DIR                   - List saved programs
-QUIT                  - Exit BASIC
+SAVE "filename"       - Auto-adds .bas extension
+LOAD "filename"       - Supports drag-and-drop loading
+DIR                   - Interactive file browser with:
+                       * Arrow key navigation
+                       * Enter to load
+                       * D/X to delete (desktop only)
+                       * ESC to close
 ```
 
-**🔁 Navigation Shortcuts**
+### Screen Editor Mode
+```
+SCREENEDIT or SE      - Enter full-screen editor
+                      - Use arrow keys to navigate
+                      - Type directly to edit lines
+                      - ENTER commits current line
+                      - ESC exits back to line editor
+                      - Home/End for line navigation
+                      - Page Up/Down for scrolling
+```
+
+### Navigation Shortcuts
 
 | Key | Action |
 |-----|--------|
-| `PageUp` | Scroll backward through code listing (in long programs) |
+| `PageUp` | Scroll backward through code listing |
 | `PageDown` | Scroll forward through code listing |
 | `Esc` (during RUN) | Exit interpreter and return to editor |
 | `Up Arrow` | Navigate up through command history |
@@ -434,16 +508,35 @@ The BASIC interpreter supports complex expressions in most contexts:
 30 A(I+1) = B(J*2) + C(K)  ' Array indexing with expressions
 ```
 
-### Error Handling
-The interpreter provides helpful error messages:
-- Syntax errors show line numbers and context
-- Runtime errors (like division by zero) stop execution gracefully
-- Missing line numbers in GOTO/GOSUB are caught
+### Advanced Expression Features
+- **Parentheses for precedence**: `(A + B) * C`
+- **Function calls in expressions**: `SIN(X) + COS(Y)`
+- **Nested function calls**: `LEFT$(STR$(X), 3)`
+- **Array access in expressions**: `A(B(C))`
+- **Mixed string/numeric operations** with auto-conversion
+
+### Program Validation
+- **Pre-execution syntax checking**
+- **INKEY$ usage validation** (must be in assignments)
+- **Matching IF/ENDIF, FOR/NEXT, WHILE/WEND** validation
+- **DATA stream integrity** checking
+- **Comprehensive error reporting** with hints
 
 ### Memory Management
 - Variables are automatically created when first assigned
 - Arrays must be dimensioned with DIM before use (except auto-growing in assignments)
 - String variables automatically distinguished by $ suffix
+
+---
+
+## Error Handling
+
+The interpreter provides comprehensive error handling:
+- **Syntax errors** show exact line and position
+- **Runtime errors** with helpful hints
+- **INKEY$ usage validation** (must be in assignments)
+- **Comprehensive validation** before program execution
+- **Graceful error recovery** with program state preservation
 
 ---
 
@@ -454,6 +547,8 @@ The interpreter provides helpful error messages:
 3. **Structure with subroutines**: Break complex logic into GOSUB routines
 4. **Test incrementally**: Run small sections before building larger programs
 5. **Use MODE commands**: Switch to graphics modes for visual programs
+6. **Leverage INKEY$**: Create responsive, interactive programs
+7. **Use arrays wisely**: Remember they're 0-based and 1-dimensional only
 
 ---
 
@@ -478,9 +573,33 @@ The interpreter provides helpful error messages:
 160 END
 ```
 
-This manual covers all the major features of this BASIC interpreter. The language supports both traditional line-by-line BASIC programming and more modern structured programming with block IF statements and proper variable scoping.
+---
 
+## Advanced Topics
+
+### Debug Features
+**Debug Control (Advanced users)**
+- F5 in interpreter: Dump program to console
+- Extensive debug logging with categories
+- Performance monitoring with frame quotas
+- Error tracing and validation
+
+### Performance Features
+- **Automatic memory management**
+- **Efficient data structure usage**
+- **Queue-based input handling**
+- **Optimized expression evaluation**
+- **Configurable debug output quotas**
+
+### Code Architecture Notes
+The interpreter includes several sophisticated features:
+- **Quote-aware parsing** throughout
+- **Proper operator precedence**
+- **Statement-level jumping** for complex control flow
+- **Comprehensive validation pipeline**
+- **Multiple font support systems**
+- **Advanced expression evaluation** with function calls
 
 ---
 
-
+This manual covers all the major features of this BASIC interpreter. The language supports both traditional line-by-line BASIC programming and more modern structured programming with block IF statements and proper variable scoping.
