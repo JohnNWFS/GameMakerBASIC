@@ -1,23 +1,18 @@
 /// @event obj_basic_interpreter/Step
+// ==============================
 // obj_basic_interpreter → Step Event
+// ==============================
 
-// Add this at the very start of obj_basic_interpreter Step event for debugging
-/*if (keyboard_check_pressed(vk_enter)) {
-    show_debug_message("ENTER pressed - pause_in_effect: " + string(global.pause_in_effect) + 
-                      ", awaiting_input: " + string(global.awaiting_input) + 
-                      ", pause_mode: " + string(global.pause_mode));
-}*/
-// Ensure global INKEY queue exists
-if (!variable_global_exists("inkey_queue") || is_undefined(global.inkey_queue)) {
-    global.inkey_queue = ds_queue_create();
-}
+// (Optional debug tap)
+// if (keyboard_check_pressed(vk_enter)) {
+//     show_debug_message("ENTER pressed - pause_in_effect: " + string(global.pause_in_effect) +
+//                        ", awaiting_input: " + string(global.awaiting_input) +
+//                        ", pause_mode: " + string(global.pause_mode));
+// }
 
- // Ensure global INKEY queue exists (safe if already present)
- if (!variable_global_exists("inkey_queue") || is_undefined(global.inkey_queue)) {
-     global.inkey_queue = ds_queue_create();
- }
- // Capture keys for INKEY$ every frame
- inkey_capture_keys();
+// ---------- Feed INKEY$ queue once per frame ----------
+// (The function itself arbitrates INPUT vs. INKEY modal wait.)
+inkey_capture_keys();
 
 global.dbg_frame_count = 0;
 if (global.dbg_dropped_count > 0) {
@@ -43,33 +38,42 @@ if (global.program_has_ended) {
         var total_lines = ds_list_size(global.output_lines);
         global.scroll_offset = min(global.scroll_offset + 1, max(0, total_lines - visible_lines));
     }
+
     if (keyboard_check_pressed(vk_enter) || keyboard_check_pressed(vk_escape)) {
+
+        // ==== INSERTED HELP RESTORE HOOK ====
+        if (variable_global_exists("help_active") && global.help_active) {
+            help_restore_program();   // puts the user's code back
+            global.help_active = false;
+        }
+        // ==== END INSERT ====
+
         global.program_has_ended = false;
         global.current_mode = 0;
-    
-		var _ret = variable_global_exists("editor_return_room")
+
+        var _ret = variable_global_exists("editor_return_room")
                ? global.editor_return_room
                : room_first; // fallback if something goes weird
 
-    room_goto(_ret);
+        room_goto(_ret);
     }
     return;
 }
 
+
 // ==============================
-// === Handle INPUT or PAUSE (existing) ===
+// INPUT mode (line editor) routing — keep your working flow
 // ==============================
 if (global.awaiting_input) {
     if (global.pause_mode) {
         if (keyboard_check_pressed(vk_enter) || keyboard_check_pressed(vk_escape)) {
-          if (dbg_on(DBG_FLOW))   show_debug_message("PAUSE: ENTER/ESC detected, resuming...");
-            global.awaiting_input = false;
-            global.pause_mode = false;
-            global.pause_in_effect = false;
+            if (dbg_on(DBG_FLOW)) show_debug_message("PAUSE: ENTER/ESC detected, resuming...");
+            global.awaiting_input   = false;
+            global.pause_mode       = false;
+            global.pause_in_effect  = false;
             global.input_target_var = "";
             global.interpreter_input = "";
-			//
-			global.interpreter_resume_stmt_index = global.interpreter_current_stmt_index + 1;
+            global.interpreter_resume_stmt_index = global.interpreter_current_stmt_index + 1;
         }
     } else {
         for (var _k = 32; _k <= 126; _k++) if (keyboard_check_pressed(_k)) handle_interpreter_character_input(_k);
@@ -79,56 +83,73 @@ if (global.awaiting_input) {
     return;
 }
 
-/*// ------------------------------------------------------------------
-// INKEY$ modal wait handler (blocking GET-style for LET ... = INKEY$)
-// Armed by basic_cmd_let: pause_in_effect=true & inkey_waiting=true
-// Captures ONE printable key (ASCII 32..126) on pressed edge, then resumes.
-// ------------------------------------------------------------------
-if (is_undefined(global.inkey_waiting))    global.inkey_waiting    = false;
-if (is_undefined(global.inkey_captured))   global.inkey_captured   = "";
-if (is_undefined(global.inkey_target_var)) global.inkey_target_var = "";
-
-if (global.pause_in_effect && global.inkey_waiting) {
-    var _got = "";
-    for (var _kc = 32; _kc <= 126; _kc++) {
-        if (keyboard_check_pressed(_kc)) { _got = chr(_kc); break; }
-    }
-
-    if (_got != "") {
-        global.inkey_captured  = _got;
-        global.inkey_waiting   = false;
-        global.pause_in_effect = false; // allow LET to re-run and assign on next frame
-        //show_debug_message("INKEY_WAIT: captured '" + _got + "' — resuming");
+// ==============================
+// INKEY$ modal wait handler (blocking GET-style)
+// Armed by LET when RHS is pure INKEY$ (your basic_cmd_let should set:
+//   global.inkey_waiting = true; global.pause_in_effect = true;)
+// This handler captures ONE key, stashes it, and lets the same LET re-run next frame.
+// ==============================
+if (global.inkey_waiting) {
+    // If we ALREADY have a captured char, DO NOT pause or return here.
+    // Let the interpreter proceed so LET ... = INKEY$ can commit and clear flags.
+    if (string_length(global.inkey_captured) > 0) {
+        global.pause_in_effect = false; // allow interpreter to advance
+        if (dbg_on(DBG_FLOW)) show_debug_message("INKEY WAIT: resume for commit (cached='" + global.inkey_captured + "')");
+        // NOTE: NO 'return' here — fall through to the interpreter loop
     } else {
-        //show_debug_message("INKEY_WAIT: paused, waiting for printable key");
+        // Try to obtain exactly one key this frame
+        var _ch = "";
+
+        // Prefer queued key captured by inkey_capture_keys()
+        if (ds_exists(global.__inkey_queue, ds_type_queue) && ds_queue_size(global.__inkey_queue) > 0) {
+            _ch = ds_queue_dequeue(global.__inkey_queue);
+            if (is_real(_ch)) _ch = chr(_ch);
+        }
+
+        // Fallback: direct pressed-edge scan this frame
+        if (_ch == "") {
+            for (var _kc = 32; _kc <= 126; _kc++) {
+                if (keyboard_check_pressed(_kc)) { _ch = chr(_kc); break; }
+            }
+        }
+
+        if (_ch != "") {
+            // Stash and allow interpreter to proceed THIS frame to re-run LET
+            global.inkey_captured  = string(_ch);
+            global.pause_in_effect = false;
+            if (dbg_on(DBG_FLOW)) show_debug_message("INKEY WAIT: captured '" + global.inkey_captured + "', resuming for commit");
+            // NOTE: NO 'return' here — fall through to the interpreter loop
+        } else {
+            // Nothing yet: keep interpreter paused and try again next frame
+            global.pause_in_effect = true;
+            if (dbg_on(DBG_FLOW)) show_debug_message("INKEY WAIT: still waiting for key");
+            return; // only return when we truly don't have a key this frame
+        }
     }
-    return; // don't advance interpreter while waiting / just after capture
-}*/
+}
 
 // ==============================
-// === Synchronize for structured IF…ELSE handling ===
+// Synchronize for structured IF…ELSE handling
 // ==============================
 global.interpreter_current_line_index = line_index;
 
 // ==============================
-// === Handle Jumps (PREFER LEGACY LINE JUMP) ===
+// Handle Jumps (prefer legacy line jump)
 // ==============================
-// CHANGED: prefer legacy line jump (GOSUB/GOTO) over statement-level resume,
-// and CLEAR any pending statement-level flags when legacy wins.
 if (global.interpreter_next_line >= 0) {
-   if (dbg_on(DBG_FLOW))  show_debug_message("IFJUMP: legacy line jump wins → line=" + string(global.interpreter_next_line));
+    if (dbg_on(DBG_FLOW)) show_debug_message("IFJUMP: legacy line jump wins → line=" + string(global.interpreter_next_line));
     line_index = global.interpreter_next_line;
     global.interpreter_current_line_index = global.interpreter_next_line;
     global.interpreter_resume_stmt_index = 0;
 
-    // --- NEW: clear any stale statement-level jump so it can't fire after the target line runs
+    // Clear any stale statement-level jump
     global.interpreter_use_stmt_jump = false;
     global.interpreter_target_line   = -1;
     global.interpreter_target_stmt   = 0;
 
     global.interpreter_next_line = -1;
 } else if (global.interpreter_use_stmt_jump && global.interpreter_target_line >= 0) {
-   if (dbg_on(DBG_FLOW))  show_debug_message("IFJUMP: using statement-level jump → line=" + string(global.interpreter_target_line) + ", stmt=" + string(global.interpreter_target_stmt));
+    if (dbg_on(DBG_FLOW)) show_debug_message("IFJUMP: using statement-level jump → line=" + string(global.interpreter_target_line) + ", stmt=" + string(global.interpreter_target_stmt));
     line_index = global.interpreter_target_line;
     global.interpreter_current_line_index = global.interpreter_target_line;
     global.interpreter_resume_stmt_index = max(0, global.interpreter_target_stmt);
@@ -139,14 +160,14 @@ if (global.interpreter_next_line >= 0) {
 }
 
 // ==============================
-// === End of Program Check ===
+// End of Program Check
 // ==============================
 if (line_index >= ds_list_size(global.line_list)) {
     global.interpreter_running = false;
 }
 
 // ==============================
-// === Execute BASIC Line ===
+// Execute BASIC Line
 // ==============================
 if (line_index < ds_list_size(global.line_list)) {
     var line_number = ds_list_find_value(global.line_list, line_index);
@@ -161,7 +182,7 @@ if (line_index < ds_list_size(global.line_list)) {
     var _start_stmt = 0;
     if (global.interpreter_resume_stmt_index > 0) {
         _start_stmt = global.interpreter_resume_stmt_index;
-       if (dbg_on(DBG_FLOW)) show_debug_message("Resuming at statement index " + string(_start_stmt)
+        if (dbg_on(DBG_FLOW)) show_debug_message("Resuming at statement index " + string(_start_stmt)
             + " on line " + string(line_number));
         global.interpreter_resume_stmt_index = 0;
     }
@@ -174,10 +195,10 @@ if (line_index < ds_list_size(global.line_list)) {
         var cmd2 = (sp2 > 0) ? string_upper(string_copy(stmt, 1, sp2 - 1)) : string_upper(stmt);
         var arg2 = (sp2 > 0) ? string_trim(string_copy(stmt, sp2 + 1, string_length(stmt))) : "";
 
-        // REM / apostrophe: stop the *physical line*
+        // REM / apostrophe: stop the physical line
         if (cmd2 == "REM" || string_char_at(stmt, 1) == "'") {
             if (dbg_on(DBG_FLOW)) {
-               if (dbg_on(DBG_FLOW)) show_debug_message("REM/' : stop parsing remainder of line "
+                show_debug_message("REM/' : stop parsing remainder of line "
                     + string(line_number) + " at part " + string(p) + "/"
                     + string(array_length(parts) - 1));
             }
@@ -195,18 +216,16 @@ if (line_index < ds_list_size(global.line_list)) {
         if (dbg_on(DBG_FLOW)) show_debug_message("Command: " + cmd2 + " | Arg: " + arg2);
         handle_basic_command(cmd2, arg2);
 
-        // --- If a pause was armed (e.g., LET ... = INKEY$), stop RIGHT HERE ---
+        // If a pause was armed (e.g., modal INKEY$), stop RIGHT HERE
         if (global.pause_in_effect) {
             global.interpreter_resume_stmt_index = p; // retry this colon slot next frame
             if (dbg_on(DBG_FLOW)) show_debug_message("PAUSE: engaged during statement; will retry stmt index " + string(p) + " next frame");
             break;
         }
 
-        // CHANGED ORDER: prefer legacy line jump break over statement-level break,
-        // and when legacy is present, also clear any stale statement-level jump flags.
+        // Prefer legacy line jump; clear stale stmt-level flags
         if (global.interpreter_next_line >= 0) {
             if (dbg_on(DBG_FLOW)) show_debug_message("IFJUMP: breaking line loop for LEGACY LINE jump");
-            // --- NEW: clear statement-level flags so they don't redirect after the target line executes
             global.interpreter_use_stmt_jump = false;
             global.interpreter_target_line   = -1;
             global.interpreter_target_stmt   = 0;
@@ -218,19 +237,18 @@ if (line_index < ds_list_size(global.line_list)) {
         }
     }
 
-    // If no jump was requested and we're NOT paused, advance to the next line
+    // If no jump requested and NOT paused, advance to next line
     if (!(global.interpreter_use_stmt_jump && global.interpreter_target_line >= 0)
      && !(global.interpreter_next_line >= 0)
      && !global.pause_in_effect) {
         line_index++;
     }
-}
-else {
+} else {
     global.interpreter_running = false;
 }
 
 // ==============================
-// === Escape Returns to Editor ===
+// Escape Returns to Editor
 // ==============================
 if (keyboard_check_pressed(vk_escape)) {
     global.current_mode = 0;
@@ -238,7 +256,7 @@ if (keyboard_check_pressed(vk_escape)) {
 }
 
 // ==============================
-// === F5 Dumps BASIC to Console ===
+// F5 Dumps BASIC to Console
 // ==============================
 if (keyboard_check_released(vk_f5) && basic_run_to_console_flag == false) {
     basic_run_to_console_flag = true;
@@ -246,7 +264,7 @@ if (keyboard_check_released(vk_f5) && basic_run_to_console_flag == false) {
 }
 
 // ==============================
-// === Manual Scroll (Always Available) ===
+// Manual Scroll (Always Available)
 // ==============================
 if (keyboard_check_pressed(vk_pageup))   global.scroll_offset = max(global.scroll_offset - 1, 0);
 if (keyboard_check_pressed(vk_pagedown)) {
@@ -261,4 +279,3 @@ if (global.pause_in_effect && global.inkey_mode) {
     handle_inkey_input();
 }
 // === END: obj_basic_interpreter.Step ===
-

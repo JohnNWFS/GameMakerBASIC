@@ -6,397 +6,236 @@ function infix_to_postfix(tokens) {
     var output = [];
     var stack  = [];
 
-    // Local helper: safe uppercase
     var _TOKU = function(_t) { return string_upper(string(_t)); };
 
-    // Local helper: append array contents to another array
     var _push_all = function(_dst, _src) {
-        for (var __i = 0; __i < array_length(_src); __i++) {
-            array_push(_dst, _src[__i]);
-        }
+        for (var __i = 0; __i < array_length(_src); __i++) array_push(_dst, _src[__i]);
     };
 
-    // Local helper: which functions are truly zero-arg
     var _is_zero_arg_fn = function(_name) {
         var n = string_upper(_name);
         return (n == "TIMER" || n == "TIME$" || n == "DATE$" || n == "INKEY$");
     };
 
-    for (var i = 0; i < array_length(tokens); i++) {
-        var t  = tokens[i];        // raw token
-        // Ignore commas as separators — functions handle arg order explicitly
-        if (t == ",") {
-            if (dbg_on(DBG_PARSE)) show_debug_message("INFIX: Skipping comma token");
-            continue;
+    var _is_STRING_fn = function(_name) {
+        return string_upper(string(_name)) == "STRING$";
+    };
+
+    // pass tokens explicitly so we don't rely on closure capture
+    var _read_paren_payload = function(_tokens, _start) {
+        var _depth = 0, j = _start, inner = "", matched = false;
+        while (j < array_length(_tokens)) {
+            var tk = _tokens[j];
+            if (tk == "(") {
+                _depth++;
+                if (_depth > 1) inner += tk;
+            } else if (tk == ")") {
+                _depth--;
+                if (_depth == 0) { matched = true; break; }
+                inner += tk;
+            } else {
+                inner += tk;
+            }
+            j++;
         }
+        return [matched, inner, j];
+    };
 
-        var tu = _TOKU(t);         // uppercased string form
+    for (var i = 0; i < array_length(tokens); i++) {
+        var t  = tokens[i];
 
-        // ==========================================================
-        // 1) ARRAY READ COLLAPSE — NAME ( balanced stuff )  →  "NAME(...)"
-        //    (skip if NAME is a known function)
-        // ==========================================================
+        if (t == ",") { if (dbg_on(DBG_PARSE)) show_debug_message("INFIX: Skipping comma token"); continue; }
+
+        var tu = _TOKU(t);
+
+        // 1) ARRAY READ COLLAPSE
         if (is_string(t)) {
             var first = string_char_at(t, 1);
             var can_be_name = is_letter(first);
 
-            if (can_be_name
-            &&  i + 1 < array_length(tokens)
-            &&  tokens[i + 1] == "("
-            && !is_function(t)) // do not collapse functions
-            {
-                var _depth   = 0; // NOTE: use _depth, never 'depth'
-                var j       = i + 1;
-                var inner   = "";
-                var matched = false;
-
+            if (can_be_name && i + 1 < array_length(tokens) && tokens[i + 1] == "("
+            && !(is_function(t) || _is_STRING_fn(t))) {
                 if (dbg_on(DBG_PARSE)) show_debug_message("INFIX: Candidate for array collapse → '" + string(t) + "' followed by '('");
-
-                while (j < array_length(tokens)) {
-                    var tk = tokens[j];
-                    if (tk == "(") {
-                        _depth++;
-                        if (_depth > 1) inner += tk;
-                    } else if (tk == ")") {
-                        _depth--;
-                        if (_depth == 0) { matched = true; break; }
-                        inner += tk;
-                    } else {
-                        inner += tk;
-                    }
-                    j++;
-                }
+                var arr_info = _read_paren_payload(tokens, i + 1);
+                var matched  = arr_info[0];
+                var inner    = arr_info[1];
+                var j        = arr_info[2];
 
                 if (matched) {
                     var collapsed = string(t) + "(" + inner + ")";
                     array_push(output, collapsed);
-                     if (dbg_on(DBG_PARSE)) show_debug_message("INFIX: Collapsed array read token → '" + collapsed + "' (consumed through index " + string(j) + ")");
-                    i = j; // skip to ')'
+                    if (dbg_on(DBG_PARSE)) show_debug_message("INFIX: Collapsed array read token → '" + collapsed + "' (consumed through index " + string(j) + ")");
+                    i = j;
                     continue;
                 } else {
-                     if (dbg_on(DBG_PARSE)) show_debug_message("INFIX: WARNING — unmatched '(' after '" + string(t) + "'. Not collapsing.");
+                    if (dbg_on(DBG_PARSE)) show_debug_message("INFIX: WARNING — unmatched '(' after '" + string(t) + "'. Not collapsing.");
                 }
             }
         }
 
-        // ==========================================================
         // 2) NUMERIC LITERAL
-        // ==========================================================
-        if (is_numeric_string(t)) {
-            array_push(output, t);
-             if (dbg_on(DBG_PARSE)) show_debug_message("Added number to output: " + string(t));
-            continue;
-        }
+        if (is_numeric_string(t)) { array_push(output, t); if (dbg_on(DBG_PARSE)) show_debug_message("Added number to output: " + string(t)); continue; }
 
-        // ==========================================================
-        // 3) KNOWN VARIABLE (already in global.basic_variables)
-        // ==========================================================
-        if (ds_map_exists(global.basic_variables, tu)) {
-            array_push(output, tu);
-             if (dbg_on(DBG_PARSE)) show_debug_message("Added variable name to output: " + tu);
-            continue;
-        }
+        // 3) KNOWN VARIABLE
+        if (ds_map_exists(global.basic_variables, tu)) { array_push(output, tu); if (dbg_on(DBG_PARSE)) show_debug_message("Added variable name to output: " + tu); continue; }
 
-        // ==========================================================
         // 4) OPEN PAREN
-        // ==========================================================
-        if (t == "(") {
-            array_push(stack, t);
-             if (dbg_on(DBG_PARSE)) show_debug_message("Pushed '(' onto operator stack");
-            continue;
-        }
+        if (t == "(") { array_push(stack, t); if (dbg_on(DBG_PARSE)) show_debug_message("Pushed '(' onto operator stack"); continue; }
 
-        // ==========================================================
         // 5) CLOSE PAREN
-        // ==========================================================
         if (t == ")") {
             while (array_length(stack) > 0 && stack[array_length(stack) - 1] != "(") {
                 var popped_close = array_pop(stack);
                 array_push(output, popped_close);
-                 if (dbg_on(DBG_PARSE)) show_debug_message("Popped '" + string(popped_close) + "' from stack to output (closing ')')");
+                if (dbg_on(DBG_PARSE)) show_debug_message("Popped '" + string(popped_close) + "' from stack to output (closing ')')");
             }
             if (array_length(stack) > 0 && stack[array_length(stack) - 1] == "(") {
-                array_pop(stack); // discard '('
-                 if (dbg_on(DBG_PARSE)) show_debug_message("Discarded matching '(' from stack");
+                array_pop(stack);
+                if (dbg_on(DBG_PARSE)) show_debug_message("Discarded matching '(' from stack");
             } else {
-                 if (dbg_on(DBG_PARSE)) show_debug_message("INFIX: WARNING — stray ')' with no matching '('");
+                if (dbg_on(DBG_PARSE)) show_debug_message("INFIX: WARNING — stray ')' with no matching '('");
             }
             continue;
         }
 
-        // ==========================================================
-        // 6) OPERATORS (+ - * / % MOD ^ etc.)
-        // ==========================================================
+        // 6) OPERATORS
         if (is_operator(t)) {
             if (dbg_on(DBG_PARSE)) show_debug_message("Found operator: " + string(t));
-
             while (array_length(stack) > 0) {
                 var top = stack[array_length(stack) - 1];
-                if (is_operator(top) && (
-                    get_precedence(top) > get_precedence(t) ||
-                    (get_precedence(top) == get_precedence(t) && !is_right_associative(t))
-                )) {
+                if (is_operator(top) && (get_precedence(top) > get_precedence(t)
+                || (get_precedence(top) == get_precedence(t) && !is_right_associative(t)))) {
                     var popped_op = array_pop(stack);
                     array_push(output, popped_op);
-                     if (dbg_on(DBG_PARSE)) show_debug_message("Popped higher/equal precedence operator '" + string(popped_op) + "' to output");
-                } else {
-                    break;
-                }
+                    if (dbg_on(DBG_PARSE)) show_debug_message("Popped higher/equal precedence operator '" + string(popped_op) + "' to output");
+                } else break;
             }
-
             array_push(stack, t);
-             if (dbg_on(DBG_PARSE)) show_debug_message("Pushed operator '" + string(t) + "' onto stack");
+            if (dbg_on(DBG_PARSE)) show_debug_message("Pushed operator '" + string(t) + "' onto stack");
             continue;
         }
 
-        // ==========================================================
         // 7) FUNCTIONS
-        // ==========================================================
-        if (is_function(t)) {
+        if (is_function(t) || _is_STRING_fn(t)) {
             var fn_name = tu;
 
-            // ------------------------------------------------------
-            // 7Z) ZERO-ARG FUNCTIONS (TIMER/TIME$/DATE$/INKEY$)
-            // Handle BOTH forms: NAME()  and bare NAME
-            // ------------------------------------------------------
+            // Zero-arg functions emit directly
             if (_is_zero_arg_fn(fn_name)) {
-                // NAME()
-                if (i + 2 < array_length(tokens) && tokens[i + 1] == "(" && tokens[i + 2] == ")") {
-                    array_push(output, fn_name);
-                    if (dbg_on(DBG_PARSE)) show_debug_message("INFIX: Zero-arg fn '" + fn_name + "()' → pushed opcode only");
-                    i += 2; // consume "()"
-                    continue;
-                }
-                // NAME without parentheses
-                if (i + 1 >= array_length(tokens) || tokens[i + 1] != "(") {
-                    array_push(output, fn_name);
-                     if (dbg_on(DBG_PARSE)) show_debug_message("INFIX: Zero-arg fn '" + fn_name + "' without '()' → treated as zero-arg");
-                    continue;
-                }
-                // If it has '(' but not immediately ')', fall through to generic handling
-            }
-
-            // ------------------------------------------------------
-            // 7a) Balanced 1-arg function handler for non-RND
-            //     Handles cases like INT( RND(1,6) ), ABS(A+B*C), etc.
-            // ------------------------------------------------------
-            if (i + 1 < array_length(tokens) && tokens[i + 1] == "(" && fn_name != "RND") {
-                var depthB   = 0; // not 'depth'
-                var jB       = i + 1;
-                var matchedB = false;
-
-                // Find matching ')'
-                while (jB < array_length(tokens)) {
-                    var tkB = tokens[jB];
-                    if (tkB == "(") { depthB++; }
-                    else if (tkB == ")") { depthB--; if (depthB == 0) { matchedB = true; break; } }
-                    jB++;
-                }
-
-                if (matchedB) {
-                    // Extract inner tokens (between the outermost '(' and ')')
-                    var inner_tokens = [];
-                    for (var kB = i + 2; kB <= jB - 1; kB++) {
-                        array_push(inner_tokens, tokens[kB]);
-                    }
-
-                    // Convert inner expression to postfix and append
-                    var inner_post = infix_to_postfix(inner_tokens);
-                    _push_all(output, inner_post);
-
-                    // Push the function itself
-                    array_push(output, fn_name);
-                     if (dbg_on(DBG_PARSE)) show_debug_message("Processed balanced 1-arg function: " + fn_name + "(...)");
-
-                    i = jB; // consume up to ')'
-                    continue;
-                }
-                // If we didn't match, fall through to existing logic below
-            }
-
-            // ------------------------------------------------------
-            // 7b) RND(min, max) handling for complex arguments
-            // ------------------------------------------------------
-            if (fn_name == "RND") {
-                if (i + 1 < array_length(tokens) && tokens[i + 1] == "(") {
-                    var _depth = 0;
-                    var j = i + 1;
-                    var matched = false;
-                    var arg_tokens = [[]]; // Array of token lists for each argument
-                    var arg_index = 0;
-
-                    // Collect tokens until matching ')'
-                    while (j < array_length(tokens)) {
-                        var tk = tokens[j];
-                        if (tk == "(") {
-                            _depth++;
-                            if (_depth > 1) array_push(arg_tokens[arg_index], tk);
-                        } else if (tk == ")") {
-                            _depth--;
-                            if (_depth == 0) { matched = true; break; }
-                            array_push(arg_tokens[arg_index], tk);
-                        } else if (tk == "," && _depth == 1) {
-                            arg_index++;
-                            array_push(arg_tokens, []);
-                        } else {
-                            array_push(arg_tokens[arg_index], tk);
-                        }
-                        j++;
-                    }
-
-                    if (matched) {
-                        if (array_length(arg_tokens) == 1 && array_length(arg_tokens[0]) == 0) {
-                            // Empty parens: RND()
-                            array_push(output, "1");
-                            array_push(output, "RND1");
-                             if (dbg_on(DBG_PARSE)) show_debug_message("Processed empty RND() → default to RND(1)");
-                            i = j;
-                            continue;
-                        } else if (array_length(arg_tokens) == 1) {
-                            // One arg: RND(n)
-                            var inner_post = infix_to_postfix(arg_tokens[0]);
-                            _push_all(output, inner_post);
-                            array_push(output, "RND1");
-                             if (dbg_on(DBG_PARSE)) show_debug_message("Processed RND(n): " + string(arg_tokens[0]));
-                            i = j;
-                            continue;
-                        } else if (array_length(arg_tokens) == 2) {
-                            // Two args: RND(min, max)
-                            var min_post = infix_to_postfix(arg_tokens[0]);
-                            var max_post = infix_to_postfix(arg_tokens[1]);
-                            _push_all(output, min_post);
-                            _push_all(output, max_post);
-                            array_push(output, "RND2");
-                             if (dbg_on(DBG_PARSE)) show_debug_message("Processed RND(min,max): " + string(arg_tokens[0]) + ", " + string(arg_tokens[1]));
-                            i = j;
-                            continue;
-                        }
-                    }
-                    // Malformed RND call
-                     if (dbg_on(DBG_PARSE)) show_debug_message("Malformed RND call at token '" + string(t) + "' — passing through");
-                    array_push(output, t);
-                    i = j;
-                    continue;
-                } else {
-                    // RND without parentheses
-                     if (dbg_on(DBG_PARSE)) show_debug_message("? Function 'RND' used without parentheses. Defaulting to RND(1) behavior.");
-                    array_push(output, "1");
-                    array_push(output, "RND1");
-                    continue;
-                }
-            }
-
-            // ------------------------------------------------------
-            // 7c) Existing special cases for other functions
-            // ------------------------------------------------------
-            // Function used WITHOUT parentheses → fallback behavior
-            if (i + 1 >= array_length(tokens) || tokens[i + 1] != "(") {
-                if (_is_zero_arg_fn(fn_name)) {
-                    array_push(output, fn_name);
-                     if (dbg_on(DBG_PARSE)) show_debug_message("INFIX: Zero-arg fn '" + fn_name + "' used without '()' → pushed opcode");
-                } else {
-                     if (dbg_on(DBG_PARSE)) show_debug_message("? Function '" + string(t) + "' used without parentheses. Defaulting to " + fn_name + "(1) behavior.");
-                    array_push(output, "1");
-                    array_push(output, fn_name);
-                }
-                continue;
-            }
-
-            // Empty parens like REPEAT$()
-            if (i + 2 < array_length(tokens) && tokens[i + 1] == "(" && tokens[i + 2] == ")") {
-                 if (dbg_on(DBG_PARSE)) show_debug_message("Function " + fn_name + "() with no args not supported (non-RND) — passing token through");
-                array_push(output, t);
-                i += 2;
-                continue;
-            }
-
-            // REPEAT$(s, n) — exactly 2 args (simple positional form)
-            if (fn_name == "REPEAT$") {
-                 if (dbg_on(DBG_PARSE)) show_debug_message("REPEAT$ DEBUG: i=" + string(i) + ", total=" + string(array_length(tokens)));
-                if (i + 5 < array_length(tokens)
-                &&  tokens[i + 1] == "("
-                &&  tokens[i + 3] == ","
-                &&  tokens[i + 5] == ")")
-                {
-                    var rq1 = tokens[i + 2];
-                    var rq2 = tokens[i + 4];
-                    array_push(output, rq1);
-                    array_push(output, rq2);
-                    array_push(output, fn_name);
-                     if (dbg_on(DBG_PARSE)) show_debug_message("Processed REPEAT$(s,n): args = " + string(rq1) + ", " + string(rq2));
-                    i += 5;
-                } else {
-                     if (dbg_on(DBG_PARSE)) show_debug_message("Malformed REPEAT$ call starting at token '" + string(t) + "'");
-                    array_push(output, t);
-                }
-                continue;
-            }
-
-            // MID$(s, start, len) — 3 args
-            if (fn_name == "MID$") {
-                 if (dbg_on(DBG_PARSE)) show_debug_message("MID$ DEBUG: i=" + string(i) + ", total tokens=" + string(array_length(tokens)));
-                if (i + 7 < array_length(tokens)
-                &&  tokens[i + 1] == "("
-                &&  tokens[i + 3] == ","
-                &&  tokens[i + 5] == ","
-                &&  tokens[i + 7] == ")")
-                {
-                    var ma1 = tokens[i + 2];
-                    var ma2 = tokens[i + 4];
-                    var ma3 = tokens[i + 6];
-                    array_push(output, ma1);
-                    array_push(output, ma2);
-                    array_push(output, ma3);
-                    array_push(output, fn_name);
-                     if (dbg_on(DBG_PARSE)) show_debug_message("Processed MID$(s,start,len): " + string(ma1) + ", " + string(ma3));
-                    i += 7;
-                } else {
-                     if (dbg_on(DBG_PARSE)) show_debug_message("Malformed MID$ call starting at token '" + string(t) + "'");
-                    array_push(output, t);
-                }
-                continue;
-            }
-
-            // LEFT$/RIGHT$ (2 args)
-            if ((fn_name == "LEFT$" || fn_name == "RIGHT$")
-            &&  i + 5 < array_length(tokens)
-            &&  tokens[i + 1] == "("
-            &&  tokens[i + 3] == ","
-            &&  tokens[i + 5] == ")")
-            {
-                var la1 = tokens[i + 2];
-                var la2 = tokens[i + 4];
-                array_push(output, la1);
-                array_push(output, la2);
                 array_push(output, fn_name);
-                 if (dbg_on(DBG_PARSE)) show_debug_message("Processed " + fn_name + "(arg1,arg2): " + string(la1) + ", " + string(la2));
-                i += 5;
+                if (dbg_on(DBG_PARSE)) show_debug_message("Processed zero-arg function: " + fn_name);
                 continue;
             }
 
-            // Fallback: malformed function call
-             if (dbg_on(DBG_PARSE)) show_debug_message("Malformed function call: " + string(t));
-            array_push(output, t);
+            // Must be followed by '('
+            if (!(i + 1 < array_length(tokens) && tokens[i + 1] == "(")) {
+                array_push(output, fn_name);
+                if (dbg_on(DBG_PARSE)) show_debug_message("Function without '(': passing through → " + fn_name);
+                continue;
+            }
+
+            // Read (...): pass tokens explicitly
+            var f_info  = _read_paren_payload(tokens, i + 1);
+            var f_ok    = f_info[0];
+            var f_inner = f_info[1];
+            var f_end   = f_info[2];
+
+            if (!f_ok) {
+                array_push(output, fn_name);
+                if (dbg_on(DBG_PARSE)) show_debug_message("WARNING: unmatched '(' for function " + fn_name + " — passing through");
+                continue;
+            }
+
+            // ---------- SPECIAL: STRING$(x, n) ----------
+            if (fn_name == "STRING$") {
+                var lvl = 0, part = "", parts = [];
+                for (var ci = 1; ci <= string_length(f_inner); ci++) {
+                    var ch = string_char_at(f_inner, ci);
+                    if (ch == "(") { lvl++; part += ch; }
+                    else if (ch == ")") { lvl--; part += ch; }
+                    else if (ch == "," && lvl == 0) { array_push(parts, string_trim(part)); part = ""; }
+                    else { part += ch; }
+                }
+                array_push(parts, string_trim(part));
+
+                if (array_length(parts) == 2) {
+                    var t1 = basic_tokenize_expression_v2(parts[0]);
+                    var t2 = basic_tokenize_expression_v2(parts[1]);
+                    var p1 = infix_to_postfix(t1);
+                    var p2 = infix_to_postfix(t2);
+                    _push_all(output, p1);
+                    _push_all(output, p2);
+                    array_push(output, fn_name);
+                    if (dbg_on(DBG_PARSE)) show_debug_message("Processed STRING$(x,n): args = [" + parts[0] + "], [" + parts[1] + "]");
+                    i = f_end;
+                    continue;
+                }
+                // fall through to generic handling if malformed
+            }
+
+            // ---------- SPECIAL: LEFT$/RIGHT$/MID$ (multi-arg) ----------
+            if (fn_name == "LEFT$" || fn_name == "RIGHT$" || fn_name == "MID$") {
+                var lvl2 = 0, part2 = "", parts_lr = [];
+                for (var ci2 = 1; ci2 <= string_length(f_inner); ci2++) {
+                    var ch2 = string_char_at(f_inner, ci2);
+                    if (ch2 == "(") { lvl2++; part2 += ch2; }
+                    else if (ch2 == ")") { lvl2--; part2 += ch2; }
+                    else if (ch2 == "," && lvl2 == 0) { array_push(parts_lr, string_trim(part2)); part2 = ""; }
+                    else { part2 += ch2; }
+                }
+                array_push(parts_lr, string_trim(part2));
+
+                // LEFT$/RIGHT$ expect exactly 2 args
+                if ((fn_name == "LEFT$" || fn_name == "RIGHT$") && array_length(parts_lr) == 2) {
+                    var tA1 = basic_tokenize_expression_v2(parts_lr[0]);
+                    var tA2 = basic_tokenize_expression_v2(parts_lr[1]);
+                    var pA1 = infix_to_postfix(tA1);
+                    var pA2 = infix_to_postfix(tA2);
+                    _push_all(output, pA1);
+                    _push_all(output, pA2);
+                    array_push(output, fn_name);
+                    if (dbg_on(DBG_PARSE)) show_debug_message("Processed " + fn_name + "(" + parts_lr[0] + "," + parts_lr[1] + ")");
+                    i = f_end;
+                    continue;
+                }
+
+                // MID$ supports 2 or 3 args
+                if (fn_name == "MID$" && (array_length(parts_lr) == 2 || array_length(parts_lr) == 3)) {
+                    for (var mi = 0; mi < array_length(parts_lr); mi++) {
+                        var tMi = basic_tokenize_expression_v2(parts_lr[mi]);
+                        var pMi = infix_to_postfix(tMi);
+                        _push_all(output, pMi);
+                    }
+                    array_push(output, fn_name);
+                    if (dbg_on(DBG_PARSE)) show_debug_message("Processed MID$(" + string(parts_lr) + ")");
+                    i = f_end;
+                    continue;
+                }
+                // else fall through to generic one-arg below
+            }
+
+            // Generic one-arg function: <inner> <FN>
+            var inner_tokens  = basic_tokenize_expression_v2(f_inner);
+            var inner_postfix = infix_to_postfix(inner_tokens);
+            _push_all(output, inner_postfix);
+            array_push(output, fn_name);
+            if (dbg_on(DBG_PARSE)) show_debug_message("Processed 1-arg function " + fn_name + "(" + f_inner + ") → postfix emit <inner> " + fn_name);
+            i = f_end;
             continue;
         }
 
-        // ==========================================================
-        // 8) UNKNOWN TOKEN — pass through (evaluator often tolerates)
-        // ==========================================================
-         if (dbg_on(DBG_PARSE)) show_debug_message("Unknown token, adding to output: " + string(t));
+        // 8) UNKNOWN TOKEN
+        if (dbg_on(DBG_PARSE)) show_debug_message("Unknown token, adding to output: " + string(t));
         array_push(output, t);
     }
 
-    // ==========================================================
     // Drain operator stack
-    // ==========================================================
     while (array_length(stack) > 0) {
         var tail = array_pop(stack);
         array_push(output, tail);
-         if (dbg_on(DBG_PARSE)) show_debug_message("Drained operator stack → appended '" + string(tail) + "'");
+        if (dbg_on(DBG_PARSE)) show_debug_message("Drained operator stack → appended '" + string(tail) + "'");
     }
 
-     if (dbg_on(DBG_PARSE)) show_debug_message("Final postfix: " + string(output));
+    if (dbg_on(DBG_PARSE)) show_debug_message("Final postfix: " + string(output));
     return output;
 }
 // === END: infix_to_postfix ===

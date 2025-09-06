@@ -10,5 +10,5 @@ function import_from_url(_url) {
     var req = http_get(_url);
     // Store a tag so we know why this request happened
     ds_map_replace(global.http_tags, req, ":LOADURL");
-    show_debug_message("[LOADURL] GET -> " + _url + " (req=" + string(req) + ")");
+   if (dbg_on(DBG_FLOW)) show_debug_message("[LOADURL] GET -> " + _url + " (req=" + string(req) + ")");
 }

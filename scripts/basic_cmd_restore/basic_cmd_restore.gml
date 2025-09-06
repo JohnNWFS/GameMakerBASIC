@@ -21,6 +21,6 @@ function basic_cmd_restore(arg) {
     st.ptr = 0;
     if (dbg_on(DBG_FLOW)) {
         var cnt = ds_list_size(st.list);
-        show_debug_message("RESTORE: stream='" + stream_name + "' ptr=0 (size=" + string(cnt) + ")");
+        if (dbg_on(DBG_FLOW)) show_debug_message("RESTORE: stream='" + stream_name + "' ptr=0 (size=" + string(cnt) + ")");
     }
 }

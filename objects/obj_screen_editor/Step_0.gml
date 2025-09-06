@@ -4,7 +4,7 @@
 
 // Handle ESC key - exit screen editor
 if (keyboard_check_pressed(vk_escape)) {
-    show_debug_message("SCREEN_EDITOR: ESC pressed - exiting");
+    if (dbg_on(DBG_FLOW)) show_debug_message("SCREEN_EDITOR: ESC pressed - exiting");
     screen_editor_exit(id);
     exit;
 }
@@ -28,9 +28,9 @@ if (keyboard_check(vk_left)) {
             // At left edge of screen, scroll left
             horizontal_offset--;
             screen_editor_load_program(id);
-            show_debug_message("SCREEN_EDITOR: Scrolled left - new h_offset=" + string(horizontal_offset));
+            if (dbg_on(DBG_FLOW)) show_debug_message("SCREEN_EDITOR: Scrolled left - new h_offset=" + string(horizontal_offset));
         }
-        show_debug_message("SCREEN_EDITOR: Cursor left to (" + string(cursor_x) + "," + string(cursor_y) + "), h_offset=" + string(horizontal_offset));
+        if (dbg_on(DBG_FLOW)) show_debug_message("SCREEN_EDITOR: Cursor left to (" + string(cursor_x) + "," + string(cursor_y) + "), h_offset=" + string(horizontal_offset));
         arrow_repeat_timer = 4; // 4-frame delay between movements
     }
 }
@@ -50,7 +50,7 @@ if (keyboard_check(vk_right)) {
         var actual_cursor_pos = cursor_x + horizontal_offset;
         var full_line_length = string_length(full_line_text);
         
-        show_debug_message("SCREEN_EDITOR: Right arrow - cursor_x=" + string(cursor_x) + ", h_offset=" + string(horizontal_offset) + ", actual_pos=" + string(actual_cursor_pos) + ", full_line_len=" + string(full_line_length));
+        if (dbg_on(DBG_FLOW)) show_debug_message("SCREEN_EDITOR: Right arrow - cursor_x=" + string(cursor_x) + ", h_offset=" + string(horizontal_offset) + ", actual_pos=" + string(actual_cursor_pos) + ", full_line_len=" + string(full_line_length));
         
         // Allow scrolling through the entire line content
         if (actual_cursor_pos < full_line_length && actual_cursor_pos < 200) {
@@ -60,10 +60,10 @@ if (keyboard_check(vk_right)) {
                 // At right edge of screen, scroll right
                 horizontal_offset++;
                 screen_editor_load_program(id);
-                show_debug_message("SCREEN_EDITOR: Scrolled right - new h_offset=" + string(horizontal_offset));
+                if (dbg_on(DBG_FLOW)) show_debug_message("SCREEN_EDITOR: Scrolled right - new h_offset=" + string(horizontal_offset));
             }
         }
-        show_debug_message("SCREEN_EDITOR: After right - cursor(" + string(cursor_x) + "," + string(cursor_y) + "), h_offset=" + string(horizontal_offset));
+        if (dbg_on(DBG_FLOW)) show_debug_message("SCREEN_EDITOR: After right - cursor(" + string(cursor_x) + "," + string(cursor_y) + "), h_offset=" + string(horizontal_offset));
         arrow_repeat_timer = 4; // 4-frame delay between movements
     }
 }
@@ -78,7 +78,7 @@ if (keyboard_check_pressed(vk_up)) {
     if (line_modified) {
         screen_editor_commit_row(id, cursor_y);
         line_modified = false;
-        show_debug_message("SCREEN_EDITOR: Auto-committed modified line before moving up");
+        if (dbg_on(DBG_FLOW)) show_debug_message("SCREEN_EDITOR: Auto-committed modified line before moving up");
     }
     
     // Store the desired horizontal position
@@ -97,7 +97,7 @@ if (keyboard_check_pressed(vk_up)) {
     } else if (scroll_offset > 0) {
         scroll_offset--;
         screen_editor_load_program(id);
-        show_debug_message("SCREEN_EDITOR: Scrolled up - scroll_offset=" + string(scroll_offset));
+        if (dbg_on(DBG_FLOW)) show_debug_message("SCREEN_EDITOR: Scrolled up - scroll_offset=" + string(scroll_offset));
     }
     
     // Smart cursor positioning for new line
@@ -107,7 +107,7 @@ if (keyboard_check_pressed(vk_up)) {
     cursor_x = min(target_pos, 79);
     
     screen_editor_load_program(id);
-    show_debug_message("SCREEN_EDITOR: Up - cursor(" + string(cursor_x) + "," + string(cursor_y) + "), cleared input");
+    if (dbg_on(DBG_FLOW)) show_debug_message("SCREEN_EDITOR: Up - cursor(" + string(cursor_x) + "," + string(cursor_y) + "), cleared input");
 }
 
 if (keyboard_check_pressed(vk_down)) {
@@ -115,7 +115,7 @@ if (keyboard_check_pressed(vk_down)) {
     if (line_modified) {
         screen_editor_commit_row(id, cursor_y);
         line_modified = false;
-        show_debug_message("SCREEN_EDITOR: Auto-committed modified line before moving down");
+        if (dbg_on(DBG_FLOW)) show_debug_message("SCREEN_EDITOR: Auto-committed modified line before moving down");
     }
     
     // Store the desired horizontal position
@@ -137,7 +137,7 @@ if (keyboard_check_pressed(vk_down)) {
     } else if (scroll_offset + screen_rows < total_lines) {
         scroll_offset++;
         screen_editor_load_program(id);
-        show_debug_message("SCREEN_EDITOR: Scrolled down - scroll_offset=" + string(scroll_offset));
+        if (dbg_on(DBG_FLOW)) show_debug_message("SCREEN_EDITOR: Scrolled down - scroll_offset=" + string(scroll_offset));
     }
     
     // Smart cursor positioning for new line
@@ -147,7 +147,7 @@ if (keyboard_check_pressed(vk_down)) {
     cursor_x = min(target_pos, 79);
     
     screen_editor_load_program(id);
-    show_debug_message("SCREEN_EDITOR: Down - cursor(" + string(cursor_x) + "," + string(cursor_y) + "), cleared input");
+    if (dbg_on(DBG_FLOW)) show_debug_message("SCREEN_EDITOR: Down - cursor(" + string(cursor_x) + "," + string(cursor_y) + "), cleared input");
 }
 
 // Handle Page Up/Down
@@ -158,7 +158,7 @@ if (keyboard_check_pressed(vk_pageup)) {
         horizontal_offset = 0;
         cursor_x = min(cursor_x, 79);
         screen_editor_load_program(id);
-        show_debug_message("SCREEN_EDITOR: Page Up - scroll_offset " + string(old_offset) + " -> " + string(scroll_offset));
+        if (dbg_on(DBG_FLOW)) show_debug_message("SCREEN_EDITOR: Page Up - scroll_offset " + string(old_offset) + " -> " + string(scroll_offset));
     }
 }
 
@@ -170,7 +170,7 @@ if (keyboard_check_pressed(vk_pagedown)) {
         horizontal_offset = 0;
         cursor_x = min(cursor_x, 79);
         screen_editor_load_program(id);
-        show_debug_message("SCREEN_EDITOR: Page Down - scroll_offset " + string(old_offset) + " -> " + string(scroll_offset));
+        if (dbg_on(DBG_FLOW)) show_debug_message("SCREEN_EDITOR: Page Down - scroll_offset " + string(old_offset) + " -> " + string(scroll_offset));
     }
 }
 
@@ -179,7 +179,7 @@ if (keyboard_check_pressed(vk_home)) {
     cursor_x = 0;
     horizontal_offset = 0;
     screen_editor_load_program(id);
-    show_debug_message("SCREEN_EDITOR: Home pressed - jump to beginning");
+    if (dbg_on(DBG_FLOW)) show_debug_message("SCREEN_EDITOR: Home pressed - jump to beginning");
 }
 
 if (keyboard_check_pressed(vk_end)) {
@@ -197,7 +197,7 @@ if (keyboard_check_pressed(vk_end)) {
     }
     
     screen_editor_load_program(id);
-    show_debug_message("SCREEN_EDITOR: End pressed - jump to end, cursor=" + string(cursor_x) + ", h_offset=" + string(horizontal_offset));
+    if (dbg_on(DBG_FLOW)) show_debug_message("SCREEN_EDITOR: End pressed - jump to end, cursor=" + string(cursor_x) + ", h_offset=" + string(horizontal_offset));
 }
 
 
@@ -227,7 +227,7 @@ if (keyboard_check_pressed(vk_anykey)) {
 
         if (string_length(ch) == 1) {
             var ascii_code = ord(ch);
-            show_debug_message("SCREEN_EDITOR: Key pressed - char '" + ch + "', ASCII " + string(ascii_code));
+            if (dbg_on(DBG_FLOW)) show_debug_message("SCREEN_EDITOR: Key pressed - char '" + ch + "', ASCII " + string(ascii_code));
 
             if (ascii_code >= 32 && ascii_code <= 126) {
                 var current_line_text = screen_editor_get_row_text(id, cursor_y);
@@ -328,7 +328,7 @@ if (keyboard_check_pressed(vk_backspace)) {
 
 // Enter key
 if (keyboard_check_pressed(vk_enter)) {
-    show_debug_message("SCREEN_EDITOR: Enter pressed - committing row " + string(cursor_y));
+    if (dbg_on(DBG_FLOW)) show_debug_message("SCREEN_EDITOR: Enter pressed - committing row " + string(cursor_y));
     screen_editor_commit_row(id, cursor_y);
     
     horizontal_offset = 0;

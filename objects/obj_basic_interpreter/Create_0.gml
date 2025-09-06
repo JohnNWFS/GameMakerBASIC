@@ -28,3 +28,13 @@ interpreter_current_program = ds_list_create(); // OK to keep local
 
 basic_run_to_console_flag = false;
 
+if (!variable_global_exists("help_topics") || !ds_exists(global.help_topics, ds_type_list)) {
+    global.help_topics = ds_list_create();
+} else {
+    ds_list_clear(global.help_topics);
+}
+
+// PRINT tab stop width (classic BASIC style)
+if (is_undefined(global.print_zone)) global.print_zone = 14;
+
+

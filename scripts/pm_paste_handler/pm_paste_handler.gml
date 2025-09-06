@@ -5,11 +5,11 @@ function pm_paste_handler(_data, _name, _type) {
         if (is_string(_data) && string_length(_data) > 0) {
             pm_receive_text(_data);
         } else {
-            show_debug_message("[PASTE] Text handler: empty or non-string payload.");
+           if (dbg_on(DBG_FLOW)) show_debug_message("[PASTE] Text handler: empty or non-string payload.");
         }
     } else {
         // You pasted a file; ignore for now (or handle base64 here)
-        show_debug_message("[PASTE] File paste ignored: " + string(_name) + " (" + string(_type) + ")");
+       if (dbg_on(DBG_FLOW)) show_debug_message("[PASTE] File paste ignored: " + string(_name) + " (" + string(_type) + ")");
     }
 
     // Unbind so we don't keep intercepting Ctrl/Cmd+V forever

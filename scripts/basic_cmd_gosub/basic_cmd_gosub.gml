@@ -1,40 +1,39 @@
 /// @script basic_cmd_gosub
-/// @description Handle GOSUB line-number jumps, stripping inline comments
 function basic_cmd_gosub(arg) {
-    // 1) Strip off anything after a ':' (inline comment or extra code)
     var raw = string_trim(arg);
     var colonPos = string_pos(":", raw);
-    if (colonPos > 0) {
-        raw = string_trim(string_copy(raw, 1, colonPos - 1));
-        if (dbg_on(DBG_FLOW)) show_debug_message("GOSUB: Stripped argument to '" + raw + "'");
+    if (colonPos > 0) raw = string_trim(string_copy(raw, 1, colonPos - 1));
+    var target = real(raw);
+
+    // Ensure gosub stack exists
+    if (!ds_exists(global.gosub_stack, ds_type_stack)) {
+        global.gosub_stack = ds_stack_create();
     }
 
-    // 2) Parse the target line number
-    var target = real(raw);
-    if (dbg_on(DBG_FLOW)) show_debug_message("GOSUB: Target line requested: " + string(target));
+    // === CHANGE: capture statement-level resume point on this same line ===
+    var resume_stmt = 0;
+    if (variable_global_exists("interpreter_current_stmt_index")) {
+        resume_stmt = global.interpreter_current_stmt_index + 1;  // next stmt on this line
+    }
+    var frame = {
+        kind: "stmt",                 // mark as statement-level resume
+        line_index: line_index,       // current line index
+        stmt_index: resume_stmt       // next statement to run on return
+    };
+    ds_stack_push(global.gosub_stack, frame);
 
-    // 3) Push return point (the *next* line index) onto the gosub stack
-    var return_index = line_index + 1;
-    ds_stack_push(global.gosub_stack, return_index);
-    if (dbg_on(DBG_FLOW)) show_debug_message("GOSUB: Pushed return index: " + string(return_index));
-
-    // 4) Find the target in the sorted line_list
+    // Jump to target line
     global.interpreter_next_line = -1;
     var listSize = ds_list_size(global.line_list);
     for (var i = 0; i < listSize; i++) {
         if (ds_list_find_value(global.line_list, i) == target) {
             global.interpreter_next_line = i;
-            if (dbg_on(DBG_FLOW))  show_debug_message("GOSUB: Found target line at index " + string(i));
             break;
         }
     }
-
-    // 5) Error if not found
-	if (global.interpreter_next_line == -1) {
-	    basic_syntax_error("GOSUB target line not found: " + string(target), 
-	        global.current_line_number,
-	        global.interpreter_current_stmt_index, 
-	        "GOSUB_TARGET");
-	    return;
-	}
+    if (global.interpreter_next_line == -1) {
+        basic_syntax_error("GOSUB target line not found: " + string(target),
+            global.current_line_number, global.interpreter_current_stmt_index, "GOSUB_TARGET");
+        return;
+    }
 }

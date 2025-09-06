@@ -2,11 +2,11 @@
 /// @description Executes the BASIC program in memory and prints the output to the console instead of the screen.
 
 function basic_run_to_console() {
-    show_debug_message("==== BEGIN PROGRAM CONSOLE OUTPUT ====");
+   if (dbg_on(DBG_FLOW)) show_debug_message("==== BEGIN PROGRAM CONSOLE OUTPUT ====");
 
     // Safety check
     if (!ds_exists(global.program_lines, ds_type_map) || !ds_exists(global.line_numbers, ds_type_list)) {
-        show_debug_message("No program loaded.");
+       if (dbg_on(DBG_FLOW)) show_debug_message("No program loaded.");
         return;
     }
 
@@ -56,18 +56,18 @@ function basic_run_to_console() {
 
                 if (ends_with_semicolon) {
                     // no newline
-                    show_debug_message(">> " + output);
+                    if (dbg_on(DBG_FLOW)) show_debug_message(">> " + output);
                 } else {
-                    show_debug_message(">> " + output + "\n");
+                    if (dbg_on(DBG_FLOW)) show_debug_message(">> " + output + "\n");
                 }
                 break;
 
             default:
-                show_debug_message("Unknown command on line " + string(line_num) + ": " + cmd);
+                if (dbg_on(DBG_FLOW)) show_debug_message("Unknown command on line " + string(line_num) + ": " + cmd);
         }
     }
 
     ds_map_destroy(local_vars);
 	basic_run_to_console_flag = false;
-    show_debug_message("==== END PROGRAM CONSOLE OUTPUT ====");
+    if (dbg_on(DBG_FLOW)) show_debug_message("==== END PROGRAM CONSOLE OUTPUT ====");
 }

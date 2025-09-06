@@ -10,6 +10,6 @@ function screen_editor_clear_row(editor_inst, _row) {
         for (var _x = 0; _x < screen_cols; _x++) {
             screen_editor_set_char_at(id, _x, _row, ord(" "));
         }
-        show_debug_message("SCREEN_EDITOR: Cleared row " + string(_row));
+       if (dbg_on(DBG_FLOW)) show_debug_message("SCREEN_EDITOR: Cleared row " + string(_row));
     }
 }

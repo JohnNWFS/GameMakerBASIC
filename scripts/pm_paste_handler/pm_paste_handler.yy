@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"pm_paste_handler",
   "parent":{
-    "name":"PASTE FUNCTIONS",
-    "path":"folders/Scripts/PASTE FUNCTIONS.yy",
+    "name":"HTML FUNCTIONS",
+    "path":"folders/Scripts/HTML FUNCTIONS.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

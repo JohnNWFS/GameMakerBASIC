@@ -21,7 +21,7 @@ function save_program_as(filename)
         save_dir = working_directory;
         var _last = string_copy(save_dir, string_length(save_dir), 1);
         if (_last != "/" && _last != "\\") save_dir += (os_type == os_windows) ? "\\" : "/";
-        show_debug_message("FALLBACK save_dir -> '" + save_dir + "'");
+       if (dbg_on(DBG_FLOW)) show_debug_message("FALLBACK save_dir -> '" + save_dir + "'");
     }
     if (os_type == os_windows || os_type == os_macosx || os_type == os_linux) {
         if (!directory_exists(save_dir)) directory_create(save_dir);
@@ -29,7 +29,7 @@ function save_program_as(filename)
     }
 
     var save_path = save_dir + filename + ".bas";
-    show_debug_message("SAVE -> " + save_path);
+   if (dbg_on(DBG_FLOW)) show_debug_message("SAVE -> " + save_path);
 
     // --- Collect lines from likely sources
     var lines_list = ds_list_create(); // will hold strings to write, in order
@@ -196,12 +196,12 @@ function save_program_as(filename)
 
     // --- Diagnostics before writing
     var total = ds_list_size(lines_list);
-    show_debug_message("SAVE SOURCE -> " + source_used + " | lines=" + string(total));
+   if (dbg_on(DBG_FLOW)) show_debug_message("SAVE SOURCE -> " + source_used + " | lines=" + string(total));
     if (total > 0) {
         // show first couple lines for verification
         var preview_max = min(3, total);
         for (var pv = 0; pv < preview_max; pv++) {
-            show_debug_message("LINE[" + string(pv) + "] -> " + string(ds_list_find_value(lines_list, pv)));
+           if (dbg_on(DBG_FLOW)) show_debug_message("LINE[" + string(pv) + "] -> " + string(ds_list_find_value(lines_list, pv)));
         }
     }
 
@@ -216,7 +216,7 @@ function save_program_as(filename)
     file_text_close(fh);
 
     var exists_after = file_exists(save_path);
-    show_debug_message("SAVE EXISTS AFTER -> " + string(exists_after));
+   if (dbg_on(DBG_FLOW)) show_debug_message("SAVE EXISTS AFTER -> " + string(exists_after));
 
     if (total == 0) {
         show_error_message("NOTHING TO SAVE — no program lines found");

@@ -7,7 +7,7 @@
 function screen_editor_commit_row_extended(editor_inst, _row, line_text) {
     with (editor_inst) {
         var trimmed_text = string_trim(line_text);
-        show_debug_message("SCREEN_EDITOR: Committing row " + string(_row) + ": '" + trimmed_text + "'");
+       if (dbg_on(DBG_FLOW)) show_debug_message("SCREEN_EDITOR: Committing row " + string(_row) + ": '" + trimmed_text + "'");
         
         if (trimmed_text == "") return;
         
@@ -31,10 +31,10 @@ function screen_editor_commit_row_extended(editor_inst, _row, line_text) {
         if (line_num_str != "" && is_real(line_num) && line_num > 0) {
             if (code == "") {
                 delete_program_line(line_num);
-                show_debug_message("SCREEN_EDITOR: Deleted line " + string(line_num));
+               if (dbg_on(DBG_FLOW)) show_debug_message("SCREEN_EDITOR: Deleted line " + string(line_num));
             } else {
                 add_or_update_program_line(line_num, code);
-                show_debug_message("SCREEN_EDITOR: Added/updated line " + string(line_num) + ": " + code);
+               if (dbg_on(DBG_FLOW)) show_debug_message("SCREEN_EDITOR: Added/updated line " + string(line_num) + ": " + code);
             }
         }
     }

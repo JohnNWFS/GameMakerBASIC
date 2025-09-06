@@ -1,6 +1,70 @@
 /// @script basic_cmd_input
 /// @description Prompt the user with a text and await input into a variable
+
+/// @script basic_cmd_input
+/// @description Simple INPUT command that works with existing keyboard handling
 function basic_cmd_input(arg) {
+    var s = string_trim(arg);
+    var prompt = "";
+    var varName = "";
+
+    // Parse INPUT syntax: INPUT "prompt", VAR or INPUT VAR
+    var comma_pos = string_pos(",", s);
+    var semicolon_pos = string_pos(";", s);
+    
+    // Find first separator (comma or semicolon)
+    var sep_pos = 0;
+    if (comma_pos > 0 && semicolon_pos > 0) {
+        sep_pos = min(comma_pos, semicolon_pos);
+    } else if (comma_pos > 0) {
+        sep_pos = comma_pos;
+    } else if (semicolon_pos > 0) {
+        sep_pos = semicolon_pos;
+    }
+    
+    if (sep_pos > 0) {
+        // Has prompt: INPUT "prompt", VAR
+        prompt = string_trim(string_copy(s, 1, sep_pos - 1));
+        varName = string_upper(string_trim(string_copy(s, sep_pos + 1, string_length(s) - sep_pos)));
+        
+        // Remove quotes from prompt if present
+        if (string_length(prompt) >= 2 
+            && string_char_at(prompt, 1) == "\"" 
+            && string_char_at(prompt, string_length(prompt)) == "\"") {
+            prompt = string_copy(prompt, 2, string_length(prompt) - 2);
+        }
+    } else {
+        // No prompt: INPUT VAR
+        varName = string_upper(s);
+        //prompt = "? "; // Default prompt
+    }
+    
+    if (dbg_on(DBG_FLOW)) show_debug_message("INPUT: Variable='" + varName + "', Prompt='" + prompt + "'");
+    
+    // Display the prompt
+    if (prompt != "") {
+        ds_list_add(global.output_lines, prompt);
+        ds_list_add(global.output_colors, global.basic_text_color);
+    }
+    
+    // Set up input state for your existing keyboard handler
+    global.awaiting_input = true;
+    global.pause_mode = false;
+    global.input_expected = true;
+    global.input_target_var = varName;
+    global.interpreter_input = ""; // Clear any existing input buffer
+    
+// Initialize the variable only if absent; avoid numeric 0 pre-seed
+ varName = basic_normvar(varName); // ensure canonical now
+if (!ds_map_exists(global.basic_variables, varName)) {
+    // Seed both kinds to empty string; numeric coercion happens on commit
+    global.basic_variables[? varName] = "";
+}
+
+    
+    if (dbg_on(DBG_FLOW)) show_debug_message("INPUT: Awaiting input for variable " + varName);
+}
+/*function basic_cmd_input(arg) {
     var s = string_trim(arg);
     var rawPrompt = "";
     var varName   = "";

@@ -10,8 +10,8 @@ if (save_dir != "") {
     }
 }
 
-global.debug_mask = DBG_ALL;// allow all debug;
-//global.debug_mask = 0; //No Debug
+//global.debug_mask = DBG_ALL;// allow all debug;
+global.debug_mask = 0; //No Debug
 
 global.dbg_dropped_count = 0;
 
@@ -182,3 +182,18 @@ global.screen_edit_mode = false; //for scree editing
 if (dbg_on(DBG_FLOW)) show_debug_message("GLOBALS: screen_edit_mode initialized to false");
 
 
+/// Put near your other globals the first time you use them:
+if (!variable_global_exists("__html_dir_opening")) global.__html_dir_opening = false;
+if (!variable_global_exists("__html_dir_open_time")) global.__html_dir_open_time = 0;
+
+if (!variable_global_exists("DEBUG_INPUT")) global.DEBUG_INPUT = false;
+
+if (!variable_global_exists("help_topics") || !ds_exists(global.help_topics, ds_type_list)) {
+        global.help_topics = ds_list_create();
+    } else {
+        ds_list_clear(global.help_topics);
+    }
+	
+global.print_zone = 14; // width
+global.print_tab_mode = 1; 
+// 0 = zones (BASIC default), 1 = fixed-width tabs

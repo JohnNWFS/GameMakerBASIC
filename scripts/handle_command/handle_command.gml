@@ -36,12 +36,33 @@ var original_command = string_trim(command);
             break;
             
         case "SAVE":
-            if (cmd_params == "") {
-                save_program();
+            if (os_browser != browser_not_a_browser) {
+                // HTML build → use browser_file_tools download dialog
+                if (cmd_params == "") {
+                    editor_html_save_program();
+                } else {
+                    editor_html_save_program_as(cmd_params);
+                }
             } else {
-                save_program_as(cmd_params);
+                // Desktop build → use file system save
+                if (cmd_params == "") {
+                    save_program();
+                } else {
+                    save_program_as(cmd_params);
+                }
             }
             break;
+
+case "CHECK_SAVE_FUNCS":
+{
+    var s = "browser_show_save_dialog";
+    var r = "browser_show_save_dialog_raw";
+   if (dbg_on(DBG_FLOW)) show_debug_message("[CHECK] wrapper exists=" + string(function_exists(s)));
+   if (dbg_on(DBG_FLOW)) show_debug_message("[CHECK] raw exists=" + string(function_exists(r)));
+    break;
+}
+
+
             
         case "LOAD":
             if (cmd_params == "") {
@@ -50,11 +71,41 @@ var original_command = string_trim(command);
                 load_program_from(cmd_params);
             }
             break;
-			
-		case "DIR":
-        list_saved_programs();
-        break;
 
+		
+case "DIR":
+    if (os_browser != browser_not_a_browser) {
+        var p = string_trim(cmd_params);
+        var P = string_upper(p);
+        if (P == "" || P == "PROMPT") {
+            editor_html_dir_prompt();
+        } else if (P == "SHOW") {
+            editor_html_dir_show();
+        } else if (string_copy(P, 1, 4) == "OPEN") {
+            var arg = string_trim(string_delete(p, 1, 4)); // after "OPEN"
+            if (string_length(arg) == 0) {
+                show_message("Usage: DIR OPEN <index|filename>");
+            } else {
+                editor_html_dir_open(arg);
+            }
+        } else if (P != "") {  // Only try to open if there's actually a parameter
+            // convenience: if they pass a number or name directly
+            editor_html_dir_open(p);
+        }
+        // Remove the bare else clause that was causing the double call
+    } else {
+        // Windows: your original code path
+        if (cmd_params == "") {
+            list_saved_programs();
+        } else {
+            list_saved_programs(); // preserve your param behavior
+        }
+    }
+    break;
+
+case "HELP":
+	help_launch();
+	break
 
 case ":PASTE":
 {
@@ -66,7 +117,7 @@ case ":PASTE":
 
 		editor_html_handle_paste_command();
 
-    show_debug_message("[PASTE] Bound. Click the game, then press Ctrl/Cmd+V.");
+   if (dbg_on(DBG_FLOW)) show_debug_message("[PASTE] Bound. Click the game, then press Ctrl/Cmd+V.");
 }
 break;
 

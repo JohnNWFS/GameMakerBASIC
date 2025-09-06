@@ -1,5 +1,5 @@
 function basic_cmd_pause() {
-    show_debug_message("PAUSE: Execution paused. Waiting for user to press ENTER...");
+    if (dbg_on(DBG_FLOW)) show_debug_message("PAUSE: Execution paused. Waiting for user to press ENTER...");
 
 	global.pause_in_effect = true;
     global.awaiting_input = true;

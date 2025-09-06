@@ -103,7 +103,7 @@ function build_data_streams() {
                     if (ch == ":" && _depth == 0) { cut = j; break; }
                 }
                 if (cut == 0) {
-                    show_debug_message("?DATA ERROR: expected ':' after @name — line " + string(line_no) + " text: '" + part_raw + "'");
+                   if (dbg_on(DBG_FLOW)) show_debug_message("?DATA ERROR: expected ':' after @name — line " + string(line_no) + " text: '" + part_raw + "'");
                     continue;
                 }
                 stream_name = string_trim(string_copy(rest, 2, cut - 2)); // exclude '@'
@@ -143,12 +143,12 @@ function build_data_streams() {
             summary += "'" + string(k2) + "'=" + string(cnt) + "  ";
             k2 = ds_map_find_next(global.data_streams, k2);
         }
-        show_debug_message(summary + "| values=" + string(total_vals) + " | data_lines=" + string(added_lines));
+       if (dbg_on(DBG_FLOW)) show_debug_message(summary + "| values=" + string(total_vals) + " | data_lines=" + string(added_lines));
     }
 
     // TEMP: verify default stream size
     if (ds_map_exists(global.data_streams, "")) {
         var _def = ds_map_find_value(global.data_streams, "");
-        show_debug_message("DATA DEFAULT SIZE = " + string(ds_list_size(_def.list)));
+       if (dbg_on(DBG_FLOW)) show_debug_message("DATA DEFAULT SIZE = " + string(ds_list_size(_def.list)));
     }
 }

@@ -3,15 +3,15 @@
 /// @description Launch the full-screen C64-style editor
 
 function start_screen_editor() {
-    show_debug_message("COMMAND: start_screen_editor called");
+   if (dbg_on(DBG_FLOW)) show_debug_message("COMMAND: start_screen_editor called");
     
     if (global.screen_edit_mode) {
-        show_debug_message("COMMAND: Screen editor already active");
+       if (dbg_on(DBG_FLOW)) show_debug_message("COMMAND: Screen editor already active");
         basic_show_message("Screen editor already active");
         return;
     }
     
-    show_debug_message("COMMAND: Setting screen_edit_mode = true and creating obj_screen_editor");
+   if (dbg_on(DBG_FLOW)) show_debug_message("COMMAND: Setting screen_edit_mode = true and creating obj_screen_editor");
     global.screen_edit_mode = true;
     instance_create_layer(0, 0, "Instances", obj_screen_editor);
     

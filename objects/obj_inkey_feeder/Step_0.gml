@@ -20,7 +20,7 @@ var _enq = function(val, cap) {
     while (ds_queue_size(global.inkey_queue) >= cap) ds_queue_dequeue(global.inkey_queue);
     ds_queue_enqueue(global.inkey_queue, val);
     if (dbg_on(DBG_PARSE)) {
-        show_debug_message("##KEYFEED## ENQ='" + string(val) + "'"
+       if (dbg_on(DBG_FLOW)) show_debug_message("##KEYFEED## ENQ='" + string(val) + "'"
             + " A1=" + string((is_string(val) && string_length(val)>=1) ? ord(string_char_at(val,1)) : -1)
             + " A2=" + string((is_string(val) && string_length(val)>=2) ? ord(string_char_at(val,2)) : -1));
     }

@@ -44,12 +44,12 @@ if (mode == 1) {
 
     // --- If mode already active, do not switch rooms (we still updated size/font above) ---
     if (mode == global.current_mode) {
-        show_debug_message("MODE already set to " + string(mode) + "; no room switch needed.");
+        if (dbg_on(DBG_FLOW)) show_debug_message("MODE already set to " + string(mode) + "; no room switch needed.");
         return;
     }
     // --- Switch to the room for the requested mode ---
     global.current_mode = mode;
     var target_room = ds_map_find_value(global.mode_rooms, mode);
-    show_debug_message("Switching to MODE " + string(mode) + " → room: " + string(target_room));
+    if (dbg_on(DBG_FLOW)) show_debug_message("Switching to MODE " + string(mode) + " → room: " + string(target_room));
     room_goto(target_room);
 }

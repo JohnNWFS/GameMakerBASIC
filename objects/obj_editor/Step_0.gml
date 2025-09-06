@@ -68,25 +68,42 @@ if (showing_dir_overlay) {
 
     // ACTIONS
     // Load on ENTER or '>' key
-    if (keyboard_check_pressed(vk_enter) || keyboard_check_pressed(ord(">"))) {
-        var _name = dir_listing[dir_sel];
-        if (_name != "No .bas files found.") {
+// Load on ENTER or '>' key
+if (keyboard_check_pressed(vk_enter) || keyboard_check_pressed(ord(">"))) {
+    var _name = dir_listing[dir_sel];
+    if (_name != "No .bas files found.") {
+        // Check if this is an HTML file list (has global.html_dir_files data)
+        if (os_browser != browser_not_a_browser && variable_global_exists("html_dir_files") && ds_list_size(global.html_dir_files) > 0) {
+            // HTML version - load from memory
+            if (dbg_on(DBG_IO)) show_debug_message("[DIR] HTML load: " + _name + " at index " + string(dir_sel + 1));
+            var success = editor_html_dir_open(string(dir_sel + 1));
+            if (success) {
+                showing_dir_overlay = false;
+                dir_listing = [];
+                global.justreturned = 1;
+            } else {
+                basic_show_message("Failed to load file from memory");
+            }
+            exit;
+        } else {
+            // Windows version - load from disk
             var _path = dir_save_dir + _name;
             if (file_exists(_path)) {
                 if (dbg_on(DBG_IO)) show_debug_message("[DIR] load " + _path);
                 load_program_from_path(_path, _name);
                 showing_dir_overlay = false;
                 dir_listing = [];
-                global.justreturned = 1; // optional: bump back to prompt cleanly
+                global.justreturned = 1;
                 exit;
             } else {
                 basic_show_message("File not found");
             }
         }
     }
+}
 
     // Delete on 'D', 'X', or Delete key (desktop only)
-    if (os_type != os_browser) {
+    if (os_browser != browser_not_a_browser) {
         if (keyboard_check_pressed(ord("D")) || keyboard_check_pressed(ord("X")) || keyboard_check_pressed(vk_delete)) {
             if (_count > 0 && dir_listing[dir_sel] != "No .bas files found.") {
                 dir_confirm_active = true;
@@ -159,25 +176,3 @@ if (keyboard_check_pressed(vk_enter)) {
     }
  }
  
-/*  // Add to Step event
- if (drag_enabled && drag_files > 0) {
-    var file_path = drag_file[0];
-    if (string_pos(".bas", string_lower(file_path)) > 0) {
-        // Extract filename without path and extension
-        var filename_start = 1;
-        for (var i = string_length(file_path); i >= 1; i--) {
-            if (string_char_at(file_path, i) == "/" || string_char_at(file_path, i) == "\\") {
-                filename_start = i + 1;
-                break;
-            }
-        }
-        var full_filename = string_copy(file_path, filename_start, string_length(file_path));
-        var dot_pos = string_pos(".", full_filename);
-        var filename = string_copy(full_filename, 1, dot_pos - 1);
-        
-        load_program_from_path(file_path, filename);
-    }
-    drag_clear();
- }
-
-*/

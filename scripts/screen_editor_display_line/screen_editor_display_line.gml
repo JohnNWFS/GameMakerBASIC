@@ -19,7 +19,7 @@ function screen_editor_display_line(editor_inst, line_text, screen_row) {
             screen_editor_set_char_at(id, j - 1, screen_row, ord(ch));
         }
         
-        show_debug_message("SCREEN_EDITOR: Displayed line " + string(screen_row) + 
+       if (dbg_on(DBG_FLOW)) show_debug_message("SCREEN_EDITOR: Displayed line " + string(screen_row) + 
                           (screen_row == cursor_y ? " (with offset " + string(horizontal_offset) + ")" : " (no offset)"));
     }
 }

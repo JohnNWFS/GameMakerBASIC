@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"help_restore_program",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"help_restore_program",
+  "parent":{
+    "name":"HELP",
+    "path":"folders/Scripts/HELP.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

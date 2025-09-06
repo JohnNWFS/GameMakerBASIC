@@ -9,7 +9,7 @@ function refresh_current_line_display(editor_inst) {
         var full_text = get_full_line_text(id, cursor_y);
         var display_text = string_copy(full_text, horizontal_offset + 1, screen_cols);
         
-        show_debug_message("SCREEN_EDITOR: Refreshing display - full_text='" + full_text + "', display='" + display_text + "', h_offset=" + string(horizontal_offset));
+       if (dbg_on(DBG_FLOW)) show_debug_message("SCREEN_EDITOR: Refreshing display - full_text='" + full_text + "', display='" + display_text + "', h_offset=" + string(horizontal_offset));
         
         // Clear the row
         screen_editor_clear_row(id, cursor_y);

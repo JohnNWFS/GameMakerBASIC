@@ -1,12 +1,12 @@
 {
   "$GMScript":"v1",
-  "%Name":"Script148",
+  "%Name":"Script160",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"Script148",
+  "name":"Script160",
   "parent":{
-    "name":"PASTE FUNCTIONS",
-    "path":"folders/Scripts/PASTE FUNCTIONS.yy",
+    "name":"HTML FUNCTIONS",
+    "path":"folders/Scripts/HTML FUNCTIONS.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

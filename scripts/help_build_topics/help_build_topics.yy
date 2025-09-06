@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"help_build_topics",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"help_build_topics",
+  "parent":{
+    "name":"HELP",
+    "path":"folders/Scripts/HELP.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

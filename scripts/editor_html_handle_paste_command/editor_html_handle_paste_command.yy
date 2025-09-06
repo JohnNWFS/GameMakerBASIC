@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"editor_html_handle_paste_command",
   "parent":{
-    "name":"PASTE FUNCTIONS",
-    "path":"folders/Scripts/PASTE FUNCTIONS.yy",
+    "name":"HTML FUNCTIONS",
+    "path":"folders/Scripts/HTML FUNCTIONS.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

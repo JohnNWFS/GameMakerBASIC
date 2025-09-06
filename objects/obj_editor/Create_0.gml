@@ -41,3 +41,6 @@ keyboard_string = "";
 showing_dir_overlay = false;
 dir_listing = [];
 
+// Overlay for HTML DIR listing
+show_dir_overlay = false;   // draw toggle
+dir_cursor       = 0;       // selected row (0-based)
