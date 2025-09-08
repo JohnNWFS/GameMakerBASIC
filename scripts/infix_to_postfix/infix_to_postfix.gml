@@ -213,6 +213,54 @@ function infix_to_postfix(tokens) {
                 // else fall through to generic one-arg below
             }
 
+            // ---------- SPECIAL: RND (0/1/2-arg variants) ----------
+            if (fn_name == "RND") {
+                var inner_trim = string_trim(f_inner);
+
+                // 0-arg: RND()
+                if (string_length(inner_trim) == 0) {
+                    array_push(output, "RND");
+                    if (dbg_on(DBG_PARSE)) show_debug_message("Processed RND()");
+                    i = f_end;
+                    continue;
+                }
+
+                // Split on top-level commas
+                var lvlR = 0, partR = "", partsR = [];
+                for (var ri = 1; ri <= string_length(f_inner); ri++) {
+                    var chR = string_char_at(f_inner, ri);
+                    if (chR == "(") { lvlR++; partR += chR; }
+                    else if (chR == ")") { lvlR--; partR += chR; }
+                    else if (chR == "," && lvlR == 0) { array_push(partsR, string_trim(partR)); partR = ""; }
+                    else { partR += chR; }
+                }
+                array_push(partsR, string_trim(partR));
+
+                if (array_length(partsR) == 1) {
+                    var tN = basic_tokenize_expression_v2(partsR[0]);
+                    var pN = infix_to_postfix(tN);
+                    _push_all(output, pN);
+                    array_push(output, "RND1");
+                    if (dbg_on(DBG_PARSE)) show_debug_message("Processed RND(" + partsR[0] + ") → RND1");
+                    i = f_end;
+                    continue;
+                }
+
+                if (array_length(partsR) == 2) {
+                    var tA = basic_tokenize_expression_v2(partsR[0]);
+                    var tB = basic_tokenize_expression_v2(partsR[1]);
+                    var pA = infix_to_postfix(tA);
+                    var pB = infix_to_postfix(tB);
+                    _push_all(output, pA);
+                    _push_all(output, pB);
+                    array_push(output, "RND2");
+                    if (dbg_on(DBG_PARSE)) show_debug_message("Processed RND(" + partsR[0] + "," + partsR[1] + ") → RND2");
+                    i = f_end;
+                    continue;
+                }
+                // malformed → fall through to generic
+            }
+
             // Generic one-arg function: <inner> <FN>
             var inner_tokens  = basic_tokenize_expression_v2(f_inner);
             var inner_postfix = infix_to_postfix(inner_tokens);

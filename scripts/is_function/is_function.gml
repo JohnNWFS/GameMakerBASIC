@@ -24,6 +24,7 @@ function is_function(t) {
          || fn == "TIME$"
          || fn == "DATE$"
          || fn == "INKEY$"
-         || fn == "ASC";   // <-- added
+         || fn == "ASC"
+		 || fn == "LEN";   // <-- added
 }
 // === END: is_function ===

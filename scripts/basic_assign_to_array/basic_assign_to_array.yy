@@ -1,12 +1,12 @@
 {
   "$GMScript":"v1",
-  "%Name":"Script161",
+  "%Name":"basic_assign_to_array",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"Script161",
+  "name":"basic_assign_to_array",
   "parent":{
-    "name":"BASIC_COMMANDS",
-    "path":"folders/Scripts/BASIC_COMMANDS.yy",
+    "name":"Arrays",
+    "path":"folders/Scripts/Arrays.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

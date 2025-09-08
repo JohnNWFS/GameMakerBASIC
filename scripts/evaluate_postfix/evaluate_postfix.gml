@@ -80,79 +80,148 @@ function evaluate_postfix(postfix) {
             continue;
         }
 
-        // -------------------------------------------------------
-        // Operators
-        // -------------------------------------------------------
-        if (is_operator(token_upper)) {
-            if (array_length(stack) < 2) {
-                if (dbg_on(DBG_PARSE)) show_debug_message("? POSTFIX ERROR: Not enough operands for operator " + token_upper);
-                return 0;
-            }
-            var b = array_pop(stack);
-            var a = array_pop(stack);
-            var result = 0;
+		// -------------------------------------------------------
+		// Operators
+		// -------------------------------------------------------
+		if (is_operator(token_upper)) {
+		    if (array_length(stack) < 2) {
+		        if (dbg_on(DBG_PARSE)) show_debug_message("? POSTFIX ERROR: Not enough operands for operator " + token_upper);
+		        return 0;
+		    }
+		    var b = array_pop(stack);
+		    var a = array_pop(stack);
+		    var result = 0;
 
-            switch (token_upper) {
-                case "+":  result = (is_string(a) || is_string(b)) ? string(a) + string(b) : a + b; break;
-                case "-":
-                    if (is_string(a)) a = real(a);
-                    if (is_string(b)) b = real(b);
-                    result = a - b; break;
-                case "=":
-                    if (is_string(a)) a = real(a);
-                    if (is_string(b)) b = real(b);
-                    result = (a == b) ? 1 : 0;
-                    break;
-                case "*":
-                    if (is_string(a)) a = real(a);
-                    if (is_string(b)) b = real(b);
-                    result = a * b; break;
-                case "/":
-                    if (is_string(a)) a = real(a);
-                    if (is_string(b)) b = real(b);
-                    result = (b != 0) ? a / b : 0; break;
+		    switch (token_upper) {
+		        case "+":  result = (is_string(a) || is_string(b)) ? string(a) + string(b) : a + b; break;
 
-                case "\\": { // integer division → truncate toward ZERO
-                    if (is_string(a) && is_numeric_string(a)) a = real(a);
-                    if (is_string(b) && is_numeric_string(b)) b = real(b);
+		        case "-":
+		            if (is_string(a)) a = real(a);
+		            if (is_string(b)) b = real(b);
+		            result = a - b;
+		            break;
 
-                    if (!is_real(a) || !is_real(b)) {
-                        basic_syntax_error("Integer division '\\' expects numbers; got a=" + string(a) + ", b=" + string(b),
-                            global.current_line_number, global.interpreter_current_stmt_index, "TYPE_MISMATCH");
-                        result = 0;
-                        break;
-                    }
-                    if (b == 0) {
-                        basic_syntax_error("Division by zero in '\\'",
-                            global.current_line_number, global.interpreter_current_stmt_index, "DIV_ZERO");
-                        result = 0;
-                        break;
-                    }
+case "=": {
+    // Check if both are numeric (but exclude empty strings)
+    var an = is_real(a) || (is_string(a) && string_length(a) > 0 && is_numeric_string(a));
+    var bn = is_real(b) || (is_string(b) && string_length(b) > 0 && is_numeric_string(b));
 
-                    var q = a / b;
-                    q = (q >= 0) ? floor(q) : ceil(q); // trunc-to-zero
-                    result = q;
-                    break;
-                }
+    if (an && bn) {
+        if (is_string(a)) a = real(a);
+        if (is_string(b)) b = real(b);
+        result = (a == b) ? 1 : 0;
+    } else {
+        result = (string(a) == string(b)) ? 1 : 0;
+    }
+    break;
+}
 
-                case "%":
-                case "MOD":
-                    if (is_string(a)) a = real(a);
-                    if (is_string(b)) b = real(b);
-                    result = a mod b; break;
-                case "^":
-                    if (is_string(a)) a = real(a);
-                    if (is_string(b)) b = real(b);
-                    result = power(a, b); break;
-                default:
-                    if (dbg_on(DBG_PARSE)) show_debug_message("? POSTFIX WARNING: Unknown operator = " + token_upper + " → 0");
-                    result = 0; break;
-            }
+		        // NEW: all other comparisons must live here (not in the function switch)
+		        case "<>": {
+		            // numeric compare if both are numbers; otherwise string compare
+		            if (is_real(a) && is_real(b)) result = (a != b) ? 1 : 0;
+		            else                          result = (string(a) != string(b)) ? 1 : 0;
+		            break;
+		        }
+		        case "<": {
+		            if (is_string(a)) a = real(a);
+		            if (is_string(b)) b = real(b);
+		            result = (a < b) ? 1 : 0;
+		            break;
+		        }
+		        case ">": {
+		            if (is_string(a)) a = real(a);
+		            if (is_string(b)) b = real(b);
+		            result = (a > b) ? 1 : 0;
+		            break;
+		        }
+		        case "<=": {
+		            if (is_string(a)) a = real(a);
+		            if (is_string(b)) b = real(b);
+		            result = (a <= b) ? 1 : 0;
+		            break;
+		        }
+		        case ">=": {
+		            if (is_string(a)) a = real(a);
+		            if (is_string(b)) b = real(b);
+		            result = (a >= b) ? 1 : 0;
+		            break;
+		        }
 
-            array_push(stack, result);
-            if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: Operator result (" + token_upper + ") = " + string(result));
-            continue;
-        }
+		        case "*":
+		            if (is_string(a)) a = real(a);
+		            if (is_string(b)) b = real(b);
+		            result = a * b;
+		            break;
+
+		        case "/":
+		            if (is_string(a)) a = real(a);
+		            if (is_string(b)) b = real(b);
+		            result = (b != 0) ? a / b : 0;
+		            break;
+
+		        case "\\": { // integer division → truncate toward ZERO
+		            if (is_string(a) && is_numeric_string(a)) a = real(a);
+		            if (is_string(b) && is_numeric_string(b)) b = real(b);
+
+		            if (!is_real(a) || !is_real(b)) {
+		                basic_syntax_error("Integer division '\\' expects numbers; got a=" + string(a) + ", b=" + string(b),
+		                    global.current_line_number, global.interpreter_current_stmt_index, "TYPE_MISMATCH");
+		                result = 0; break;
+		            }
+		            if (b == 0) {
+		                basic_syntax_error("Division by zero in '\\'",
+		                    global.current_line_number, global.interpreter_current_stmt_index, "DIV_ZERO");
+		                result = 0; break;
+		            }
+
+		            var q = a / b;
+		            q = (q >= 0) ? floor(q) : ceil(q); // trunc-to-zero
+		            result = q;
+		            break;
+		        }
+
+		        case "%":
+		        case "MOD":
+		            if (is_string(a)) a = real(a);
+		            if (is_string(b)) b = real(b);
+		            result = a mod b;
+		            break;
+
+		        case "^":
+		            if (is_string(a)) a = real(a);
+		            if (is_string(b)) b = real(b);
+		            result = power(a, b);
+		            break;
+
+case "AND": {
+    // Don't pop again - use the a,b already popped above
+    var tb = is_real(b) ? (b != 0) : (string_length(string(b)) > 0);
+    var ta = is_real(a) ? (a != 0) : (string_length(string(a)) > 0);
+    
+    result = (ta && tb) ? 1 : 0;
+    break;
+}
+case "OR": {
+    // Don't pop again - use the a,b already popped above  
+    var tb = is_real(b) ? (b != 0) : (string_length(string(b)) > 0);
+    var ta = is_real(a) ? (a != 0) : (string_length(string(a)) > 0);
+    
+    result = (ta || tb) ? 1 : 0;
+    break;
+}
+
+		        default:
+		            if (dbg_on(DBG_PARSE)) show_debug_message("? POSTFIX WARNING: Unknown operator = " + token_upper + " → 0");
+		            result = 0;
+		            break;
+		    }
+
+		    array_push(stack, result);
+		    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: Operator result (" + token_upper + ") = " + string(result));
+		    continue;
+		}
+
 
         // -------------------------------------------------------
         // Functions (numeric + string)
@@ -220,6 +289,14 @@ function evaluate_postfix(postfix) {
                     if (dbg_on(DBG_PARSE)) show_debug_message("FUNC: TIMER → " + string(secs));
                     break;
                 }
+				
+				case "LEN": {
+				    var s = string(array_pop(stack));
+				    array_push(stack, string_length(s));
+				    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: LEN('" + s + "') → " + string(string_length(s)));
+				    break;
+				}
+				
                 case "TIME$": {
                     var dt  = date_current_datetime();
                     var hh  = date_get_hour(dt);
@@ -414,6 +491,9 @@ function evaluate_postfix(postfix) {
                     break;
                 }
 
+			
+
+
                 default:
                     if (dbg_on(DBG_PARSE)) show_debug_message("? POSTFIX WARNING: Unknown function = " + token_upper + " — pushing last real as fallback");
                     array_push(stack, safe_real_pop(stack));
@@ -423,33 +503,76 @@ function evaluate_postfix(postfix) {
             continue;
         }
 
-        // -------------------------------------------------------
-        // Scalar variable load (string vars keep "", numeric vars coerce)
-        // -------------------------------------------------------
-        if (ds_map_exists(global.basic_variables, token_upper)) {
-            var vv = global.basic_variables[? token_upper];
+			// -------------------------------------------------------
+			// Scalar variable load (string vars stay strings; numeric vars coerce)
+			// -------------------------------------------------------
+			if (ds_map_exists(global.basic_variables, token_upper)) {
+			    var vv = global.basic_variables[? token_upper];
 
-            if (string_char_at(token_upper, string_length(token_upper)) == "$") {
-                if (is_undefined(vv)) vv = "";
-                if (!is_string(vv))  vv = string(vv);
-            } else {
-                if (is_string(vv)) {
-                    vv = is_numeric_string(vv) ? real(vv) : 0;
-                } else if (!is_real(vv)) {
-                    vv = 0;
-                }
-            }
+			    var is_string_var = (string_char_at(token_upper, string_length(token_upper)) == "$");
 
-            array_push(stack, vv);
-            if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: Loaded variable " + token_upper + " = " + string(vv));
-            continue;
-        }
+			    if (is_string_var) {
+			        // String variables ALWAYS behave as strings (QBASIC semantics)
+			        if (is_undefined(vv)) vv = "";
+			        vv = string(vv); // ensure string; do not numeric-coerce
+			    } else {
+			        // Numeric variables: allow numeric strings, else 0
+			        if (is_string(vv)) {
+			            vv = is_numeric_string(vv) ? real(vv) : 0;
+			        } else if (!is_real(vv)) {
+			            vv = 0;
+			        }
+			    }
 
-        // -------------------------------------------------------
-        // Fallback: push as string literal (unknown token)
-        // -------------------------------------------------------
-        array_push(stack, trimmed);
-        if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: Pushed fallback string → " + trimmed);
+			    array_push(stack, vv);
+
+			    if (dbg_on(DBG_PARSE)) {
+			        var _tag = is_string_var ? "[S]" : "[N]";
+			        show_debug_message("POSTFIX: Loaded variable " + token_upper + " " + _tag + " = " + string(vv));
+			    }
+			    continue;
+			}
+
+
+       // -------------------------------------------------------
+		// Fallback: IDENT or literal
+		// -------------------------------------------------------
+		var ident = trimmed;
+
+		// If this looks like an identifier (A..Z start) and it’s not in the map,
+		// treat it as an undeclared numeric variable (default 0).
+		var first = string_upper(string_char_at(ident, 1));
+		var oc = ord(first);
+		var looks_ident = (oc >= 65 && oc <= 90); // A..Z
+
+		if (looks_ident) {
+		    var key = string_upper(ident);
+		    if (!ds_map_exists(global.basic_variables, key)) {
+		        // create as numeric 0 (QBASIC style)
+		        global.basic_variables[? key] = 0;
+		        if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: Implicit numeric var created '" + key + "' = 0");
+		    }
+		    var vv = global.basic_variables[? key];
+
+		    // coerce type by suffix: $ means string var
+		    if (string_char_at(key, string_length(key)) == "$") {
+		        if (is_undefined(vv)) vv = "";
+		        if (!is_string(vv))  vv = string(vv);
+		    } else {
+		        if (is_string(vv)) {
+		            vv = is_numeric_string(vv) ? real(vv) : 0;
+		        } else if (!is_real(vv)) {
+		            vv = 0;
+		        }
+		    }
+		    array_push(stack, vv);
+		    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: Loaded/created ident " + key + " = " + string(vv));
+		} else {
+		    // true literal fallback
+		    array_push(stack, trimmed);
+		    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: Pushed fallback string → " + trimmed);
+		}
+
     }
 
     return (array_length(stack) > 0) ? stack[array_length(stack) - 1] : 0;
