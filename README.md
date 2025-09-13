@@ -32,6 +32,7 @@ A lightweight, custom-built BASIC interpreter and code editor created using **Ga
 - [Program Structure](#program-structure)
 - [Variables and Data Types](#variables-and-data-types)
 - [Input/Output Commands](#inputoutput-commands)
+- [Sound Commands](#sound-commands)
 - [Program Control](#program-control)
 - [Mode Control](#mode-control)
 - [MODE 1 Commands](#mode-1-commands)
@@ -120,6 +121,63 @@ Use colons (`:`) to separate multiple statements on one line.
 10 CLS              ' Clear screen (MODE 0: clears text output)
                     ' (MODE 1: clears grid and resets cursor)
 ```
+
+---
+
+## Sound Commands
+
+### BEEP - Musical Note Sequences
+```basic
+10 BEEP C1          ' Play middle C for 1 beat
+20 BEEP A0.5 B0.5 C2 ' Play sequence: A eighth, B eighth, C half note
+30 BEEP C#1 Db1 F#2  ' Sharps and flats supported (# or b)
+40 BEEP R1 C1        ' R1 = 1-beat rest, then C
+50 BEEP O2 C1 D1     ' O2 = octave 2, affects following notes
+60 BEEP O-1 A4 O1 G2 ' Octave changes apply until changed again
+```
+
+#### BEEP Syntax
+```
+BEEP <spec> [<spec> ...]
+```
+
+**Note Specifications:**
+- **NOTE**: `A`, `B`, `C`, `D`, `E`, `F`, `G` or `R` (rest)
+- **Accidentals**: `#` (sharp) or `b` (flat) - e.g., `C#`, `Bb`
+- **Duration**: Number of beats - `1` = quarter note, `2` = half note, `4` = whole note, `0.5` = eighth note, `0.25` = sixteenth note
+- **Octave**: `O<number>` sets octave relative to middle C (C4)
+
+#### BEEP Examples
+```basic
+10 ' Simple melody
+20 BEEP C1 D1 E1 F1 G1 A1 B1 C2
+
+30 ' With rhythm and rests
+40 BEEP C0.5 C0.5 G1 R0.5 F0.5 E1
+
+50 ' Octave changes
+60 BEEP O-1 C2 O0 C2 O1 C2    ' Low C, middle C, high C
+
+70 ' Sharps and flats
+80 BEEP C1 C#1 D1 Eb1 E1      ' Chromatic sequence
+
+90 ' Complex melody with tempo changes
+100 BEEP O0 G0.25 A0.25 B0.5 O1 C1 R0.5 O0 B0.5 A1
+```
+
+#### BEEP Technical Details
+- **Tempo**: Default 120 BPM (can be modified via `global.beep_tempo`)
+- **Pitch Range**: Supports multiple octaves relative to C4 (middle C)
+- **Sound Generation**: Uses pitch-shifted samples for different notes
+- **Sequence Behavior**: BEEP pauses program execution until the entire sequence completes
+- **Sample Requirements**: Requires `global.beep_samples` map with C2-C6 samples, or falls back to single `global.beep_sound`
+
+#### BEEP Programming Notes
+- Multiple BEEP commands can create musical programs
+- BEEP sequences are non-blocking between notes but block until complete
+- Octave settings persist until changed with another `O<number>`
+- Use rests (`R`) for musical timing and pauses
+- Duration `0` is interpreted as `0.25` (sixteenth note)
 
 ---
 
@@ -549,11 +607,14 @@ The interpreter provides comprehensive error handling:
 5. **Use MODE commands**: Switch to graphics modes for visual programs
 6. **Leverage INKEY$**: Create responsive, interactive programs
 7. **Use arrays wisely**: Remember they're 0-based and 1-dimensional only
+8. **Create musical programs**: Use BEEP for sound effects and melodies
+9. **Combine BEEP with loops**: Create dynamic musical sequences
 
 ---
 
-## Example Program
+## Example Programs
 
+### Number Guessing Game
 ```basic
 10 REM ** Number Guessing Game **
 20 CLS : COLOR YELLOW
@@ -570,7 +631,22 @@ The interpreter provides comprehensive error handling:
 130 PRINT "Sorry! The number was "; SECRET : END
 140 COLOR GREEN
 150 PRINT "Correct! You got it in "; TRIES; " tries!"
-160 END
+160 BEEP O1 C0.5 E0.5 G1    ' Victory fanfare
+170 END
+```
+
+### Musical Scale Program
+```basic
+10 REM ** Musical Scales **
+20 CLS
+30 PRINT "Playing C Major Scale..."
+40 BEEP C1 D1 E1 F1 G1 A1 B1 C2
+50 PRINT "Playing Chromatic Scale..."
+60 BEEP C0.5 C#0.5 D0.5 Eb0.5 E0.5 F0.5 F#0.5 G0.5
+70 BEEP G#0.5 A0.5 Bb0.5 B0.5 O1 C1
+80 PRINT "Playing Arpeggio..."
+90 BEEP O0 C0.5 E0.5 G0.5 O1 C0.5 O0 G0.5 E0.5 C1
+100 END
 ```
 
 ---
@@ -599,7 +675,8 @@ The interpreter includes several sophisticated features:
 - **Comprehensive validation pipeline**
 - **Multiple font support systems**
 - **Advanced expression evaluation** with function calls
+- **Musical note sequencing** with pitch calculation and timing
 
 ---
 
-This manual covers all the major features of this BASIC interpreter. The language supports both traditional line-by-line BASIC programming and more modern structured programming with block IF statements and proper variable scoping.
+This manual covers all the major features of this BASIC interpreter. The language supports both traditional line-by-line BASIC programming and more modern structured programming with block IF statements and proper variable scoping. The BEEP command adds musical capabilities, making it possible to create programs that combine computation, graphics, and sound.
