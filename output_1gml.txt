@@ -1,0 +1,3661 @@
+/// @script evaluate_postfix
+/// @description Evaluate a postfix token array, with support for 1-D arrays.
+/// Notes:
+/// - Array tokens arrive as a single atom like "D(I)" because infix_to_postfix collapses NAME(...).
+/// - We defensively avoid treating built-in functions as arrays (e.g., "INT(5)").
+/// - Comma tokens are ignored completely.
+/// - Returns the TOP of the stack (last pushed), else 0.
+
+function evaluate_postfix(postfix) {
+    var stack = [];
+    if (dbg_on(DBG_PARSE)) show_debug_message("Evaluating postfix: " + string(postfix));
+
+    for (var i = 0; i < array_length(postfix); i++) {
+        var token = postfix[i];
+        if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: Processing token [" + string(i) + "] → " + string(token));
+
+        // Normalize once
+        var trimmed     = string_trim(string(token));
+        var token_upper = string_upper(trimmed);
+
+        // -------------------------------------------------------
+        // Ignore commas completely (arg separators, never values)
+        // -------------------------------------------------------
+        if (trimmed == ",") {
+            if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: Ignoring stray comma token");
+            continue;
+        }
+
+        // -------------------------------------------------------
+        // ARRAY READ SUPPORT (atom form: NAME(index_expr))
+        // -------------------------------------------------------
+        var openPos = string_pos("(", token_upper);
+        if (openPos > 0 && string_char_at(token_upper, string_length(token_upper)) == ")") {
+            var arrNameU   = string_copy(token_upper, 1, openPos - 1);
+            var innerLen   = string_length(token) - openPos - 1;
+            var idxTextRaw = string_copy(token, openPos + 1, innerLen);
+
+            // MINIMAL CHANGE: also skip STRING$ here even if is_function() doesn't know it
+            if (!is_function(arrNameU) && arrNameU != "STRING$") {
+                var arrName = arrNameU; // arrays stored uppercase in helpers
+                var idxText = string_trim(idxTextRaw);
+
+                if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX[ARRAY]: Candidate '" + string(token) + "' → name='" + arrName + "', idxText='" + idxText + "'");
+
+                var idxVal = basic_evaluate_expression_v2(idxText);
+                if (!is_real(idxVal)) {
+                    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX[ARRAY] ERROR: Index non-numeric from '" + idxText + "' → '" + string(idxVal) + "'. Pushing 0.");
+                    array_push(stack, 0);
+                    continue;
+                }
+
+                var arrVal = basic_array_get(arrName, idxVal); // your 1-based getter
+                if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX[ARRAY]: " + arrName + "(" + string(idxVal) + ") → " + string(arrVal));
+                array_push(stack, arrVal);
+                continue;
+            }
+        }
+
+        // -------------------------------------------------------
+        // Numeric literal
+        // -------------------------------------------------------
+        if (is_numeric_string(trimmed)) {
+            var num = real(trimmed);
+            array_push(stack, num);
+            if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: Pushed number → " + string(num));
+            continue;
+        }
+
+        // -------------------------------------------------------
+        // Quoted string literal
+        // -------------------------------------------------------
+        if (string_length(trimmed) >= 2
+        &&  string_char_at(trimmed, 1) == "\""
+        &&  string_char_at(trimmed, string_length(trimmed)) == "\"")
+        {
+            var str = string_copy(trimmed, 2, string_length(trimmed) - 2);
+            str = string_replace_all(str, "\"\"", "\"");  // unescape "" -> "
+            array_push(stack, str);
+            if (dbg_on(DBG_FLOW)) if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: Pushed quoted string literal → " + str);
+            continue;
+        }
+
+		// -------------------------------------------------------
+		// Operators
+		// -------------------------------------------------------
+		if (is_operator(token_upper)) {
+		    if (array_length(stack) < 2) {
+		        if (dbg_on(DBG_PARSE)) show_debug_message("? POSTFIX ERROR: Not enough operands for operator " + token_upper);
+		        return 0;
+		    }
+		    var b = array_pop(stack);
+		    var a = array_pop(stack);
+		    var result = 0;
+
+		    switch (token_upper) {
+		        case "+":  result = (is_string(a) || is_string(b)) ? string(a) + string(b) : a + b; break;
+
+		        case "-":
+		            if (is_string(a)) a = real(a);
+		            if (is_string(b)) b = real(b);
+		            result = a - b;
+		            break;
+
+case "=": {
+    // Check if both are numeric (but exclude empty strings)
+    var an = is_real(a) || (is_string(a) && string_length(a) > 0 && is_numeric_string(a));
+    var bn = is_real(b) || (is_string(b) && string_length(b) > 0 && is_numeric_string(b));
+
+    if (an && bn) {
+        if (is_string(a)) a = real(a);
+        if (is_string(b)) b = real(b);
+        result = (a == b) ? 1 : 0;
+    } else {
+        result = (string(a) == string(b)) ? 1 : 0;
+    }
+    break;
+}
+
+		        // NEW: all other comparisons must live here (not in the function switch)
+		        case "<>": {
+		            // numeric compare if both are numbers; otherwise string compare
+		            if (is_real(a) && is_real(b)) result = (a != b) ? 1 : 0;
+		            else                          result = (string(a) != string(b)) ? 1 : 0;
+		            break;
+		        }
+		        case "<": {
+		            if (is_string(a)) a = real(a);
+		            if (is_string(b)) b = real(b);
+		            result = (a < b) ? 1 : 0;
+		            break;
+		        }
+		        case ">": {
+		            if (is_string(a)) a = real(a);
+		            if (is_string(b)) b = real(b);
+		            result = (a > b) ? 1 : 0;
+		            break;
+		        }
+		        case "<=": {
+		            if (is_string(a)) a = real(a);
+		            if (is_string(b)) b = real(b);
+		            result = (a <= b) ? 1 : 0;
+		            break;
+		        }
+		        case ">=": {
+		            if (is_string(a)) a = real(a);
+		            if (is_string(b)) b = real(b);
+		            result = (a >= b) ? 1 : 0;
+		            break;
+		        }
+
+		        case "*":
+		            if (is_string(a)) a = real(a);
+		            if (is_string(b)) b = real(b);
+		            result = a * b;
+		            break;
+
+		        case "/":
+		            if (is_string(a)) a = real(a);
+		            if (is_string(b)) b = real(b);
+		            result = (b != 0) ? a / b : 0;
+		            break;
+
+		        case "\\": { // integer division → truncate toward ZERO
+		            if (is_string(a) && is_numeric_string(a)) a = real(a);
+		            if (is_string(b) && is_numeric_string(b)) b = real(b);
+
+		            if (!is_real(a) || !is_real(b)) {
+		                basic_syntax_error("Integer division '\\' expects numbers; got a=" + string(a) + ", b=" + string(b),
+		                    global.current_line_number, global.interpreter_current_stmt_index, "TYPE_MISMATCH");
+		                result = 0; break;
+		            }
+		            if (b == 0) {
+		                basic_syntax_error("Division by zero in '\\'",
+		                    global.current_line_number, global.interpreter_current_stmt_index, "DIV_ZERO");
+		                result = 0; break;
+		            }
+
+		            var q = a / b;
+		            q = (q >= 0) ? floor(q) : ceil(q); // trunc-to-zero
+		            result = q;
+		            break;
+		        }
+
+		        case "%":
+		        case "MOD":
+		            if (is_string(a)) a = real(a);
+		            if (is_string(b)) b = real(b);
+		            result = a mod b;
+		            break;
+
+		        case "^":
+		            if (is_string(a)) a = real(a);
+		            if (is_string(b)) b = real(b);
+		            result = power(a, b);
+		            break;
+
+case "AND": {
+    // Don't pop again - use the a,b already popped above
+    var tb = is_real(b) ? (b != 0) : (string_length(string(b)) > 0);
+    var ta = is_real(a) ? (a != 0) : (string_length(string(a)) > 0);
+    
+    result = (ta && tb) ? 1 : 0;
+    break;
+}
+case "OR": {
+    // Don't pop again - use the a,b already popped above  
+    var tb = is_real(b) ? (b != 0) : (string_length(string(b)) > 0);
+    var ta = is_real(a) ? (a != 0) : (string_length(string(a)) > 0);
+    
+    result = (ta || tb) ? 1 : 0;
+    break;
+}
+
+		        default:
+		            if (dbg_on(DBG_PARSE)) show_debug_message("? POSTFIX WARNING: Unknown operator = " + token_upper + " → 0");
+		            result = 0;
+		            break;
+		    }
+
+		    array_push(stack, result);
+		    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: Operator result (" + token_upper + ") = " + string(result));
+		    continue;
+		}
+
+
+        // -------------------------------------------------------
+        // Functions (numeric + string)
+        // -------------------------------------------------------
+        if (is_function(token_upper) || token_upper == "STRING$") {
+            token_upper = string_upper(string_trim(token));
+            if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: Dispatching function → '" + token_upper + "'");
+
+            switch (token_upper) {
+
+                // ---- Random
+                case "RND1": {
+                    var n = safe_real_pop(stack);
+                    if (n <= 0) n = 1;
+                    var r1;
+                    if (n == 1) {
+                        // Classic BASIC: RND(1) returns 0.0 to 0.999...
+                        r1 = random(1);
+                    } else {
+                        // Integer range: RND(6) returns 1-6
+                        r1 = irandom(n - 1) + 1;
+                    }
+                    array_push(stack, r1);
+                    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: RND1(" + string(n) + ") → " + string(r1));
+                    break;
+                }
+
+                case "RND2": {
+                    var max_val_raw = array_pop(stack);
+                    var min_val_raw = array_pop(stack);
+                    var min_val, max_val;
+
+                    if (is_real(min_val_raw)) {
+                        min_val = min_val_raw;
+                    } else if (ds_map_exists(global.basic_variables, min_val_raw) && is_real(global.basic_variables[? min_val_raw])) {
+                        min_val = global.basic_variables[? min_val_raw];
+                    } else {
+                        min_val = undefined;
+                    }
+
+                    if (is_real(max_val_raw)) {
+                        max_val = max_val_raw;
+                    } else if (ds_map_exists(global.basic_variables, max_val_raw) && is_real(global.basic_variables[? max_val_raw])) {
+                        max_val = global.basic_variables[? max_val_raw];
+                    } else {
+                        max_val = undefined;
+                    }
+
+                    if (!is_real(min_val) || !is_real(max_val)) {
+                        basic_system_message("ERROR: RND(min,max) requires numeric arguments — got '" 
+                            + string(min_val_raw) + "', '" + string(max_val_raw) + "'");
+                        array_push(stack, 0);
+                    } else {
+                        var result = irandom_range(min_val, max_val);
+                        array_push(stack, result);
+                        if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: RND2(" + string(min_val) + "," + string(max_val) + ") → " + string(result));
+                    }
+                    break;
+                }
+
+                // ---- NEW: Zero-arg time/keyboard functions ----
+                case "TIMER": {
+                    var secs = floor(current_time / 1000); // ms → seconds since game start
+                    array_push(stack, secs);
+                    if (dbg_on(DBG_PARSE)) show_debug_message("FUNC: TIMER → " + string(secs));
+                    break;
+                }
+				
+				case "LEN": {
+				    var s = string(array_pop(stack));
+				    array_push(stack, string_length(s));
+				    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: LEN('" + s + "') → " + string(string_length(s)));
+				    break;
+				}
+				
+                case "TIME$": {
+                    var dt  = date_current_datetime();
+                    var hh  = date_get_hour(dt);
+                    var mm  = date_get_minute(dt);
+                    var ss  = date_get_second(dt);
+                    var hhs = (hh < 10 ? "0" : "") + string(hh);
+                    var mms = (mm < 10 ? "0" : "") + string(mm);
+                    var sss = (ss < 10 ? "0" : "") + string(ss);
+                    var out = hhs + ":" + mms + ":" + sss;
+                    array_push(stack, out);
+                    if (dbg_on(DBG_PARSE)) show_debug_message("FUNC: TIME$ → " + out);
+                    break;
+                }
+                case "DATE$": {
+                    var dt2 = date_current_datetime();
+                    var yy  = date_get_year(dt2);
+                    var mo  = date_get_month(dt2);
+                    var dd  = date_get_day(dt2);
+                    var mos = (mo < 10 ? "0" : "") + string(mo);
+                    var dds = (dd < 10 ? "0" : "") + string(dd);
+                    var out2 = string(yy) + "-" + mos + "-" + dds;
+                    array_push(stack, out2);
+                    if (dbg_on(DBG_PARSE)) show_debug_message("FUNC: DATE$ → " + out2);
+                    break;
+                }
+
+                case "INKEY$": {
+                    if (dbg_on(DBG_PARSE)) show_debug_message("INKEY$ function: Processing INKEY$ token");
+
+                    if (!variable_global_exists("inkey_queue") || is_undefined(global.inkey_queue)) {
+                        if (dbg_on(DBG_PARSE)) show_debug_message("INKEY$ function: creating global.inkey_queue");
+                        global.inkey_queue = ds_queue_create();
+                    }
+
+                    var _res = "";
+                    if (ds_queue_size(global.inkey_queue) > 0) {
+                        var _ch = ds_queue_dequeue(global.inkey_queue);
+                        if (is_real(_ch)) _ch = chr(_ch);
+                        _res = string(_ch);
+                        if (dbg_on(DBG_PARSE)) show_debug_message(
+                            "INKEY$ function: Dequeued '" + _res + "', queue size now = " + string(ds_queue_size(global.inkey_queue))
+                        );
+                    } else {
+                        if (dbg_on(DBG_PARSE)) show_debug_message("INKEY$ function: Queue empty → returning empty string");
+                    }
+
+                    if (dbg_on(DBG_PARSE)) {
+                        var _len = string_length(_res);
+                        var _a1  = (_len >= 1) ? ord(string_char_at(_res, 1)) : -1;
+                        var _a2  = (_len >= 2) ? ord(string_char_at(_res, 2)) : -1;
+                        if (dbg_on(DBG_FLOW)) show_debug_message("##INK## LEN=" + string(_len)
+                            + " A1=" + string(_a1)
+                            + " A2=" + string(_a2)
+                            + " K$='" + _res + "'");
+                    }
+
+                    array_push(stack, _res);
+                    break;
+                }
+
+                // ---- Math
+                case "ABS": array_push(stack, abs(safe_real_pop(stack))); break;
+                case "EXP": array_push(stack, exp(safe_real_pop(stack))); break;
+
+                // Preserving your prior semantics: LOG & LOG10 both as base-10
+                case "LOG":
+                case "LOG10": {
+                    var v = safe_real_pop(stack);
+                    array_push(stack, (ln(v) / ln(10)));
+                    break;
+                }
+
+                case "SGN": {
+                    var vsgn = safe_real_pop(stack);
+                    var sgnv = (vsgn > 0) - (vsgn < 0);
+                    array_push(stack, sgnv);
+                    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: SGN(" + string(vsgn) + ") → " + string(sgnv));
+                    break;
+                }
+
+                case "INT": array_push(stack, floor(safe_real_pop(stack))); break;
+                case "SIN": array_push(stack, sin(safe_real_pop(stack)));   break;
+                case "COS": array_push(stack, cos(safe_real_pop(stack)));   break;
+                case "TAN": array_push(stack, tan(safe_real_pop(stack)));   break;
+
+                // ---- String conversions
+                case "STR$": {
+                    var vstr = safe_real_pop(stack);
+                    var s = string(vstr);
+                    array_push(stack, s);
+                    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: STR$ → " + s);
+                    break;
+                }
+				
+                case "CHR$": {
+                    var cv = safe_real_pop(stack);
+                    var c  = chr(cv);
+                    array_push(stack, c);
+                    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: CHR$ → " + c);
+                    break;
+                }
+
+                // ---- String functions we added
+                case "REPEAT$": {
+                    var nrep = floor(safe_real_pop(stack));
+                    var srep = string(array_pop(stack));
+                    if (nrep < 0) nrep = 0;
+
+                    var max_out = 65535;
+                    var unit = max(1, string_length(srep));
+                    if (unit * nrep > max_out) nrep = floor(max_out / unit);
+
+                    var outrep = "";
+                    repeat (nrep) outrep += srep;
+                    array_push(stack, outrep);
+                    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: REPEAT$('"+srep+"', "+string(nrep)+") → len="+string(string_length(outrep)));
+                    break;
+                }
+
+                case "LEFT$": {
+                    var nleft = floor(safe_real_pop(stack));
+                    var sleft = string(array_pop(stack));
+                    if (nleft < 0) nleft = 0;
+
+                    var outleft = (nleft <= 0) ? "" : string_copy(sleft, 1, nleft);
+                    array_push(stack, outleft);
+                    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: LEFT$('"+sleft+"', "+string(nleft)+") → '"+outleft+"'");
+                    break;
+                }
+
+                case "RIGHT$": {
+                    var nright = floor(safe_real_pop(stack));
+                    var sright = string(array_pop(stack));
+                    if (nright < 0) nright = 0;
+
+                    var lenr = string_length(sright);
+                    var start = max(1, lenr - nright + 1);
+                    var outright = (nright <= 0) ? "" : string_copy(sright, start, nright);
+                    array_push(stack, outright);
+                    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: RIGHT$('"+sright+"', "+string(nright)+") → '"+outright+"'");
+                    break;
+                }
+
+                case "MID$": {
+                    var lmid = floor(safe_real_pop(stack));
+                    var smid = floor(safe_real_pop(stack));
+                    var strm = string(array_pop(stack));
+
+                    if (lmid < 0) lmid = 0;
+                    if (smid < 1) smid = 1;
+
+                    var outm = "";
+                    if (lmid > 0 && smid <= string_length(strm)) {
+                        outm = string_copy(strm, smid, lmid);
+                    }
+                    array_push(stack, outm);
+                    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: MID$('"+strm+"', "+string(smid)+", "+string(lmid)+") → '"+outm+"'");
+                    break;
+                }
+
+                case "ASC": {
+                    var s = string(array_pop(stack));            // ensure string
+                    var r = (string_length(s) >= 1) ? ord(string_char_at(s, 1)) : 0;
+                    array_push(stack, r);
+                    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: ASC('" + s + "') → " + string(r));
+                    break;
+                }
+
+                // ---- NEW: STRING$(x, n) ----
+                case "STRING$": {
+                    // Postfix order from infix handler: push x, push n, then STRING$
+                    var n = array_pop(stack);
+                    var _x = array_pop(stack);
+
+                    // normalize n
+                    var count = max(0, floor(is_real(n) ? n : real(n)));
+
+                    // determine a single character from _x
+                    var ch;
+                    if (is_string(_x)) {
+                        ch = (string_length(_x) > 0) ? string_copy(_x, 1, 1) : " ";
+                    } else {
+                        var code = clamp(floor(real(_x)), 0, 255);
+                        ch = chr(code);
+                    }
+
+                    var out = "";
+                    repeat (count) out += ch;
+
+                    array_push(stack, out);
+                    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: STRING$(" + string(x) + "," + string(count) + ") → len=" + string(string_length(out)));
+                    break;
+                }
+
+			
+
+
+                default:
+                    if (dbg_on(DBG_PARSE)) show_debug_message("? POSTFIX WARNING: Unknown function = " + token_upper + " — pushing last real as fallback");
+                    array_push(stack, safe_real_pop(stack));
+                    break;
+            }
+
+            continue;
+        }
+
+			// -------------------------------------------------------
+			// Scalar variable load (string vars stay strings; numeric vars coerce)
+			// -------------------------------------------------------
+			if (ds_map_exists(global.basic_variables, token_upper)) {
+			    var vv = global.basic_variables[? token_upper];
+
+			    var is_string_var = (string_char_at(token_upper, string_length(token_upper)) == "$");
+
+			    if (is_string_var) {
+			        // String variables ALWAYS behave as strings (QBASIC semantics)
+			        if (is_undefined(vv)) vv = "";
+			        vv = string(vv); // ensure string; do not numeric-coerce
+			    } else {
+			        // Numeric variables: allow numeric strings, else 0
+			        if (is_string(vv)) {
+			            vv = is_numeric_string(vv) ? real(vv) : 0;
+			        } else if (!is_real(vv)) {
+			            vv = 0;
+			        }
+			    }
+
+			    array_push(stack, vv);
+
+			    if (dbg_on(DBG_PARSE)) {
+			        var _tag = is_string_var ? "[S]" : "[N]";
+			        show_debug_message("POSTFIX: Loaded variable " + token_upper + " " + _tag + " = " + string(vv));
+			    }
+			    continue;
+			}
+
+
+       // -------------------------------------------------------
+		// Fallback: IDENT or literal
+		// -------------------------------------------------------
+		var ident = trimmed;
+
+		// If this looks like an identifier (A..Z start) and it’s not in the map,
+		// treat it as an undeclared numeric variable (default 0).
+		var first = string_upper(string_char_at(ident, 1));
+		var oc = ord(first);
+		var looks_ident = (oc >= 65 && oc <= 90); // A..Z
+
+		if (looks_ident) {
+		    var key = string_upper(ident);
+		    if (!ds_map_exists(global.basic_variables, key)) {
+		        // create as numeric 0 (QBASIC style)
+		        global.basic_variables[? key] = 0;
+		        if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: Implicit numeric var created '" + key + "' = 0");
+		    }
+		    var vv = global.basic_variables[? key];
+
+		    // coerce type by suffix: $ means string var
+		    if (string_char_at(key, string_length(key)) == "$") {
+		        if (is_undefined(vv)) vv = "";
+		        if (!is_string(vv))  vv = string(vv);
+		    } else {
+		        if (is_string(vv)) {
+		            vv = is_numeric_string(vv) ? real(vv) : 0;
+		        } else if (!is_real(vv)) {
+		            vv = 0;
+		        }
+		    }
+		    array_push(stack, vv);
+		    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: Loaded/created ident " + key + " = " + string(vv));
+		} else {
+		    // true literal fallback
+		    array_push(stack, trimmed);
+		    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: Pushed fallback string → " + trimmed);
+		}
+
+    }
+
+    return (array_length(stack) > 0) ? stack[array_length(stack) - 1] : 0;
+}
+
+/// @script infix_to_postfix
+// === BEGIN: infix_to_postfix ===
+function infix_to_postfix(tokens) {
+    if (dbg_on(DBG_PARSE)) show_debug_message("Converting to postfix: " + string(tokens));
+
+    var output = [];
+    var stack  = [];
+
+    var _TOKU = function(_t) { return string_upper(string(_t)); };
+
+    var _push_all = function(_dst, _src) {
+        for (var __i = 0; __i < array_length(_src); __i++) array_push(_dst, _src[__i]);
+    };
+
+    var _is_zero_arg_fn = function(_name) {
+        var n = string_upper(_name);
+        return (n == "TIMER" || n == "TIME$" || n == "DATE$" || n == "INKEY$");
+    };
+
+    var _is_STRING_fn = function(_name) {
+        return string_upper(string(_name)) == "STRING$";
+    };
+
+    // pass tokens explicitly so we don't rely on closure capture
+    var _read_paren_payload = function(_tokens, _start) {
+        var _depth = 0, j = _start, inner = "", matched = false;
+        while (j < array_length(_tokens)) {
+            var tk = _tokens[j];
+            if (tk == "(") {
+                _depth++;
+                if (_depth > 1) inner += tk;
+            } else if (tk == ")") {
+                _depth--;
+                if (_depth == 0) { matched = true; break; }
+                inner += tk;
+            } else {
+                inner += tk;
+            }
+            j++;
+        }
+        return [matched, inner, j];
+    };
+
+    for (var i = 0; i < array_length(tokens); i++) {
+        var t  = tokens[i];
+
+        if (t == ",") { if (dbg_on(DBG_PARSE)) show_debug_message("INFIX: Skipping comma token"); continue; }
+
+        var tu = _TOKU(t);
+
+        // 1) ARRAY READ COLLAPSE
+        if (is_string(t)) {
+            var first = string_char_at(t, 1);
+            var can_be_name = is_letter(first);
+
+            if (can_be_name && i + 1 < array_length(tokens) && tokens[i + 1] == "("
+            && !(is_function(t) || _is_STRING_fn(t))) {
+                if (dbg_on(DBG_PARSE)) show_debug_message("INFIX: Candidate for array collapse → '" + string(t) + "' followed by '('");
+                var arr_info = _read_paren_payload(tokens, i + 1);
+                var matched  = arr_info[0];
+                var inner    = arr_info[1];
+                var j        = arr_info[2];
+
+                if (matched) {
+                    var collapsed = string(t) + "(" + inner + ")";
+                    array_push(output, collapsed);
+                    if (dbg_on(DBG_PARSE)) show_debug_message("INFIX: Collapsed array read token → '" + collapsed + "' (consumed through index " + string(j) + ")");
+                    i = j;
+                    continue;
+                } else {
+                    if (dbg_on(DBG_PARSE)) show_debug_message("INFIX: WARNING — unmatched '(' after '" + string(t) + "'. Not collapsing.");
+                }
+            }
+        }
+
+        // 2) NUMERIC LITERAL
+        if (is_numeric_string(t)) { array_push(output, t); if (dbg_on(DBG_PARSE)) show_debug_message("Added number to output: " + string(t)); continue; }
+
+        // 3) KNOWN VARIABLE
+        if (ds_map_exists(global.basic_variables, tu)) { array_push(output, tu); if (dbg_on(DBG_PARSE)) show_debug_message("Added variable name to output: " + tu); continue; }
+
+        // 4) OPEN PAREN
+        if (t == "(") { array_push(stack, t); if (dbg_on(DBG_PARSE)) show_debug_message("Pushed '(' onto operator stack"); continue; }
+
+        // 5) CLOSE PAREN
+        if (t == ")") {
+            while (array_length(stack) > 0 && stack[array_length(stack) - 1] != "(") {
+                var popped_close = array_pop(stack);
+                array_push(output, popped_close);
+                if (dbg_on(DBG_PARSE)) show_debug_message("Popped '" + string(popped_close) + "' from stack to output (closing ')')");
+            }
+            if (array_length(stack) > 0 && stack[array_length(stack) - 1] == "(") {
+                array_pop(stack);
+                if (dbg_on(DBG_PARSE)) show_debug_message("Discarded matching '(' from stack");
+            } else {
+                if (dbg_on(DBG_PARSE)) show_debug_message("INFIX: WARNING — stray ')' with no matching '('");
+            }
+            continue;
+        }
+
+        // 6) OPERATORS
+        if (is_operator(t)) {
+            if (dbg_on(DBG_PARSE)) show_debug_message("Found operator: " + string(t));
+            while (array_length(stack) > 0) {
+                var top = stack[array_length(stack) - 1];
+                if (is_operator(top) && (get_precedence(top) > get_precedence(t)
+                || (get_precedence(top) == get_precedence(t) && !is_right_associative(t)))) {
+                    var popped_op = array_pop(stack);
+                    array_push(output, popped_op);
+                    if (dbg_on(DBG_PARSE)) show_debug_message("Popped higher/equal precedence operator '" + string(popped_op) + "' to output");
+                } else break;
+            }
+            array_push(stack, t);
+            if (dbg_on(DBG_PARSE)) show_debug_message("Pushed operator '" + string(t) + "' onto stack");
+            continue;
+        }
+
+        // 7) FUNCTIONS
+        if (is_function(t) || _is_STRING_fn(t)) {
+            var fn_name = tu;
+
+            // Zero-arg functions emit directly
+            if (_is_zero_arg_fn(fn_name)) {
+                array_push(output, fn_name);
+                if (dbg_on(DBG_PARSE)) show_debug_message("Processed zero-arg function: " + fn_name);
+                continue;
+            }
+
+            // Must be followed by '('
+            if (!(i + 1 < array_length(tokens) && tokens[i + 1] == "(")) {
+                array_push(output, fn_name);
+                if (dbg_on(DBG_PARSE)) show_debug_message("Function without '(': passing through → " + fn_name);
+                continue;
+            }
+
+            // Read (...): pass tokens explicitly
+            var f_info  = _read_paren_payload(tokens, i + 1);
+            var f_ok    = f_info[0];
+            var f_inner = f_info[1];
+            var f_end   = f_info[2];
+
+            if (!f_ok) {
+                array_push(output, fn_name);
+                if (dbg_on(DBG_PARSE)) show_debug_message("WARNING: unmatched '(' for function " + fn_name + " — passing through");
+                continue;
+            }
+
+            // ---------- SPECIAL: STRING$(x, n) ----------
+            if (fn_name == "STRING$") {
+                var lvl = 0, part = "", parts = [];
+                for (var ci = 1; ci <= string_length(f_inner); ci++) {
+                    var ch = string_char_at(f_inner, ci);
+                    if (ch == "(") { lvl++; part += ch; }
+                    else if (ch == ")") { lvl--; part += ch; }
+                    else if (ch == "," && lvl == 0) { array_push(parts, string_trim(part)); part = ""; }
+                    else { part += ch; }
+                }
+                array_push(parts, string_trim(part));
+
+                if (array_length(parts) == 2) {
+                    var t1 = basic_tokenize_expression_v2(parts[0]);
+                    var t2 = basic_tokenize_expression_v2(parts[1]);
+                    var p1 = infix_to_postfix(t1);
+                    var p2 = infix_to_postfix(t2);
+                    _push_all(output, p1);
+                    _push_all(output, p2);
+                    array_push(output, fn_name);
+                    if (dbg_on(DBG_PARSE)) show_debug_message("Processed STRING$(x,n): args = [" + parts[0] + "], [" + parts[1] + "]");
+                    i = f_end;
+                    continue;
+                }
+                // fall through to generic handling if malformed
+            }
+
+            // ---------- SPECIAL: LEFT$/RIGHT$/MID$ (multi-arg) ----------
+            if (fn_name == "LEFT$" || fn_name == "RIGHT$" || fn_name == "MID$") {
+                var lvl2 = 0, part2 = "", parts_lr = [];
+                for (var ci2 = 1; ci2 <= string_length(f_inner); ci2++) {
+                    var ch2 = string_char_at(f_inner, ci2);
+                    if (ch2 == "(") { lvl2++; part2 += ch2; }
+                    else if (ch2 == ")") { lvl2--; part2 += ch2; }
+                    else if (ch2 == "," && lvl2 == 0) { array_push(parts_lr, string_trim(part2)); part2 = ""; }
+                    else { part2 += ch2; }
+                }
+                array_push(parts_lr, string_trim(part2));
+
+                // LEFT$/RIGHT$ expect exactly 2 args
+                if ((fn_name == "LEFT$" || fn_name == "RIGHT$") && array_length(parts_lr) == 2) {
+                    var tA1 = basic_tokenize_expression_v2(parts_lr[0]);
+                    var tA2 = basic_tokenize_expression_v2(parts_lr[1]);
+                    var pA1 = infix_to_postfix(tA1);
+                    var pA2 = infix_to_postfix(tA2);
+                    _push_all(output, pA1);
+                    _push_all(output, pA2);
+                    array_push(output, fn_name);
+                    if (dbg_on(DBG_PARSE)) show_debug_message("Processed " + fn_name + "(" + parts_lr[0] + "," + parts_lr[1] + ")");
+                    i = f_end;
+                    continue;
+                }
+
+                // MID$ supports 2 or 3 args
+                if (fn_name == "MID$" && (array_length(parts_lr) == 2 || array_length(parts_lr) == 3)) {
+                    for (var mi = 0; mi < array_length(parts_lr); mi++) {
+                        var tMi = basic_tokenize_expression_v2(parts_lr[mi]);
+                        var pMi = infix_to_postfix(tMi);
+                        _push_all(output, pMi);
+                    }
+                    array_push(output, fn_name);
+                    if (dbg_on(DBG_PARSE)) show_debug_message("Processed MID$(" + string(parts_lr) + ")");
+                    i = f_end;
+                    continue;
+                }
+                // else fall through to generic one-arg below
+            }
+
+            // ---------- SPECIAL: RND (0/1/2-arg variants) ----------
+            if (fn_name == "RND") {
+                var inner_trim = string_trim(f_inner);
+
+                // 0-arg: RND()
+                if (string_length(inner_trim) == 0) {
+                    array_push(output, "RND");
+                    if (dbg_on(DBG_PARSE)) show_debug_message("Processed RND()");
+                    i = f_end;
+                    continue;
+                }
+
+                // Split on top-level commas
+                var lvlR = 0, partR = "", partsR = [];
+                for (var ri = 1; ri <= string_length(f_inner); ri++) {
+                    var chR = string_char_at(f_inner, ri);
+                    if (chR == "(") { lvlR++; partR += chR; }
+                    else if (chR == ")") { lvlR--; partR += chR; }
+                    else if (chR == "," && lvlR == 0) { array_push(partsR, string_trim(partR)); partR = ""; }
+                    else { partR += chR; }
+                }
+                array_push(partsR, string_trim(partR));
+
+                if (array_length(partsR) == 1) {
+                    var tN = basic_tokenize_expression_v2(partsR[0]);
+                    var pN = infix_to_postfix(tN);
+                    _push_all(output, pN);
+                    array_push(output, "RND1");
+                    if (dbg_on(DBG_PARSE)) show_debug_message("Processed RND(" + partsR[0] + ") → RND1");
+                    i = f_end;
+                    continue;
+                }
+
+                if (array_length(partsR) == 2) {
+                    var tA = basic_tokenize_expression_v2(partsR[0]);
+                    var tB = basic_tokenize_expression_v2(partsR[1]);
+                    var pA = infix_to_postfix(tA);
+                    var pB = infix_to_postfix(tB);
+                    _push_all(output, pA);
+                    _push_all(output, pB);
+                    array_push(output, "RND2");
+                    if (dbg_on(DBG_PARSE)) show_debug_message("Processed RND(" + partsR[0] + "," + partsR[1] + ") → RND2");
+                    i = f_end;
+                    continue;
+                }
+                // malformed → fall through to generic
+            }
+
+            // Generic one-arg function: <inner> <FN>
+            var inner_tokens  = basic_tokenize_expression_v2(f_inner);
+            var inner_postfix = infix_to_postfix(inner_tokens);
+            _push_all(output, inner_postfix);
+            array_push(output, fn_name);
+            if (dbg_on(DBG_PARSE)) show_debug_message("Processed 1-arg function " + fn_name + "(" + f_inner + ") → postfix emit <inner> " + fn_name);
+            i = f_end;
+            continue;
+        }
+
+        // 8) UNKNOWN TOKEN
+        if (dbg_on(DBG_PARSE)) show_debug_message("Unknown token, adding to output: " + string(t));
+        array_push(output, t);
+    }
+
+    // Drain operator stack
+    while (array_length(stack) > 0) {
+        var tail = array_pop(stack);
+        array_push(output, tail);
+        if (dbg_on(DBG_PARSE)) show_debug_message("Drained operator stack → appended '" + string(tail) + "'");
+    }
+
+    if (dbg_on(DBG_PARSE)) show_debug_message("Final postfix: " + string(output));
+    return output;
+}
+// === END: infix_to_postfix ===
+
+function basic_evaluate_condition(expr) {
+    var s = string_trim(expr);
+    if (dbg_on(DBG_FLOW)) show_debug_message ("COND: Begin evaluate_condition → '" + s + "'");
+
+    // ===== boolean precedence: OR (low) then AND (high) =====
+    {
+        var su = string_upper(s);
+        var L  = string_length(su);
+        var _depth = 0;
+        var in_q  = false;
+
+        // ---- Top-level OR ----
+        for (var i = 1; i <= L - 1; i++) {
+            var ch = string_char_at(su, i);
+            if (ch == "\"") { in_q = !in_q; continue; }
+            if (in_q) continue;
+
+            if (ch == "(") { _depth++; continue; }
+            if (ch == ")") { _depth = max(0, _depth - 1); continue; }
+            if (_depth != 0) continue;
+
+            if (string_copy(su, i, 2) == "OR") {
+                // require space boundaries (avoid COLOR etc.)
+                var prev = (i == 1) ? " " : string_char_at(su, i - 1);
+                var next = (i + 2 <= L) ? string_char_at(su, i + 2) : " ";
+                if (prev == " " && next == " ") {
+                    var left  = string_trim(string_copy(s, 1, i - 1));
+                    var right = string_trim(string_copy(s, i + 2, L - (i + 2) + 1));
+                    if (dbg_on(DBG_FLOW)) show_debug_message ("COND: top-level OR split → LHS='" + left + "'  ||  RHS='" + right + "'");
+
+                    var lres = basic_evaluate_condition(left);
+                    if (dbg_on(DBG_FLOW)) show_debug_message("COND: OR left result = " + string(lres));
+                    if (lres) { 
+						if (dbg_on(DBG_FLOW)) {show_debug_message("COND: OR short-circuit TRUE");}
+					return true; }
+
+                    var rres = basic_evaluate_condition(right);
+                    var ores = (lres || rres);
+                    if (dbg_on(DBG_FLOW)) show_debug_message("COND: OR final = " + string(ores));
+                    return ores;
+                }
+            }
+        }
+
+        // ---- Top-level AND ----
+        _depth = 0; in_q = false;  // FIX: use _depth, not 'depth'
+        for (var j = 1; j <= L - 2; j++) {
+            var ch2 = string_char_at(su, j);
+            if (ch2 == "\"") { in_q = !in_q; continue; }
+            if (in_q) continue;
+
+            if (ch2 == "(") { _depth++; continue; }
+            if (ch2 == ")") { _depth = max(0, _depth - 1); continue; }
+            if (_depth != 0) continue;
+
+            if (string_copy(su, j, 3) == "AND") {
+                var prev2 = (j == 1) ? " " : string_char_at(su, j - 1);
+                var next2 = (j + 3 <= L) ? string_char_at(su, j + 3) : " ";
+                if (prev2 == " " && next2 == " ") {
+                    var left2  = string_trim(string_copy(s, 1, j - 1));
+                    var right2 = string_trim(string_copy(s, j + 3, L - (j + 3) + 1));
+                    if (dbg_on(DBG_FLOW)) show_debug_message("COND: top-level AND split → LHS='" + left2 + "'  &&  RHS='" + right2 + "'");
+
+                    var lres2 = basic_evaluate_condition(left2);
+                    if (dbg_on(DBG_FLOW)) show_debug_message("COND: AND left result = " + string(lres2));
+                    if (!lres2) { if (dbg_on(DBG_FLOW)) show_debug_message("COND: AND short-circuit FALSE"); return false; }
+
+                    var rres2 = basic_evaluate_condition(right2);
+                    var andres = (lres2 && rres2);
+                    if (dbg_on(DBG_FLOW)) show_debug_message("Combined condition (AND): " + string(lres2) + " AND " + string(rres2) + " = " + string(andres));
+                    return andres;
+                }
+            }
+        }
+    }
+    // ===== END boolean handling =====
+
+    // --- Comparator search (unchanged) ---
+    var ops = ["<>", "<=", ">=", "=", "<", ">"];
+    var found_op = "";
+    var op_pos = 0;
+    var _depth = 0;
+
+    for (var i2 = 1; i2 <= string_length(s); i2++) {
+        var ch3 = string_char_at(s, i2);
+        if (ch3 == "(") { _depth++; continue; }
+        if (ch3 == ")") { _depth--; continue; }
+        if (_depth != 0) continue;
+
+        if (i2 < string_length(s)) {
+            var two = string_copy(s, i2, 2);
+            if (two == "<>" || two == "<=" || two == ">=") {
+                found_op = two; op_pos = i2;
+                if (dbg_on(DBG_FLOW)) show_debug_message("COND: Found 2-char op '" + found_op + "' at pos " + string(op_pos));
+                break;
+            }
+        }
+        if (ch3 == "=" || ch3 == "<" || ch3 == ">") {
+            found_op = ch3; op_pos = i2;
+            if (dbg_on(DBG_FLOW)) show_debug_message("COND: Found 1-char op '" + found_op + "' at pos " + string(op_pos));
+            break;
+        }
+    }
+
+    if (found_op != "") {
+        var lhs = string_trim(string_copy(s, 1, op_pos - 1));
+        var rhs = string_trim(string_copy(s, op_pos + string_length(found_op), string_length(s) - (op_pos + string_length(found_op) - 1)));
+        var op  = found_op;
+
+        if (dbg_on(DBG_FLOW)) show_debug_message("COND: Split → LHS='" + lhs + "'  OP='" + op + "'  RHS='" + rhs + "'");
+
+        var lhs_val = basic_evaluate_expression_v2(lhs);
+        var rhs_val = basic_evaluate_expression_v2(rhs);
+        if (dbg_on(DBG_FLOW)) show_debug_message("COND: Eval → LHS=" + string(lhs_val) + "  RHS=" + string(rhs_val));
+
+        var lhs_str = string(lhs_val);
+        var rhs_str = string(rhs_val);
+        var lhs_is_num = is_real(lhs_val) || is_numeric_string(lhs_str);
+        var rhs_is_num = is_real(rhs_val) || is_numeric_string(rhs_str);
+        if (dbg_on(DBG_FLOW)) show_debug_message("COND: Types → LHS_is_num=" + string(lhs_is_num) + "  RHS_is_num=" + string(rhs_is_num));
+
+        if (!(lhs_is_num && rhs_is_num)) {
+            var sres = false;
+            switch (op) {
+                case "=":  sres = (lhs_str == rhs_str); break;
+                case "<>": sres = (lhs_str != rhs_str); break;
+                default:   sres = false;
+            }
+            if (dbg_on(DBG_FLOW)) show_debug_message("COND: String-compare '" + op + "' → " + string(sres));
+            return sres;
+        }
+
+        var lhs_num = real(lhs_str);
+        var rhs_num = real(rhs_str);
+        var nres = false;
+        switch (op) {
+            case "=":  nres = (lhs_num == rhs_num); break;
+            case "<":  nres = (lhs_num <  rhs_num); break;
+            case ">":  nres = (lhs_num >  rhs_num); break;
+            case "<=": nres = (lhs_num <= rhs_num); break;
+            case ">=": nres = (lhs_num >= rhs_num); break;
+            case "<>": nres = (lhs_num != rhs_num); break;
+        }
+        if (dbg_on(DBG_FLOW)) show_debug_message("COND: Numeric-compare '" + op + "' → " + string(nres));
+        return nres;
+    }
+
+    // --- Legacy space-split path (kept) ---
+    var tokens = string_split(s, " ");
+    if (array_length(tokens) == 3) {
+        var lhs2 = string_trim(tokens[0]);
+        var op2  = string_trim(tokens[1]);
+        var rhs2 = string_trim(tokens[2]);
+        if (dbg_on(DBG_FLOW)) show_debug_message("COND: Fallback (space-split) → LHS='" + lhs2 + "' OP='" + op2 + "' RHS='" + rhs2 + "'");
+
+        var lhs_val2 = basic_evaluate_expression_v2(lhs2);
+        var rhs_val2 = basic_evaluate_expression_v2(rhs2);
+        if (dbg_on(DBG_FLOW)) show_debug_message("COND: Fallback eval → LHS=" + string(lhs_val2) + "  RHS=" + string(rhs_val2));
+
+        var lhs_str2 = string(lhs_val2);
+        var rhs_str2 = string(rhs_val2);
+        var lhs_is_num2 = is_real(lhs_val2) || is_numeric_string(lhs_str2);
+        var rhs_is_num2 = is_real(rhs_val2) || is_numeric_string(rhs_str2);
+        if (dbg_on(DBG_FLOW)) show_debug_message("COND: Fallback types → LHS_is_num=" + string(lhs_is_num2) + "  RHS_is_num=" + string(rhs_is_num2));
+
+        if (!(lhs_is_num2 && rhs_is_num2)) {
+            var sres2 = false;
+            switch (op2) {
+                case "=":  sres2 = (lhs_str2 == rhs_str2); break;
+                case "<>": sres2 = (lhs_str2 != rhs_str2); break;
+                default:   sres2 = false;
+            }
+            if (dbg_on(DBG_FLOW)) show_debug_message("COND: Fallback string-compare '" + op2 + "' → " + string(sres2));
+            return sres2;
+        }
+
+        var lhs_num2 = real(lhs_str2);
+        var rhs_num2 = real(rhs_str2);
+        var nres2 = false;
+        switch (op2) {
+            case "=":  nres2 = (lhs_num2 == rhs_num2); break;
+            case "<":  nres2 = (lhs_num2 <  rhs_num2); break;
+            case ">":  nres2 = (lhs_num2 >  rhs_num2); break;
+            case "<=": nres2 = (lhs_num2 <= rhs_num2); break;
+            case ">=": nres2 = (lhs_num2 >= rhs_num2); break;
+            case "<>": nres2 = (lhs_num2 != rhs_num2); break;
+        }
+        if (dbg_on(DBG_FLOW)) show_debug_message("COND: Fallback numeric-compare '" + op2 + "' → " + string(nres2));
+        return nres2;
+    }
+
+    // --- NEW: final fallback — evaluate whole expression as truthy/falsey ---
+    if (dbg_on(DBG_FLOW)) show_debug_message("COND: No operator; evaluating whole expression for truthiness");
+    var _val = basic_evaluate_expression_v2(s);
+    var _truth = 0;
+    if (is_real(_val) || is_numeric_string(string(_val))) {
+        _truth = (real(string(_val)) != 0);
+    } else {
+        var _s = string(_val);
+        _truth = (string_length(_s) > 0);
+    }
+    if (dbg_on(DBG_FLOW)) show_debug_message("COND: expression value=" + string(_val) + " → truth=" + string(_truth));
+    return _truth;
+}
+
+/// @event obj_globals/Create
+// obj_globals → Create Event
+
+
+
+var save_dir = get_save_directory();
+if (save_dir != "") {
+    if (!directory_exists(save_dir)) {
+        directory_create(save_dir);
+    }
+}
+
+//global.debug_mask = DBG_ALL;// allow all debug;
+global.debug_mask = 0; //No Debug
+
+global.dbg_dropped_count = 0;
+
+global.justreturned = 0;
+global.program_filename = "";
+global.username = "";
+global.editor_spawned = false;
+
+// Program and source management
+global.program_lines = ds_map_create();
+global.basic_program = ds_map_create();
+global.program_map  = ds_map_create();
+
+// Line tracking
+global.line_list    = ds_list_create();
+global.line_numbers = ds_list_create();
+global.undo_stack = ds_list_create();
+global.output_lines = ds_list_create();
+global.output_colors = ds_list_create();
+global.input_history = ds_list_create();
+
+// Interpreter control stacks
+global.gosub_stack = ds_stack_create();
+global.for_stack   = ds_stack_create();
+global.while_stack = ds_stack_create();
+global.history_index = -1;
+
+// IF…ELSE block handling
+global.if_block_map = ds_map_create();
+global.if_stack     = ds_stack_create();
+
+// Spawn the editor after globals are ready
+instance_create_layer(0, 0, "Instances", obj_editor);
+
+// Initialize variable store
+if (!variable_global_exists("basic_variables")) {
+    global.basic_variables = ds_map_create();
+}
+
+// Output buffer
+global.print_line_buffer = "";
+
+// Color settings
+global.basic_text_color = make_color_rgb(255, 191, 64);
+global.current_draw_color = c_green;
+global.background_draw_color = c_black;
+global.background_draw_enabled = false;
+
+// Input / Pause
+global.awaiting_input = false;
+global.input_target_var = "";
+global.interpreter_input = "";
+global.interpreter_cursor_pos = 0;
+global.interpreter_running = false;
+global.last_interpreter_string = "";
+global.program_has_ended = false;
+global.pause_in_effect = false;
+global.input_expected = false;
+global.pause_mode = false;
+
+// Scrolling control
+global.scroll_offset = 0;
+global.scroll_lock = false;
+
+// Named colors
+global.colors = ds_map_create();
+global.colors[? "RED"]     = c_red;
+global.colors[? "GREEN"]   = c_green;
+global.colors[? "BLUE"]    = c_blue;
+global.colors[? "CYAN"]    = c_teal;
+global.colors[? "MAGENTA"] = c_fuchsia;
+global.colors[? "YELLOW"]  = c_yellow;
+global.colors[? "WHITE"]   = c_white;
+global.colors[? "BLACK"]   = c_black;
+global.colors[? "GRAY"]    = c_gray;
+global.colors[? "ORANGE"]  = c_orange;
+global.colors[? "LIME"]    = c_lime;
+global.colors[? "NAVY"] = make_color_rgb(0, 0, 128);
+global.colors[? "DKGRAY"] = make_color_rgb(64, 64, 64);
+
+// MODE control
+global.current_mode = 0; // 0 = Text, 1 = Tile graphics, 2 = Pixel graphics
+global.mode_rooms = ds_map_create();
+global.mode_rooms[? 0] = rm_basic_interpreter; // Text
+global.mode_rooms[? 1] = rm_mode1_graphics;    // Tile graphics
+global.mode_rooms[? 2] = rm_mode2_pixel;       // Pixel graphics
+
+// MODE 1 sprite sheet container
+// FONT registry for MODE 1
+global.font_sheets = ds_map_create();
+
+// Base character sheet
+ds_map_add(global.font_sheets, "DEFAULT", spr_charactersheet);
+
+// Special 32×32 or alt glyphs
+ds_map_add(global.font_sheets, "SPECIAL", spr_charactersheet_special);
+
+// 16×16 set
+ds_map_add(global.font_sheets, "16x16", spr_charactersheet_16x16);
+ds_map_add(global.font_sheets, "16x16_SPECIAL", spr_charactersheet_16x16_special);
+
+// 8×8 set
+ds_map_add(global.font_sheets, "8x8", spr_charactersheet_8x8);
+ds_map_add(global.font_sheets, "DEFAULT_32", spr_charactersheet);
+ds_map_add(global.font_sheets, "DEFAULT_16", spr_charactersheet_16x16);
+ds_map_add(global.font_sheets, "DEFAULT_8",  spr_charactersheet_8x8);
+
+ds_map_add(global.font_sheets, "SPECIAL_16", spr_charactersheet_16x16_special);
+
+// Initialize active sheet
+global.mode1_active_sprite   = global.font_sheets[? "DEFAULT_32"];
+global.mode1_active_font_key = "DEFAULT_32";
+global.mode1_cell_px         = 32;
+
+global.active_font_name = "DEFAULT";
+global.active_font_sprite = global.font_sheets[? global.active_font_name];
+
+global.grid_refresh_needed = false;
+global.grid_refresh_char = 32;
+
+global.basic_arrays = ds_map_create(); // name (string) → ds_list
+
+global.interpreter_target_line = -1;
+global.interpreter_target_stmt = 0;
+global.interpreter_use_stmt_jump = false;
+global.interpreter_resume_stmt_index = 0;
+
+global.interpreter_current_stmt_index = 0;
+
+global.config = ds_map_create();
+global.config[? "max_line_number"] = 65535;
+global.config[? "max_history_size"] = 50;
+
+
+// === DATA/READ globals ===
+// Create once; the builder will clear/reuse it each run.
+if (!variable_global_exists("data_streams") || !ds_exists(global.data_streams, ds_type_map)) {
+    global.data_streams = ds_map_create();
+    if (dbg_on(DBG_FLOW)) show_debug_message("globals: created global.data_streams");
+}
+
+
+if (!variable_global_exists("__inkey_queue")) {
+    global.__inkey_queue = ds_queue_create();
+}
+
+global.inkey_mode = false; 
+global.pause_in_effect = false; 
+global.inkey_waiting    = false;
+global.inkey_captured   = "";
+global.inkey_target_var = "";
+global.interpreter_current_line_index = 0; 
+
+// Archival copy of line numbers used by run_program
+global.basic_line_numbers = ds_list_create();
+global._syntax_error_just_emitted = false;
+
+// optional, if you use these
+global._validator_header_emitted = false;
+global._abort_after_validation   = false;
+
+// Where to return when leaving the interpreter
+global.editor_return_room = room; // whatever room the editor lives in at startup
+
+global.config[? "show_error_hints"] = true; // show compact help lines under syntax errors
+
+global.screen_edit_mode = false; //for scree editing
+if (dbg_on(DBG_FLOW)) show_debug_message("GLOBALS: screen_edit_mode initialized to false");
+
+
+/// Put near your other globals the first time you use them:
+if (!variable_global_exists("__html_dir_opening")) global.__html_dir_opening = false;
+if (!variable_global_exists("__html_dir_open_time")) global.__html_dir_open_time = 0;
+
+if (!variable_global_exists("DEBUG_INPUT")) global.DEBUG_INPUT = false;
+
+if (!variable_global_exists("help_topics") || !ds_exists(global.help_topics, ds_type_list)) {
+        global.help_topics = ds_list_create();
+    } else {
+        ds_list_clear(global.help_topics);
+    }
+	
+global.print_zone = 14; // width
+global.print_tab_mode = 1; 
+// 0 = zones (BASIC default), 1 = fixed-width tabs
+
+/// @event obj_editor/Step
+// Pause regular editor when screen editor is active
+if (global.screen_edit_mode) {
+    //if (dbg_on(DBG_FLOW)) show_debug_message("EDITOR: Screen edit mode active, pausing regular editor");
+    exit;
+}
+
+if (global.justreturned == 1) {
+    current_input = "";
+    cursor_pos = 0;
+    keyboard_string = "";
+    global.justreturned = 0;
+    exit; // skip the rest of this Step event
+}
+
+// === DIRECTORY OVERLAY INPUT (ASCII) ===
+if (showing_dir_overlay) {
+
+    // Close overlay on ESC (unless confirm is up)
+    if (!dir_confirm_active && keyboard_check_pressed(vk_escape)) {
+        showing_dir_overlay = false;
+        dir_listing = [];
+        if (dbg_on(DBG_FLOW)) show_debug_message("[DIR] close overlay (ESC)");
+        exit;
+    }
+
+    // Guard page_size (Draw recalculates each frame)
+    if (dir_page_size < 1) dir_page_size = 1;
+
+    var _count = array_length(dir_listing);
+    if (_count <= 0) { exit; } // nothing to do
+
+    // Clamp selection to list
+    dir_sel = clamp(dir_sel, 0, max(0, _count - 1));
+
+    // If confirm dialog active: handle Y/N only; block other inputs
+    if (dir_confirm_active) {
+        if (keyboard_check_pressed(ord("Y"))) {
+            // Delete (desktop only)
+            if (os_type != os_browser) {
+                var _name = dir_listing[dir_confirm_index];
+                var _path = dir_save_dir + _name;
+                if (file_exists(_path)) {
+                    if (dbg_on(DBG_IO)) show_debug_message("[DIR] delete " + _path);
+                    file_delete(_path);
+                }
+                // refresh list
+                list_saved_programs(); // re-enter overlay with fresh state
+            } else {
+                if (dbg_on(DBG_IO)) show_debug_message("[DIR] delete disabled on HTML5");
+                dir_confirm_active = false;
+            }
+        }
+        if (keyboard_check_pressed(ord("N")) || keyboard_check_pressed(vk_escape)) {
+            if (dbg_on(DBG_FLOW)) show_debug_message("[DIR] delete cancelled");
+            dir_confirm_active = false;
+        }
+        exit; // modal consumes input
+    }
+
+    // NAVIGATION
+    if (keyboard_check_pressed(vk_home))  dir_sel = 0;
+    else if (keyboard_check_pressed(vk_end))   dir_sel = max(0, _count - 1);
+    else if (keyboard_check_pressed(vk_up))    dir_sel = max(0, dir_sel - 1);
+    else if (keyboard_check_pressed(vk_down))  dir_sel = min(_count - 1, dir_sel + 1);
+    else if (keyboard_check_pressed(vk_pageup))   dir_sel = max(0, dir_sel - dir_page_size);
+    else if (keyboard_check_pressed(vk_pagedown)) dir_sel = min(_count - 1, dir_sel + dir_page_size);
+
+    // ACTIONS
+    // Load on ENTER or '>' key
+// Load on ENTER or '>' key
+if (keyboard_check_pressed(vk_enter) || keyboard_check_pressed(ord(">"))) {
+    var _name = dir_listing[dir_sel];
+    if (_name != "No .bas files found.") {
+        // Check if this is an HTML file list (has global.html_dir_files data)
+        if (os_browser != browser_not_a_browser && variable_global_exists("html_dir_files") && ds_list_size(global.html_dir_files) > 0) {
+            // HTML version - load from memory
+            if (dbg_on(DBG_IO)) show_debug_message("[DIR] HTML load: " + _name + " at index " + string(dir_sel + 1));
+            var success = editor_html_dir_open(string(dir_sel + 1));
+            if (success) {
+                showing_dir_overlay = false;
+                dir_listing = [];
+                global.justreturned = 1;
+            } else {
+                basic_show_message("Failed to load file from memory");
+            }
+            exit;
+        } else {
+            // Windows version - load from disk
+            var _path = dir_save_dir + _name;
+            if (file_exists(_path)) {
+                if (dbg_on(DBG_IO)) show_debug_message("[DIR] load " + _path);
+                load_program_from_path(_path, _name);
+                showing_dir_overlay = false;
+                dir_listing = [];
+                global.justreturned = 1;
+                exit;
+            } else {
+                basic_show_message("File not found");
+            }
+        }
+    }
+}
+
+    // Delete on 'D', 'X', or Delete key (desktop only)
+    if (os_browser != browser_not_a_browser) {
+        if (keyboard_check_pressed(ord("D")) || keyboard_check_pressed(ord("X")) || keyboard_check_pressed(vk_delete)) {
+            if (_count > 0 && dir_listing[dir_sel] != "No .bas files found.") {
+                dir_confirm_active = true;
+                dir_confirm_index  = dir_sel;
+                if (dbg_on(DBG_FLOW)) show_debug_message("[DIR] confirm delete idx=" + string(dir_sel));
+            }
+        }
+    }
+
+    // NOTE: Do not let base editor input run while overlay is active
+    exit;
+}
+
+
+
+
+
+// Handle Enter key
+if (keyboard_check_pressed(vk_enter)) {
+    add_to_history(current_input);
+    process_input_line(current_input);
+    current_input = "";
+    cursor_pos = 0;
+    global.history_index = -1;
+    input_buffer = keyboard_string; // reset keyboard buffer
+}
+
+ else if (keyboard_check_released(vk_backspace)) {
+    if (cursor_pos > 0) {
+        current_input = string_delete(current_input, cursor_pos, 1);
+        cursor_pos--;
+    }
+ }
+ else if (keyboard_check_pressed(vk_left)) {
+    cursor_pos = max(0, cursor_pos - 1);
+ }
+ else if (keyboard_check_pressed(vk_right)) {
+    cursor_pos = min(string_length(current_input), cursor_pos + 1);
+ }
+ else if (keyboard_check_pressed(vk_up)) {
+    navigate_history_up();
+ }
+ else if (keyboard_check_pressed(vk_down)) {
+    navigate_history_down();
+ }
+ else if (keyboard_check_pressed(vk_pageup)) {
+    display_start_line = max(0, display_start_line - lines_per_screen);
+ }
+ else if (keyboard_check_pressed(vk_pagedown)) {
+    var max_start = max(0, ds_list_size(global.line_numbers) - lines_per_screen);
+    display_start_line = min(max_start, display_start_line + lines_per_screen);
+ }
+ else if (keyboard_check(vk_control) && keyboard_check_pressed(ord("Z"))) {
+    undo_last_change();
+ }
+ else if (keyboard_check(vk_f5)) {
+    dump_program_to_console();
+	basic_show_message("Dumped program to Console");	 
+ }
+ else {
+    // Handle character input with repeat
+    handle_character_input();
+ }
+ 
+  // In Step Event
+ if (message_timer > 0) {
+    message_timer--;
+    if (message_timer <= 0) {
+        message_text = "";
+    }
+ }
+ 
+
+/// @script basic_cmd_input
+/// @description Prompt the user with a text and await input into a variable
+
+/// @script basic_cmd_input
+/// @description Simple INPUT command that works with existing keyboard handling
+function basic_cmd_input(arg) {
+    var s = string_trim(arg);
+    var prompt = "";
+    var varName = "";
+
+    // Parse INPUT syntax: INPUT "prompt", VAR or INPUT VAR
+    var comma_pos = string_pos(",", s);
+    var semicolon_pos = string_pos(";", s);
+    
+    // Find first separator (comma or semicolon)
+    var sep_pos = 0;
+    if (comma_pos > 0 && semicolon_pos > 0) {
+        sep_pos = min(comma_pos, semicolon_pos);
+    } else if (comma_pos > 0) {
+        sep_pos = comma_pos;
+    } else if (semicolon_pos > 0) {
+        sep_pos = semicolon_pos;
+    }
+    
+    if (sep_pos > 0) {
+        // Has prompt: INPUT "prompt", VAR
+        prompt = string_trim(string_copy(s, 1, sep_pos - 1));
+        varName = string_upper(string_trim(string_copy(s, sep_pos + 1, string_length(s) - sep_pos)));
+        
+        // Remove quotes from prompt if present
+        if (string_length(prompt) >= 2 
+            && string_char_at(prompt, 1) == "\"" 
+            && string_char_at(prompt, string_length(prompt)) == "\"") {
+            prompt = string_copy(prompt, 2, string_length(prompt) - 2);
+        }
+    } else {
+        // No prompt: INPUT VAR
+        varName = string_upper(s);
+        //prompt = "? "; // Default prompt
+    }
+    
+    if (dbg_on(DBG_FLOW)) show_debug_message("INPUT: Variable='" + varName + "', Prompt='" + prompt + "'");
+    
+    // Display the prompt
+    if (prompt != "") {
+        ds_list_add(global.output_lines, prompt);
+        ds_list_add(global.output_colors, global.basic_text_color);
+    }
+    
+    // Set up input state for your existing keyboard handler
+    global.awaiting_input = true;
+    global.pause_mode = false;
+    global.input_expected = true;
+    global.input_target_var = varName;
+    global.interpreter_input = ""; // Clear any existing input buffer
+    
+// Initialize the variable only if absent; avoid numeric 0 pre-seed
+ varName = basic_normvar(varName); // ensure canonical now
+if (!ds_map_exists(global.basic_variables, varName)) {
+    // Seed both kinds to empty string; numeric coercion happens on commit
+    global.basic_variables[? varName] = "";
+}
+
+    
+    if (dbg_on(DBG_FLOW)) show_debug_message("INPUT: Awaiting input for variable " + varName);
+}
+/*function basic_cmd_input(arg) {
+    var s = string_trim(arg);
+    var rawPrompt = "";
+    var varName   = "";
+
+    // 1) Primary split: first top-level ';' or ',' (quote-aware)
+    var sep_pos = 0;
+    var sep_ch  = "";
+    var in_q = false;
+    var L = string_length(s);
+    for (var i = 1; i <= L; i++) {
+        var ch = string_char_at(s, i);
+        if (ch == "\"") { in_q = !in_q; continue; }
+        if (!in_q && (ch == ";" || ch == ",")) { sep_pos = i; sep_ch = ch; break; }
+    }
+
+    if (sep_pos > 0) {
+        rawPrompt = string_trim(string_copy(s, 1, sep_pos - 1));
+        varName   = string_upper(string_trim(string_copy(s, sep_pos + 1, L - sep_pos)));
+    } else {
+        // 2) Fallback: starts with a quoted prompt but no separator was detected (e.g., `"PROMPT" ; VAR`)
+        if (L >= 2 && string_char_at(s, 1) == "\"") {
+            // find closing quote
+            var close = 0;
+            for (var k = 2; k <= L; k++) {
+                if (string_char_at(s, k) == "\"") { close = k; break; }
+            }
+            if (close > 0) {
+                rawPrompt = string_copy(s, 2, close - 2); // inside quotes
+                var rest = string_trim(string_copy(s, close + 1, L - close));
+                // consume optional separator and following spaces
+                if (string_length(rest) > 0) {
+                    var first = string_char_at(rest, 1);
+                    if (first == ";" || first == ",") {
+                        rest = string_trim(string_delete(rest, 1, 1));
+                    }
+                }
+                varName = string_upper(string_trim(rest));
+            } else {
+                // no closing quote → treat entire thing as var
+                varName = string_upper(s);
+            }
+        } else {
+            // no prompt provided; entire arg is the variable name
+            varName = string_upper(s);
+        }
+    }
+
+    // 3) If prompt still has surrounding quotes, strip them
+    if (string_length(rawPrompt) >= 2
+        && string_char_at(rawPrompt, 1) == "\""
+        && string_char_at(rawPrompt, string_length(rawPrompt)) == "\"")
+    {
+        rawPrompt = string_copy(rawPrompt, 2, string_length(rawPrompt) - 2);
+    }
+
+    // 4) Emit the prompt (append a space if missing) 
+    if (rawPrompt != "") {
+        if (string_char_at(rawPrompt, string_length(rawPrompt)) != " ") rawPrompt += " ";
+        ds_list_add(global.output_lines, rawPrompt);
+        ds_list_add(global.output_colors, global.basic_text_color);
+        if (dbg_on(DBG_FLOW)) show_debug_message("INPUT: Prompt='" + rawPrompt + "'");
+    } else {
+        if (dbg_on(DBG_FLOW)) show_debug_message("INPUT: No prompt (default '? ')");
+    }
+
+    // 5) Seed the variable (string vars end with $, others numeric)
+    if (string_length(varName) > 0 && string_char_at(varName, string_length(varName)) == "$") {
+        global.basic_variables[? varName] = "";
+    } else {
+        global.basic_variables[? varName] = "0";
+    }
+
+    // 6) Enter input mode
+    global.awaiting_input   = true;
+    global.pause_mode       = false;
+    global.input_expected   = true;
+    global.input_target_var = varName;
+
+    if (dbg_on(DBG_FLOW)) show_debug_message("INPUT: Awaiting input for variable " + varName);
+}
+
+function run_program() {
+    if (dbg_on(DBG_FLOW)) show_debug_message("RUN_PROGRAM START - color is: " + string(global.current_draw_color));
+	// Always remember where we launched from (editor room)
+	global.editor_return_room = rm_editor;
+
+    // ── Guard: no program ────────────────────────────────────────────────
+    if (!ds_exists(global.line_numbers, ds_type_list) || ds_list_size(global.line_numbers) == 0) {
+        show_error_message("NO PROGRAM");
+        return;
+    }
+
+    // ── Sync editor → runtime structures used by interpreter/validator ──
+    // program_map (lineNo -> code)
+    if (!ds_exists(global.program_map, ds_type_map)) {
+        global.program_map = ds_map_create();
+    } else {
+        ds_map_clear(global.program_map);
+    }
+    ds_map_copy(global.program_map, global.program_lines);
+
+    // line_list (sorted list of line numbers)
+    if (!ds_exists(global.line_list, ds_type_list)) {
+        global.line_list = ds_list_create();
+    } else {
+        ds_list_clear(global.line_list);
+    }
+    for (var _i = 0; _i < ds_list_size(global.line_numbers); _i++) {
+        ds_list_add(global.line_list, global.line_numbers[| _i]);
+    }
+    ds_list_sort(global.line_list, true);
+
+    // (Optional archival copies)
+    if (!ds_exists(global.basic_program, ds_type_map)) {
+        global.basic_program = ds_map_create();
+    } else {
+        ds_map_clear(global.basic_program);
+    }
+    ds_map_copy(global.basic_program, global.program_lines);
+
+    if (!variable_global_exists("basic_line_numbers") || !ds_exists(global.basic_line_numbers, ds_type_list)) {
+        global.basic_line_numbers = ds_list_create();
+    } else {
+        ds_list_clear(global.basic_line_numbers);
+    }
+    ds_list_copy(global.basic_line_numbers, global.line_numbers);
+
+    // ── Make sure output buffers exist BEFORE validation (errors print into them) ──
+    if (!is_real(global.output_lines) || !ds_exists(global.output_lines, ds_type_list)) {
+        global.output_lines = ds_list_create();
+    }
+    if (!is_real(global.output_colors) || !ds_exists(global.output_colors, ds_type_list)) {
+        global.output_colors = ds_list_create();
+    }
+
+    // Per-run flag (safe init)
+    if (is_undefined(global._syntax_error_just_emitted)) global._syntax_error_just_emitted = false;
+    global._syntax_error_just_emitted = false;
+
+    // ── Build helpers that validators/dispatchers rely on ─────────────────
+    build_data_streams();     // harvest DATA / prep READ/RESTORE
+    build_if_block_map();     // multi-line IF/ELSE structure
+    if (dbg_on(DBG_FLOW)) show_debug_message("IF-block map built (" + string(ds_map_size(global.if_block_map)) + " blocks)");
+
+    // ── VALIDATE: visible errors + correct room ───────────────────────────
+    // Assumes basic_validate_program() exists.
+    if (!basic_validate_program()) {
+        // Validator already printed a visible error & set end flags.
+        // Ensure the user can see it.
+        if (room != rm_basic_interpreter) room_goto(rm_basic_interpreter);
+        return;
+    }
+
+    // ── Clean start: clear output buffers for a fresh run ─────────────────
+    ds_list_clear(global.output_lines);
+    ds_list_clear(global.output_colors);
+    global.print_line_buffer = "";
+
+    // ── Interpreter state ─────────────────────────────────────────────────
+    global.interpreter_input    = "";
+    global.awaiting_input       = false;
+    global.input_target_var     = "";
+    global.interpreter_running  = true;
+    global.program_has_ended    = false;
+
+    global.pause_in_effect      = false;
+    global.pause_mode           = false;
+    global.input_expected       = false;
+
+    global.inkey_mode           = false;
+    global.inkey_waiting        = false;
+    global.inkey_captured       = "";
+    global.inkey_target_var     = "";
+
+    // Set draw color for this run (your existing choice)
+    global.current_draw_color = make_color_rgb(255, 191, 64); // Amber
+
+    // Line navigation
+    global.interpreter_current_line_index = 0;
+    global.interpreter_next_line          = -1;
+    global.interpreter_use_stmt_jump      = false;
+    global.interpreter_target_line        = -1;
+    global.interpreter_target_stmt        = 0;
+    global.interpreter_resume_stmt_index  = 0;
+    global.current_line_number            = (ds_list_size(global.line_list) > 0)
+                                           ? (global.line_list[| 0]) : -1;
+
+    // Where to return when done
+    global.editor_return_room = room;
+
+    // Go to interpreter room (only if not already there)
+    if (room != rm_basic_interpreter) room_goto(rm_basic_interpreter);
+}
+
+/// @event obj_globals/Game_End
+global.inkey_mode = false;
+// ─────────────────────────────
+// MAPS
+// ─────────────────────────────
+if (ds_exists(global.basic_variables, ds_type_map)) ds_map_destroy(global.basic_variables);
+if (ds_exists(global.program_lines, ds_type_map)) ds_map_destroy(global.program_lines);
+if (ds_exists(global.basic_program, ds_type_map)) ds_map_destroy(global.basic_program);
+if (ds_exists(global.program_map, ds_type_map)) ds_map_destroy(global.program_map);
+if (ds_exists(global.colors, ds_type_map)) ds_map_destroy(global.colors);
+if (ds_exists(global.if_block_map, ds_type_map)) {
+    var _key = ds_map_find_first(global.if_block_map);
+    while (!is_undefined(_key)) {
+        var _info = global.if_block_map[? _key];
+        if (ds_exists(_info[? "elseifIndices"], ds_type_list)) ds_list_destroy(_info[? "elseifIndices"]);
+        ds_map_destroy(_info);
+        _key = ds_map_find_next(global.if_block_map, _key);
+    }
+    ds_map_destroy(global.if_block_map);
+}
+if (ds_exists(global.mode_rooms, ds_type_map)) ds_map_destroy(global.mode_rooms);
+if (ds_exists(global.font_sheets, ds_type_map)) ds_map_destroy(global.font_sheets);
+if (ds_exists(global.config, ds_type_map)) ds_map_destroy(global.config);
+if (ds_exists(global.data_streams, ds_type_map)) {
+    var _key = ds_map_find_first(global.data_streams);
+    while (!is_undefined(_key)) {
+        var _stream = global.data_streams[? _key];
+        if (ds_exists(_stream.list, ds_type_list)) ds_list_destroy(_stream.list);
+        _key = ds_map_find_next(global.data_streams, _key);
+    }
+    ds_map_destroy(global.data_streams);
+}
+
+// ─────────────────────────────
+// ARRAYS
+// ─────────────────────────────
+if (ds_exists(global.basic_arrays, ds_type_map)) {
+    // Destroy each backing list…
+    var _key = ds_map_find_first(global.basic_arrays);
+    while (!is_undefined(_key)) {
+        var _lst = global.basic_arrays[? _key];
+        ds_list_destroy(_lst);
+        _key = ds_map_find_next(global.basic_arrays, _key);
+    }
+    // Then destroy the map itself
+    ds_map_destroy(global.basic_arrays);
+}
+
+// ─────────────────────────────
+// LISTS
+// ─────────────────────────────
+if (ds_exists(global.line_list, ds_type_list)) ds_list_destroy(global.line_list);
+if (ds_exists(global.line_numbers, ds_type_list)) ds_list_destroy(global.line_numbers);
+if (ds_exists(global.basic_line_numbers, ds_type_list)) {
+    ds_list_destroy(global.basic_line_numbers);
+}
+
+if (ds_exists(global.undo_stack, ds_type_list)) {
+    while (!ds_list_empty(global.undo_stack)) {
+        var _snapshot = ds_list_find_value(global.undo_stack, 0);
+        if (ds_exists(_snapshot[? "global.program_lines"], ds_type_map)) ds_map_destroy(_snapshot[? "global.program_lines"]);
+        if (ds_exists(_snapshot[? "global.line_numbers"], ds_type_list)) ds_list_destroy(_snapshot[? "global.line_numbers"]);
+        ds_map_destroy(_snapshot);
+        ds_list_delete(global.undo_stack, 0);
+    }
+    ds_list_destroy(global.undo_stack);
+}
+if (ds_exists(global.output_lines, ds_type_list)) ds_list_destroy(global.output_lines);
+if (ds_exists(global.output_colors, ds_type_list)) ds_list_destroy(global.output_colors);
+if (ds_exists(global.input_history, ds_type_list)) ds_list_destroy(global.input_history);
+
+// ─────────────────────────────
+// STACKS
+// ─────────────────────────────
+if (ds_exists(global.gosub_stack, ds_type_stack)) ds_stack_destroy(global.gosub_stack);
+if (ds_exists(global.for_stack, ds_type_stack)) ds_stack_destroy(global.for_stack);
+if (ds_exists(global.while_stack, ds_type_stack)) ds_stack_destroy(global.while_stack);
+if (ds_exists(global.if_stack, ds_type_stack)) ds_stack_destroy(global.if_stack);
+
+// ─────────────────────────────
+// TEMPORARY LIST (used in interpreter object)
+// ─────────────────────────────
+if (variable_global_exists("interpreter_current_program")) {
+    if (ds_exists(interpreter_current_program, ds_type_list)) {
+        ds_list_destroy(interpreter_current_program);
+    }
+}
+
+// ─────────────────────────────
+// Buffer & State Cleanup
+// ─────────────────────────────
+global.print_line_buffer = "";
+global.editor_spawned = false;
+
+if (ds_exists(global.__inkey_queue, ds_type_queue)) {
+    ds_queue_destroy(global.__inkey_queue);
+}
+
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+function handle_command(command) {
+//	show_debug_message("HANDLE_COMMAND called with: " + string(command) + " - paste_manager_exists: " + string(instance_exists(obj_paste_manager)));
+   
+var original_command = string_trim(command);
+    command = string_upper(original_command);
+    
+    // Split command from parameters to preserve case in filenames
+    var space_pos = string_pos(" ", command);
+    var cmd_word = "";
+    var cmd_params = "";
+    
+    if (space_pos > 0) {
+        cmd_word = string_copy(command, 1, space_pos - 1);
+        cmd_params = string_trim(string_copy(original_command, space_pos + 1, string_length(original_command)));
+    } else {
+        cmd_word = command;
+    }
+    
+    switch (cmd_word) {
+        case "LIST":
+            if (cmd_params == "") {
+                list_program();
+            } else {
+                list_program_range(cmd_params);
+            }
+            break;
+            
+        case "RUN":
+            run_program();
+            break;
+            
+        case "NEW":
+            new_program();
+            break;
+            
+        case "SAVE":
+            if (os_browser != browser_not_a_browser) {
+                // HTML build → use browser_file_tools download dialog
+                if (cmd_params == "") {
+                    editor_html_save_program();
+                } else {
+                    editor_html_save_program_as(cmd_params);
+                }
+            } else {
+                // Desktop build → use file system save
+                if (cmd_params == "") {
+                    save_program();
+                } else {
+                    save_program_as(cmd_params);
+                }
+            }
+            break;
+
+case "CHECK_SAVE_FUNCS":
+{
+    var s = "browser_show_save_dialog";
+    var r = "browser_show_save_dialog_raw";
+   if (dbg_on(DBG_FLOW)) show_debug_message("[CHECK] wrapper exists=" + string(function_exists(s)));
+   if (dbg_on(DBG_FLOW)) show_debug_message("[CHECK] raw exists=" + string(function_exists(r)));
+    break;
+}
+
+
+            
+        case "LOAD":
+            if (cmd_params == "") {
+                show_error_message("FILENAME REQUIRED");
+            } else {
+                load_program_from(cmd_params);
+            }
+            break;
+
+		
+case "DIR":
+    if (os_browser != browser_not_a_browser) {
+        var p = string_trim(cmd_params);
+        var P = string_upper(p);
+        if (P == "" || P == "PROMPT") {
+            editor_html_dir_prompt();
+        } else if (P == "SHOW") {
+            editor_html_dir_show();
+        } else if (string_copy(P, 1, 4) == "OPEN") {
+            var arg = string_trim(string_delete(p, 1, 4)); // after "OPEN"
+            if (string_length(arg) == 0) {
+                show_message("Usage: DIR OPEN <index|filename>");
+            } else {
+                editor_html_dir_open(arg);
+            }
+        } else if (P != "") {  // Only try to open if there's actually a parameter
+            // convenience: if they pass a number or name directly
+            editor_html_dir_open(p);
+        }
+        // Remove the bare else clause that was causing the double call
+    } else {
+        // Windows: your original code path
+        if (cmd_params == "") {
+            list_saved_programs();
+        } else {
+            list_saved_programs(); // preserve your param behavior
+        }
+    }
+    break;
+
+case "HELP":
+	help_launch();
+	break
+
+case ":PASTE":
+{
+    // Desktop build: native clipboard
+    if (os_browser == browser_not_a_browser) {
+        editor_handle_paste_command();
+        break;
+    }
+
+		editor_html_handle_paste_command();
+
+   if (dbg_on(DBG_FLOW)) show_debug_message("[PASTE] Bound. Click the game, then press Ctrl/Cmd+V.");
+}
+break;
+
+
+
+
+
+	    case ":LOADURL":
+	        // Expect the rest of the input line to be the URL
+	        // If your parser provides 'args', use that. Otherwise, adapt to your arg var.
+	        import_from_url(string_trim(args));
+	        break;
+		
+		
+
+		case "QUIT":	
+		case "Q":
+		quit_program()
+		break;
+
+        case "SCREENEDIT":
+        case "SE":
+            start_screen_editor();
+            break;
+
+
+			
+        default:
+            show_error_message("SYNTAX ERROR");
+            break;
+    }
+ }
+/// @script build_if_block_map
+/// @description Scan basic_program for IF…ELSEIF…ELSE…ENDIF block structure,
+///              but skip inline IFs so they don’t trigger mismatches.
+
+function build_if_block_map() {
+    // 1) Destroy any old map
+    if (variable_global_exists("if_block_map") && ds_exists(global.if_block_map, ds_type_map)) {
+        ds_map_destroy(global.if_block_map);
+    }
+    global.if_block_map = ds_map_create();
+
+    // 2) Temp stack for nested block IFs
+    var openStack = ds_stack_create();
+    var total     = ds_list_size(global.basic_line_numbers);
+
+    // 3) Walk every line
+    for (var idx = 0; idx < total; idx++) {
+        var lineNum = global.basic_line_numbers[| idx];
+        var rawText = string_trim(global.basic_program[? lineNum]);
+        var text    = string_upper(rawText);
+        var sp      = string_pos(" ", text);
+        var kw      = (sp > 0) ? string_copy(text, 1, sp - 1) : text;
+
+        switch (kw) {
+            case "IF":
+                // detect inline IF: IF … THEN <command> on same line
+                var thenPos = string_pos("THEN", text);
+                var after   = (thenPos > 0)
+                              ? string_trim(string_copy(rawText, thenPos + 4, string_length(rawText)))
+                              : "";
+                if (thenPos > 0 && string_length(after) > 0) {
+                    // Inline IF → skip block indexing entirely
+                    if (dbg_on(DBG_FLOW)) show_debug_message("INLINE IF skip at line " + string(lineNum));
+                    break;
+                }
+                // Block IF → record it
+                var info = ds_map_create();
+                ds_map_add(info, "startIndex",       idx);
+                ds_map_add(info, "elseifIndices",    ds_list_create());
+                ds_map_add(info, "elseIndex",        -1);
+                ds_map_add(info, "endifIndex",       -1);
+                ds_map_add(info, "firstBranchIndex", idx + 1);
+                ds_stack_push(openStack, info);
+                break;
+
+            case "ELSEIF":
+                if (!ds_stack_empty(openStack)) {
+                    var top = ds_stack_top(openStack);
+                    ds_list_add(top[? "elseifIndices"], idx);
+                } else {
+                    if (dbg_on(DBG_FLOW)) show_debug_message("?MISMATCH ERROR: ELSEIF at line " + string(lineNum) + " without IF");
+                }
+                break;
+
+            case "ELSE":
+                if (!ds_stack_empty(openStack)) {
+                    var top = ds_stack_top(openStack);
+                    ds_map_replace(top, "elseIndex", idx);
+                } else {
+                    if (dbg_on(DBG_FLOW)) show_debug_message("?MISMATCH ERROR: ELSE at line " + string(lineNum) + " without IF");
+                }
+                break;
+
+            case "ENDIF":
+                if (!ds_stack_empty(openStack)) {
+                    var top = ds_stack_pop(openStack);
+                    ds_map_replace(top, "endifIndex", idx);
+
+                    // recompute firstBranchIndex
+                    var eList = top[? "elseifIndices"];
+                    var fb = (ds_list_size(eList) > 0)
+                             ? eList[| 0]
+                             : ((top[? "elseIndex"] >= 0) ? top[? "elseIndex"] : idx);
+                    ds_map_replace(top, "firstBranchIndex", fb);
+
+                    ds_map_add(global.if_block_map, top[? "startIndex"], top);
+                } else {
+                    if (dbg_on(DBG_FLOW)) show_debug_message("?MISMATCH ERROR: ENDIF at line " + string(lineNum) + " without IF");
+                }
+                break;
+        }
+    }
+
+    // 4) Any unclosed IFs left on the stack?
+    while (!ds_stack_empty(openStack)) {
+        var orphan = ds_stack_pop(openStack);
+        var startIdx  = orphan[? "startIndex"];
+        var startLine = global.basic_line_numbers[| startIdx];
+        if (dbg_on(DBG_FLOW)) show_debug_message("?MISMATCH ERROR: IF at line " + string(startLine) + " missing ENDIF");
+        ds_map_destroy(orphan);
+    }
+    ds_stack_destroy(openStack);
+
+    if (dbg_on(DBG_FLOW)) show_debug_message("Built IF block map with " + string(ds_map_size(global.if_block_map)) + " entries.");
+}
+
+// @function basic_cmd_print_mode1(arg)
+/// @description MODE 1 version of PRINT that writes to the grid using cursor position
+function basic_cmd_print_mode1(arg) {
+    // Initialize cursor if not set
+    if (!variable_global_exists("mode1_cursor_x")) global.mode1_cursor_x = 0;
+    if (!variable_global_exists("mode1_cursor_y")) global.mode1_cursor_y = 0;
+    
+    var suppress_newline = false;
+    
+    // Check for trailing semicolon
+    if (string_length(arg) > 0 && string_char_at(arg, string_length(arg)) == ";") {
+        suppress_newline = true;
+        arg = string_copy(arg, 1, string_length(arg) - 1);
+        if (dbg_on(DBG_FLOW)) show_debug_message("PRINT MODE1: Semicolon detected, suppressing newline");
+    }
+    
+    arg = string_trim(arg);
+    if (arg == "") {
+        if (!suppress_newline) {
+            // Move cursor to next line
+            global.mode1_cursor_x = 0;
+            global.mode1_cursor_y = min(24, global.mode1_cursor_y + 1);
+            if (dbg_on(DBG_FLOW)) show_debug_message("PRINT MODE1: Empty line, cursor now at (" + string(global.mode1_cursor_x) + "," + string(global.mode1_cursor_y) + ")");
+        }
+        return;
+    }
+    
+    var output_text = "";
+    
+    // Handle simple quoted strings directly
+    if (string_length(arg) >= 2 && string_char_at(arg, 1) == "\"" && string_char_at(arg, string_length(arg)) == "\"") {
+        output_text = string_copy(arg, 2, string_length(arg) - 2);
+        if (dbg_on(DBG_FLOW)) show_debug_message("PRINT MODE1: Simple quoted string: '" + output_text + "'");
+    } else {
+        // Evaluate as expression for variables, numbers, etc.
+        try {
+            var tokens = basic_tokenize_expression_v2(arg);
+            var postfix = infix_to_postfix(tokens);
+            var result = evaluate_postfix(postfix);
+            output_text = string(result);
+            if (dbg_on(DBG_FLOW)) show_debug_message("PRINT MODE1: Evaluated expression '" + arg + "' to: '" + output_text + "'");
+        } catch (e) {
+            // If evaluation fails, treat as literal string
+            output_text = arg;
+            if (dbg_on(DBG_FLOW)) show_debug_message("PRINT MODE1: Expression failed, using literal: '" + output_text + "'");
+        }
+    }
+    
+    if (dbg_on(DBG_FLOW)) show_debug_message("PRINT MODE1: Starting at cursor (" + string(global.mode1_cursor_x) + "," + string(global.mode1_cursor_y) + ")");
+    
+    // Print each character at cursor position using mode1_grid_set
+    for (var i = 0; i < string_length(output_text); i++) {
+        var ch = ord(string_char_at(output_text, i + 1));
+        
+        if (dbg_on(DBG_FLOW)) show_debug_message("PRINT MODE1: Setting char '" + string_char_at(output_text, i + 1) + "' (code " + string(ch) + ") at (" + string(global.mode1_cursor_x) + "," + string(global.mode1_cursor_y) + ")");
+        
+        // Use mode1_grid_set to place character
+        mode1_grid_set(global.mode1_cursor_x, global.mode1_cursor_y, ch, c_white, c_black);
+        
+        // Advance cursor
+        global.mode1_cursor_x++;
+        if (global.mode1_cursor_x >= 40) {
+            global.mode1_cursor_x = 0;
+            global.mode1_cursor_y = min(24, global.mode1_cursor_y + 1);
+            if (dbg_on(DBG_FLOW)) show_debug_message("PRINT MODE1: Wrapped to next line, cursor now at (" + string(global.mode1_cursor_x) + "," + string(global.mode1_cursor_y) + ")");
+        }
+    }
+    
+    if (!suppress_newline) {
+        global.mode1_cursor_x = 0;
+        global.mode1_cursor_y = min(24, global.mode1_cursor_y + 1);
+        if (dbg_on(DBG_FLOW)) show_debug_message("PRINT MODE1: Newline, cursor now at (" + string(global.mode1_cursor_x) + "," + string(global.mode1_cursor_y) + ")");
+    }
+    
+    if (dbg_on(DBG_FLOW)) show_debug_message("PRINT MODE1: Finished printing '" + output_text + "', cursor at (" + string(global.mode1_cursor_x) + "," + string(global.mode1_cursor_y) + ")");
+}
+// FILE: scripts/inkey_capture_keys.gml
+// FUNCTION: inkey_capture_keys
+// PURPOSE: Feed the INKEY$ queue with a single key per frame.
+// POLICY:
+//   - Block capture while BASIC INPUT is active (awaiting_input = true)
+//     UNLESS we are in an INKEY$ modal wait (inkey_waiting = true).
+//   - During INKEY$ modal wait, keep capturing so the state machine can unblock.
+//   - Otherwise capture printable ASCII (32..126) and (optionally) touch on Android.
+
+function inkey_capture_keys() {
+    /// inkey_capture_keys()
+
+    // --- INPUT/INKEY arbitration guard -------------------------------------
+    // Block capture only when INPUT is live and we are NOT in a modal INKEY wait.
+    var _block_capture = false;
+
+    if (variable_global_exists("awaiting_input") && global.awaiting_input) {
+        var _inkey_waiting = (variable_global_exists("inkey_waiting") && global.inkey_waiting);
+        if (!_inkey_waiting) {
+            _block_capture = true;  // INPUT owns the keyboard; don't feed INKEY$ queue
+        }
+    }
+
+    if (_block_capture) {
+		//TEMPORARY: REMOVE WHEN TESTING INKEY$
+        //if (dbg_on(DBG_FLOW)) show_debug_message("INKEY$ CAPTURE: blocked (awaiting_input && !inkey_waiting)");
+        exit;
+    }
+    // -----------------------------------------------------------------------
+
+    // Initialize queue if not exists (use your current global.__inkey_queue)
+    if (!ds_exists(global.__inkey_queue, ds_type_queue)) {
+        global.__inkey_queue = ds_queue_create();
+        if (dbg_on(DBG_FLOW)) show_debug_message("INKEY$ CAPTURE: Initialized global.__inkey_queue");
+    }
+
+    // --- Scan for one printable key (ASCII 32..126) per frame ---------------
+    for (var key = 32; key <= 126; key++) {
+        if (keyboard_check_pressed(key)) {
+            var ch = chr(key);
+            if (dbg_on(DBG_FLOW)) show_debug_message("INKEY$ CAPTURE: Key " + string(key) + " pressed, char='" + ch + "'");
+
+            // Limit queue length to 10 (same policy as before)
+            if (ds_queue_size(global.__inkey_queue) < 10) {
+                ds_queue_enqueue(global.__inkey_queue, ch);
+                if (dbg_on(DBG_FLOW)) show_debug_message("INKEY$ CAPTURE: '" + ch + "' queued. Size=" + string(ds_queue_size(global.__inkey_queue)));
+            } else {
+                if (dbg_on(DBG_FLOW)) show_debug_message("INKEY$ CAPTURE: Queue full (10), skipped '" + ch + "'");
+            }
+            break; // capture at most one key per frame
+        }
+    }
+
+    // --- Optional: map simple touch regions to WASD on Android --------------
+    if (os_type == os_android) {
+        var w = display_get_width();
+        var h = display_get_height();
+        if (device_mouse_check_button_pressed(0, mb_left)) {
+            var mx = device_mouse_x(0);
+            var my = device_mouse_y(0);
+            var ch2 = "";
+
+            // Quadrant-ish mapping (center bands) → W/A/S/D
+            if (my < h * 0.5 && mx > w * 0.25 && mx < w * 0.75) ch2 = "W";
+            else if (my > h * 0.5 && mx > w * 0.25 && mx < w * 0.75) ch2 = "S";
+            else if (mx < w * 0.5 && my > h * 0.25 && my < h * 0.75) ch2 = "A";
+            else if (mx > w * 0.5 && my > h * 0.25 && my < h * 0.75) ch2 = "D";
+
+            if (ch2 != "" && ds_queue_size(global.__inkey_queue) < 10) {
+                ds_queue_enqueue(global.__inkey_queue, ch2);
+                if (dbg_on(DBG_FLOW)) show_debug_message("INKEY$ CAPTURE: Touch→'" + ch2 + "', queued. Size=" + string(ds_queue_size(global.__inkey_queue)));
+            }
+        }
+    }
+}
+
+/// @event obj_mode1_grid/Draw
+//draw_sprite(spr_charactersheet,10,10,10);
+var tile_w    = global.mode1_cell_px; // 32 (default), 16, or 8
+var tile_h    = global.mode1_cell_px;
+var cols      = floor(room_width  / tile_w);
+var rows      = floor(room_height / tile_h);
+var max_chars = sprite_get_number(global.active_font_sprite);
+
+
+
+if (global.grid_refresh_needed) {
+    global.grid_refresh_needed = false;
+    for (var row = 0; row < rows; row++) {
+        for (var col = 0; col < cols; col++) {
+            var i = col + row * cols;
+            if (i < array_length(grid)) {
+                grid[i].char = global.grid_refresh_char;
+            }
+        }
+    }
+}
+
+for (var _y = 0; _y < rows; _y++) {
+    for (var _x = 0; _x < cols; _x++) {
+        var i = _x + _y * cols;
+        if (i < array_length(grid)) {
+            var tile = grid[i];
+            // Draw background
+            draw_set_color(tile.bg);
+            draw_rectangle(
+                _x * tile_w, _y * tile_h,
+                (_x + 1) * tile_w, (_y + 1) * tile_h,
+                false
+            );
+            // Draw foreground (sprite tint)
+            draw_set_color(tile.fg);
+            // Force proper blending
+            gpu_set_blendmode(bm_normal);
+            draw_set_alpha(1.0);
+            var subimg = clamp(tile.char, 0, max_chars - 1);
+            // Draw character sprite
+            draw_sprite_ext(
+                global.active_font_sprite,
+                subimg,
+                _x * tile_w,
+                _y * tile_h,
+                1, 1, 0,
+                tile.fg,
+                1.0
+            );
+            // Debug helpers (commented out)
+            //if (drewfont < 5000) { show_debug_message(global.active_font_sprite); drewfont++; }
+            //draw_text(_x * tile_w, _y * tile_h + tile_h - 12, string(tile.char));
+        }
+    }
+}
+
+//    draw_set_color(c_white);
+//	draw_text(4, room_height - 40, "FONT=" + global.active_font_name + "  spr=" + string(global.active_font_sprite) + "  num=" + string(sprite_get_number(global.active_font_sprite)));
+	
+// Reset draw state after the loop
+draw_set_color(c_white);
+gpu_set_blendmode(bm_normal);
+
+// === END MESSAGE (MODE 1 style) === //
+if (global.program_has_ended) {
+    // Find a good position for the message - bottom of screen, centered
+    var msg = "Program ended - ESC or ENTER to return";
+    var msg_chars = string_length(msg);
+    var start_col = max(0, floor((cols - msg_chars) / 2)); // Center horizontally
+    var msg_row = rows - 2; // Two rows from bottom
+    
+    // Draw message character by character using the current font sprite
+    for (var i = 0; i < msg_chars; i++) {
+        var char_code = ord(string_char_at(msg, i + 1));
+        var char_x = (start_col + i) * tile_w;
+        var char_y = msg_row * tile_h;
+        
+        // Draw a background highlight for better visibility
+        draw_set_color(c_black);
+        draw_rectangle(char_x, char_y, char_x + tile_w, char_y + tile_h, false);
+        
+        // Draw the character in lime color to match MODE 0
+        var subimg = clamp(char_code, 0, max_chars - 1);
+        draw_sprite_ext(
+            global.active_font_sprite,
+            subimg,
+            char_x, char_y,
+            1, 1, 0,
+            c_lime,
+            1.0
+        );
+    }
+    
+    // Reset draw state
+	
+}
+
+//draw_text(10, 24, "Font: " + global.active_font_name);
+
+
+/// @func basic_cmd_read(arg)
+/// @desc READ [@stream,] var1[, var2 ...]
+///       Pulls values from pre-scanned DATA streams into variables (incl. arrays).
+function basic_cmd_read(arg) {
+    var s = strip_basic_remark(string_trim(arg));
+    if (s == "") { 
+    basic_syntax_error("READ requires variable names", 
+        global.current_line_number, global.interpreter_current_stmt_index, "READ_SYNTAX");
+    return; 
+	}	
+    // Optional @stream prefix: READ @name, A, B$
+    var stream_name = "";
+    var dest_text   = s;
+    if (string_char_at(s, 1) == "@") {
+        var _depth = 0, inq = false, cut = 0, L = string_length(s);
+        for (var i = 1; i <= L; i++) {
+            var ch = string_char_at(s, i);
+            if (ch == "\"") {
+                var nxt = (i < L) ? string_char_at(s, i + 1) : "";
+                if (inq && nxt == "\"") { i++; continue; }
+                inq = !inq; continue;
+            }
+            if (inq) continue;
+            if (ch == "(") { _depth++; continue; }
+            if (ch == ")") { _depth = max(0, _depth - 1); continue; }
+            if (ch == ",") { cut = i; break; }
+        }
+        if (cut <= 0) { 
+            basic_syntax_error("READ expected ',' after @name in '" + s + "'", 
+                global.current_line_number, global.interpreter_current_stmt_index, "READ_SYNTAX");
+            return; 
+        }
+        stream_name = string_trim(string_copy(s, 2, cut - 2)); // exclude '@'
+        dest_text   = string_trim(string_copy(s, cut + 1, L - cut));
+    }
+    if (!ds_exists(global.data_streams, ds_type_map) || !ds_map_exists(global.data_streams, stream_name)) {
+        basic_syntax_error("READ stream not found: '" + stream_name + "'", 
+            global.current_line_number, global.interpreter_current_stmt_index, "READ_SYNTAX");
+        return;
+    }
+    var stream = ds_map_find_value(global.data_streams, stream_name);
+    var lst    = stream.list;
+    var dests = split_on_unquoted_commas(dest_text);
+    for (var di = 0; di < array_length(dests); di++) {
+        if (stream.ptr >= ds_list_size(lst)) {
+            var msg = "?READ ERROR: Out of DATA on stream '" + stream_name + "'";
+            if (dbg_on(DBG_FLOW))  show_debug_message(msg);
+            // Graceful stop: reuse your END command
+            handle_basic_command("END", "");
+            return;
+        }
+        var v = lst[| stream.ptr];
+        stream.ptr++;
+        var dest = string_trim(dests[di]);
+        
+        // NEW: Validate variable name
+        if (dest == "" || !is_letter(string_char_at(dest, 1))) {
+            basic_syntax_error("Invalid variable name in READ: " + dest, 
+                global.current_line_number, global.interpreter_current_stmt_index, "READ_SYNTAX");
+            return;
+        }
+        
+        var rhs;
+        if (is_string(v)) {
+            var escaped = string_replace_all(v, "\"", "\"\"");
+            rhs = "\"" + escaped + "\"";
+        } else {
+            rhs = string(v);
+        }
+        if (dbg_on(DBG_FLOW)) show_debug_message("READ: stream='" + stream_name + "' → " + dest + "=" + rhs);
+        // Route through the existing LET path so arrays etc. work
+        basic_cmd_let(dest + "=" + rhs);
+    }
+}
+function editor_html_dir__open_handler(data, name, type) {
+    if (dbg_on(DBG_FLOW)) show_debug_message("[ENTER] editor_html_dir__open_handler");
+    
+    // clear the guard immediately on first callback
+    if (variable_global_exists("__html_dir_opening")) global.__html_dir_opening = false;
+
+    if (is_undefined(name)) { // defensive
+        if (dbg_on(DBG_FLOW)) show_debug_message("[EXIT] editor_html_dir__open_handler (undefined name)");
+        return;
+    }
+
+    if (!variable_global_exists("html_dir_files")) global.html_dir_files = ds_list_create();
+    var rec = ds_map_create();
+    ds_map_set(rec, "name", name);
+    ds_map_set(rec, "type", type);
+    ds_map_set(rec, "data", data);
+
+    // estimate size from base64 length (as before)
+    var size_est = 0, comma = string_pos(",", data);
+    if (comma > 0) {
+        var b64 = string_copy(data, comma + 1, string_length(data) - comma);
+        var L = string_length(b64), pad = 0;
+        if (L >= 1 && string_char_at(b64, L) == "=") pad++;
+        if (L >= 2 && string_char_at(b64, L - 1) == "=") pad++;
+        size_est = max(0, floor(L * 3 / 4) - pad);
+    }
+    ds_map_set(rec, "size", size_est);
+
+    ds_list_add(global.html_dir_files, rec);
+    if (dbg_on(DBG_FLOW)) show_debug_message("[DIR/HTML] added '" + name + "' (" + string(size_est) + " bytes)");
+
+    // After all files are loaded, automatically show the directory overlay
+    // Use call_later to ensure all files are processed first
+    if (!variable_global_exists("__html_dir_auto_show_scheduled") || !global.__html_dir_auto_show_scheduled) {
+        global.__html_dir_auto_show_scheduled = true;
+        
+        // Schedule the directory show for next frame
+        call_later(1, time_source_units_frames, function() {
+            // Only show if we have .bas files
+            if (variable_global_exists("html_dir_files") && ds_list_size(global.html_dir_files) > 0) {
+                var has_bas_files = false;
+                var n = ds_list_size(global.html_dir_files);
+                for (var i = 0; i < n; i++) {
+                    var rec = global.html_dir_files[| i];
+                    var filename = ds_map_find_value(rec, "name");
+                    if (string_pos(".bas", string_lower(filename)) > 0) {
+                        has_bas_files = true;
+                        break;
+                    }
+                }
+                
+                if (has_bas_files) {
+                    editor_html_dir_show();
+                    basic_show_message("Files loaded. Use arrows to select, Enter to open.");
+                } else {
+                    basic_show_message("Files selected, but no .bas files found.");
+                }
+            }
+            global.__html_dir_auto_show_scheduled = false;
+        });
+    }
+    
+    if (dbg_on(DBG_FLOW)) show_debug_message("[EXIT] editor_html_dir__open_handler");
+}
+function basic_cmd_printat(arg) {
+    if (dbg_on(DBG_FLOW)) show_debug_message("=== PRINTAT DEBUG START ===");
+    if (dbg_on(DBG_FLOW)) show_debug_message("Raw arg: '" + string(arg) + "'");
+
+    // Parse arguments (x, y, "string" [, fg [, bg]])
+    var args = basic_parse_csv_args(arg);
+    if (dbg_on(DBG_FLOW)) show_debug_message("Parsed " + string(array_length(args)) + " arguments");
+    if (array_length(args) < 3) {
+        if (dbg_on(DBG_FLOW)) show_debug_message("❌ PRINTAT ERROR: Not enough arguments.");
+        return;
+    }
+
+    // Evaluate x and y using the SAME expression engine your FOR header uses
+    var x_expr = string_trim(args[0]);
+    var y_expr = string_trim(args[1]);
+    var _x     = floor(real(basic_evaluate_expression_v2(x_expr)));
+    var _y     = floor(real(basic_evaluate_expression_v2(y_expr)));
+    if (dbg_on(DBG_FLOW)) show_debug_message("PRINTAT: start=(" + string(_x) + "," + string(_y) + ")");
+
+	// 3rd argument: literal if quoted, otherwise evaluate expression → string
+	var str_expr = string_trim(args[2]);
+
+	if (string_length(str_expr) >= 2) {
+		var first = string_char_at(str_expr, 1);
+		var last  = string_char_at(str_expr, string_length(str_expr));
+		if ((first == "\"" || first == "'") && first == last) {
+		    // literal
+		    str_expr = string_copy(str_expr, 2, string_length(str_expr) - 2);
+		    var str = str_expr;
+		} else {
+		    // expression (supports variables, STR$, concatenation, etc.)
+		    var _val = basic_evaluate_expression_v2(str_expr);
+		    var str  = string(_val);
+		}
+	} else {
+		var str = string(basic_evaluate_expression_v2(str_expr));
+	}
+
+
+    // Optional colors
+    var fg = (array_length(args) > 3) ? basic_parse_color(string_trim(args[3])) : c_white;
+    var bg = (array_length(args) > 4) ? basic_parse_color(string_trim(args[4])) : c_black;
+
+    // Grid and bounds
+    var grid_obj = instance_find(obj_mode1_grid, 0);
+    if (!instance_exists(grid_obj)) { if (dbg_on(DBG_FLOW)) show_debug_message("PRINTAT: grid not found"); return; }
+    var cols = grid_obj.grid_cols;
+    var rows = grid_obj.grid_rows;
+    if (_x < 0 || _y < 0 || _x >= cols || _y >= rows) {
+        if (dbg_on(DBG_FLOW)) show_debug_message("PRINTAT: start out of bounds"); return;
+    }
+
+    // Write characters, clamped to right edge
+    var max_len = min(string_length(str), cols - _x);
+    if (dbg_on(DBG_FLOW)) show_debug_message("PRINTAT: str len=" + string(string_length(str)) + " -> max_len=" + string(max_len));
+    for (var j = 0; j < max_len; j++) {
+        var ch = ord(string_char_at(str, j + 1));
+        mode1_grid_set(_x + j, _y, ch, fg, bg);
+    }
+
+    if (dbg_on(DBG_FLOW)) show_debug_message("✅ PRINTAT complete");
+    if (dbg_on(DBG_FLOW)) show_debug_message("=== PRINTAT DEBUG END ===");
+}
+
+/// @function basic_cmd_scroll(arg)
+/// @description SCROLL [direction,] amount  -- direction defaults to UP when omitted or numeric-first.
+function basic_cmd_scroll(arg) {
+    if (global.current_mode < 1) {
+        if (dbg_on(DBG_FLOW)) show_debug_message("SCROLL: Not implemented in text mode");
+        return;
+    }
+    
+    var grid_obj = instance_find(obj_mode1_grid, 0);
+    if (!instance_exists(grid_obj)) {
+        if (dbg_on(DBG_FLOW)) show_debug_message("SCROLL: No grid object found");
+        return;
+    }
+
+    // Defaults
+    var _direction = "UP";
+    var amount     = 1;
+
+    var s = string_trim(arg);
+    if (s != "") {
+        var args = basic_parse_csv_args(s);
+
+        if (array_length(args) == 1) {
+            var a0 = string_trim(args[0]);
+
+            // If the single arg is numeric (or an identifier that evals numeric), treat it as AMOUNT, direction=UP
+            var treat_as_amount = false;
+            if (is_numeric_string(a0)) {
+                treat_as_amount = true;
+            } else {
+                // try evaluator; if it yields a number, we accept it as amount
+                var v = basic_evaluate_expression_v2(a0);
+                if (is_real(v)) {
+                    amount = max(1, floor(real(v)));
+                    treat_as_amount = true;
+                }
+            }
+
+            if (treat_as_amount) {
+                // direction remains default "UP"
+                if (is_numeric_string(a0)) amount = max(1, floor(real(a0)));
+            } else {
+                // Otherwise it’s a direction token
+                _direction = string_upper(a0);
+                // Remove quotes if present
+                if (string_length(_direction) >= 2 && (string_char_at(_direction,1) == "\"" || string_char_at(_direction,1) == "'")) {
+                    _direction = string_copy(_direction, 2, string_length(_direction) - 2);
+                    _direction = string_upper(_direction);
+                }
+            }
+        }
+        else if (array_length(args) >= 2) {
+            // direction, amount
+            _direction = string_upper(string_trim(args[0]));
+            if (string_length(_direction) >= 2 && (string_char_at(_direction,1) == "\"" || string_char_at(_direction,1) == "'")) {
+                _direction = string_copy(_direction, 2, string_length(_direction) - 2);
+                _direction = string_upper(_direction);
+            }
+            amount = max(1, floor(real(basic_evaluate_expression_v2(string_trim(args[1])))));
+        }
+    }
+
+    // Hand off
+    mode1_scroll_grid(grid_obj, _direction, amount);
+    if (dbg_on(DBG_FLOW)) show_debug_message("SCROLL: " + _direction + " by " + string(amount));
+}
+
+/// @event obj_basic_interpreter/Draw
+draw_set_font(fnt_basic);
+
+    //draw_set_color(c_white);
+	//draw_text(4, room_height - 60, "FONT=" + global.active_font_name + "  spr=" + string(global.active_font_sprite) + "  num=" + string(sprite_get_number(global.active_font_sprite)));
+
+
+// === BACKGROUND === //
+if (global.background_draw_enabled) {
+    draw_set_color(global.background_draw_color);
+    draw_rectangle(0, 0, room_width, room_height, false);
+}
+
+var font_height = string_height("A");
+var visible_lines = floor(room_height / font_height) - 2;
+var total_lines = ds_list_size(global.output_lines) + (global.awaiting_input ? 1 : 0);
+
+// === SCROLL MANAGEMENT === //
+if (!global.scroll_lock && global.interpreter_running && !global.awaiting_input && !global.program_has_ended) {
+    global.scroll_offset = max(0, total_lines - visible_lines);
+}
+global.scroll_offset = clamp(global.scroll_offset, 0, max(0, total_lines - visible_lines));
+
+// === OUTPUT TEXT === //
+var y1 = 0;
+for (var i = global.scroll_offset; i < ds_list_size(global.output_lines); i++) {
+    var col = (i < ds_list_size(global.output_colors)) ? global.output_colors[| i] : global.basic_text_color;
+    draw_set_color(col);
+    draw_text(16, y1, global.output_lines[| i]);
+    y1 += font_height;
+}
+
+// === INPUT LINE OR PAUSE === //
+if (global.awaiting_input) {
+    draw_set_color(global.basic_text_color);
+    var input_str = "";
+
+    if (global.input_expected) {
+        // We're in INPUT mode
+        input_str = "? " + global.interpreter_input;
+    } else {
+        // We're in PAUSE mode
+        input_str = global.interpreter_input;
+
+        var curr_color = draw_get_color();
+        var txt = "PAUSED...";
+        var xx = room_width div 2;
+        var yy = room_height div 2;
+
+        draw_set_color(c_black);
+        draw_text(xx - 1, yy - 1, txt);
+        draw_text(xx + 1, yy - 1, txt);
+        draw_text(xx - 1, yy + 1, txt);
+        draw_text(xx + 1, yy + 1, txt);
+
+        draw_set_color(c_yellow);
+        draw_text(xx, yy, txt);
+
+        draw_set_color(curr_color);
+    }
+
+    if (current_time mod 1000 < 500) input_str += "|";
+    draw_text(16, y1, input_str);
+    y1 += font_height;
+}
+
+// === END MESSAGE === //
+if (global.program_has_ended) {
+    draw_set_color(c_lime);
+    draw_text(16, y1 + 16, "Program has ended - ESC or ENTER to return");
+}
+
+function basic_cmd_clschar(arg) {
+    if (dbg_on(DBG_FLOW))  show_debug_message("=== CLSCHAR DEBUG START ===");
+    if (dbg_on(DBG_FLOW))  show_debug_message("Raw arg: '" + string(arg) + "'");
+    
+    var args = string_split(arg, ",");
+    if (dbg_on(DBG_FLOW))  show_debug_message("Split args count: " + string(array_length(args)));
+    for (var i = 0; i < array_length(args); i++) {
+        show_debug_message("Arg[" + string(i) + "]: '" + string(args[i]) + "'");
+    }
+
+    var char_index = 0;
+    var fg_color = c_white;
+    var bg_color = c_black;
+
+    if (array_length(args) >= 1) {
+        char_index = real(string_trim(args[0]));
+        if (dbg_on(DBG_FLOW))  show_debug_message("Parsed char_index: " + string(char_index));
+    }
+
+    if (array_length(args) >= 2) {
+        var fg_str = string_upper(string_trim(args[1]));
+        if (dbg_on(DBG_FLOW))  show_debug_message("Looking for fg color: '" + fg_str + "'");
+        if (ds_map_exists(global.colors, fg_str)) {
+            fg_color = global.colors[? fg_str];
+            if (dbg_on(DBG_FLOW))  show_debug_message("Found fg color: " + string(fg_color));
+        } else {
+            if (dbg_on(DBG_FLOW))  show_debug_message("FG COLOR NOT FOUND!");
+        }
+    }
+
+    if (array_length(args) >= 3) {
+        var bg_str = string_upper(string_trim(args[2]));
+        if (dbg_on(DBG_FLOW))  show_debug_message("Looking for bg color: '" + bg_str + "'");
+        if (ds_map_exists(global.colors, bg_str)) {
+            bg_color = global.colors[? bg_str];
+            if (dbg_on(DBG_FLOW))  show_debug_message("Found bg color: " + string(bg_color));
+        } else {
+            if (dbg_on(DBG_FLOW))  show_debug_message("BG COLOR NOT FOUND!");
+        }
+    }
+
+    var grid_obj = instance_find(obj_mode1_grid, 0);
+    if (!instance_exists(grid_obj)) {
+        if (dbg_on(DBG_FLOW))  show_debug_message("❌ CLSCHAR: No obj_mode1_grid found!");
+    } else {
+        if (dbg_on(DBG_FLOW))  show_debug_message("✅ CLSCHAR: Found grid obj - calling fill...");
+        if (dbg_on(DBG_FLOW))  show_debug_message("Calling fill with: char=" + string(char_index) + ", fg=" + string(fg_color) + ", bg=" + string(bg_color));
+        grid_obj.mode1_grid_fill(char_index, fg_color, bg_color);
+    }
+    if (dbg_on(DBG_FLOW))  show_debug_message("=== CLSCHAR DEBUG END ===");
+}
+/// @function basic_array_set(name, idx, value)
+/// @description Sets a value in a 1D array stored in global.basic_arrays (0-based indexing, auto-grows)
+/// @param name  The name of the array (string)
+/// @param idx   The index to set (0-based)
+/// @param value The value to set
+/// arrays v1 — 2025-08-08
+/// 1D arrays backed by ds_list, 0-based, auto-grow, OOB reads return 0
+
+function basic_array_set(_name, _idx, _val) {
+    var nm = string_upper(string_trim(_name));
+    if (dbg_on(DBG_FLOW))  show_debug_message("ARRAY_SET: Setting " + nm + "[" + string(_idx) + "] = " + string(_val));
+
+    // Ensure the map entry exists and is a ds_list
+    if (!ds_map_exists(global.basic_arrays, nm)) {
+        if (dbg_on(DBG_FLOW))  show_debug_message("ARRAY_SET: Creating new ds_list for " + nm);
+        global.basic_arrays[? nm] = ds_list_create();
+    }
+
+    var lst = global.basic_arrays[? nm];
+    if (!ds_exists(lst, ds_type_list)) {
+        if (dbg_on(DBG_FLOW))  show_debug_message("ARRAY_SET: Replacing non-list backing store for " + nm);
+        lst = ds_list_create();
+        global.basic_arrays[? nm] = lst;
+    }
+
+    // Normalize index
+    var idx = floor(real(_idx)); // integer index (use floor to avoid +1 surprises near boundaries)
+
+    // OPTIONAL: hard-stop on negative indexes (comment this out if you prefer silent ignore)
+    if (idx < 0) {
+        if (dbg_on(DBG_FLOW))  show_debug_message("ARRAY_SET ERROR: Negative index " + string(idx) + " for array " + nm);
+        return;
+    }
+
+    // Grow to fit (fills with 0)
+    while (ds_list_size(lst) <= idx) {
+        ds_list_add(lst, 0);
+        // OPTIONAL: verbose growth log (disable if noisy)
+        // show_debug_message("ARRAY_SET: Growing " + nm + " to size " + string(ds_list_size(lst)));
+    }
+
+    // Assign
+    ds_list_replace(lst, idx, _val);
+    // OPTIONAL: confirmation log (disable if noisy)
+    // show_debug_message("ARRAY_SET: Set " + nm + "[" + string(idx) + "] = " + string(_val));
+}
+
+/// pm_receive_text(text)
+function pm_receive_text(_text) {
+    // Compatibility shim for legacy script calling
+    var text_in = _text;
+    if (is_undefined(text_in)) {
+        if (argument_count > 0) text_in = argument0; else text_in = "";
+    }
+
+   if (dbg_on(DBG_FLOW)) show_debug_message("[pm_receive_text] got len=" + string(is_string(text_in) ? string_length(text_in) : -1));
+    if (!is_string(text_in) || string_length(text_in) <= 0) return 0;
+
+    var t = string(text_in);
+    t = string_replace_all(t, "\r\n", "\n");
+    t = string_replace_all(t, "\r",   "\n");
+
+    var arr = string_split(t, "\n");
+    var count = 0;
+    var auto_num = 10;
+
+    for (var i = 0; i < array_length(arr); i++) {
+        var raw = string_trim(arr[i]);
+        if (raw == "") continue;
+
+        // Treat a leading '+' as decoration (strip it)
+        if (string_length(raw) >= 2 && string_char_at(raw, 1) == "+") {
+            raw = string_delete(raw, 1, 1);
+            raw = string_trim(raw);
+        }
+
+        var sp   = string_pos(" ", raw);
+        var head = (sp > 0) ? string_copy(raw, 1, sp - 1) : raw;
+
+        if (string_length(head) > 0 && is_real(real(head))) {
+            var num  = real(head);
+            var code = (sp > 0) ? string_trim(string_copy(raw, sp + 1, string_length(raw))) : "";
+            if (function_exists(paste_line)) paste_line(num, code);
+        } else {
+            if (function_exists(paste_line)) paste_line(auto_num, raw);
+            auto_num += 10;
+        }
+        count++;
+    }
+
+    if (instance_exists(obj_paste_manager)) with (obj_paste_manager) {
+        _pm_msg = "Imported " + string(count) + " line(s).";
+        _pm_msg_ttl = 180;
+        _pm_visible = false;
+    }
+
+   if (dbg_on(DBG_FLOW)) show_debug_message("[pm_receive_text] imported lines=" + string(count));
+    return count;
+}
+
+/// @function basic_array_get(name, idx)
+/// @description Retrieves a value from a 1D array stored in global.basic_arrays (1-based BASIC indexing)
+/// @param name The name of the array (string)
+/// @param idx  The index to access (1-based BASIC index)
+/// arrays v1 — 2025-08-08
+/// 1D arrays backed by ds_list, 0-based, auto-grow, OOB reads return 0
+function basic_array_get(_name, _idx) {
+    var nm = string_upper(string_trim(_name));
+    if (dbg_on(DBG_FLOW))  show_debug_message("ARRAY_GET: Accessing " + nm + "[" + string(_idx) + "] (BASIC 1-based)");
+    // Must exist in the map
+    if (!ds_map_exists(global.basic_arrays, nm)) {
+        if (dbg_on(DBG_FLOW))  show_debug_message("ARRAY_GET ERROR: Array '" + nm + "' does not exist");
+        return 0;
+    }
+    // Must be a valid ds_list handle
+    var lst = global.basic_arrays[? nm];
+    if (!ds_exists(lst, ds_type_list)) {
+        if (dbg_on(DBG_FLOW))  show_debug_message("ARRAY_GET ERROR: '" + nm + "' is not a ds_list");
+        return 0;
+    }
+    // Convert BASIC 1-based index to ds_list 0-based index
+    var idx_basic = max(1, floor(real(_idx))); // 1-based, clamped at 1
+    var idx = idx_basic - 1;                   // convert to 0-based for ds_list
+    
+    // Bounds check
+    var n = ds_list_size(lst);
+    if (idx < 0 || idx >= n) {
+        if (dbg_on(DBG_FLOW))  show_debug_message("ARRAY_GET ERROR: Index " + string(idx_basic) + " (0-based: " + string(idx) + ") out of bounds for " + nm + " (size=" + string(n) + ")");
+        return 0;
+    }
+    // Fetch
+    var value = ds_list_find_value(lst, idx);
+    // OPTIONAL: verbose log (comment out if noisy)
+    // show_debug_message("ARRAY_GET: " + nm + "[" + string(idx_basic) + "] = " + string(value));
+    return value;
+}
+// === 2A. Create this as a separate script file (handle_inkey_input.gml) ===
+/// @function handle_inkey_input()
+/// @description Handle INKEY$ input during pause
+function handle_inkey_input() {
+    // Only process if we're in INKEY$ mode
+    if (!global.inkey_mode) return false;
+    
+    // Scan for any printable key press
+    for (var key = 32; key <= 126; key++) { // printable ASCII range
+        if (keyboard_check_pressed(key)) {
+            var ch = chr(key);
+            
+            // Store the result
+            global.basic_variables[? "__INKEY_RESULT"] = ch;
+            
+            // Resume program execution
+            global.pause_in_effect = false;
+            global.awaiting_input = false;
+            global.input_target_var = "";
+            global.pause_mode = false;
+            global.input_expected = false;
+            global.inkey_mode = false;
+            
+            if (dbg_on(DBG_FLOW)) show_debug_message("INKEY$: Got keypress '" + ch + "' (code " + string(key) + "), resuming program");
+            return true; // Input was handled
+        }
+    }
+    
+    // Handle special keys if needed
+    if (keyboard_check_pressed(vk_enter)) {
+        global.basic_variables[? "__INKEY_RESULT"] = chr(13);
+        // Resume execution (same cleanup as above)
+        global.pause_in_effect = false;
+        global.awaiting_input = false;
+        global.input_target_var = "";
+        global.pause_mode = false;
+        global.input_expected = false;
+        global.inkey_mode = false;
+        
+        if (dbg_on(DBG_FLOW)) show_debug_message("INKEY$: Got ENTER, resuming program");
+        return true;
+    }
+    
+    return false; // No input yet, keep waiting
+}
+function editor_html_save_program_as(filename) {
+    if (os_browser == browser_not_a_browser) {
+        show_error_message("HTML save is only available in browser builds.");
+        return false;
+    }
+
+    // Initialize the extension (safe to call each time; no-op if already inited)
+    browser_file_tools_init();
+
+    // --- Normalize filename (parity with desktop)
+    filename = string_trim(filename);
+    if (string_length(filename) == 0) { show_error_message("NO FILENAME PROVIDED"); return false; }
+    if (string_char_at(filename, 1) == "\"" && string_char_at(filename, string_length(filename)) == "\"") {
+        filename = string_copy(filename, 2, string_length(filename) - 2);
+    }
+    filename = string_replace_all(filename, "/",  "_");
+    filename = string_replace_all(filename, "\\", "_");
+    filename = string_replace_all(filename, "..", "_");
+    filename = string_replace_all(filename, ".bas", "");
+    filename = filename + ".bas";
+
+    // --- Build program text
+    var text = editor_html_build_program_text();
+    if (string_length(text) == 0) {
+        show_error_message("NOTHING TO SAVE — no program lines found");
+        return false;
+    }
+
+    // --- Create byte buffer (CRLF preserved)
+    var n = string_length(text);
+    var buf = buffer_create(n, buffer_fixed, 1);
+    for (var i = 1; i <= n; i++) {
+        buffer_write(buf, buffer_u8, ord(string_char_at(text, i)));
+    }
+    buffer_seek(buf, buffer_seek_start, 0);
+
+    // --- Call the YAL wrapper directly (wrapper is present in your build)
+    browser_show_save_dialog(buf, filename, "text/plain; charset=utf-8", n);
+
+    buffer_delete(buf);
+    return true;
+}
+
+/// @function basic_cmd_charat(arg)
+/// @desc CHARAT x, y, charIndex [, fg [, bg]]
+function basic_cmd_charat(arg) {
+    var args = basic_parse_csv_args(arg);
+    if (array_length(args) < 3) {
+        if (dbg_on(DBG_FLOW)) show_debug_message("CHARAT requires 3 arguments: x, y, char");
+        return;
+    }
+
+    // Evaluate coordinates (identifiers allowed)
+    var _x = floor(real(basic_evaluate_expression_v2(string_trim(args[0]))));
+    var _y = floor(real(basic_evaluate_expression_v2(string_trim(args[1]))));
+    var char_index = floor(real(basic_evaluate_expression_v2(string_trim(args[2]))));
+
+    // Optional colors
+    var fg = (array_length(args) > 3) ? basic_parse_color(string_trim(args[3])) : undefined;
+    var bg = (array_length(args) > 4) ? basic_parse_color(string_trim(args[4])) : undefined;
+
+    var grid_obj = instance_find(obj_mode1_grid, 0);
+    if (!instance_exists(grid_obj)) {
+        if (dbg_on(DBG_FLOW)) show_debug_message("CHARAT: grid not found");
+        return;
+    }
+
+    var cols = grid_obj.grid_cols;
+    var rows = grid_obj.grid_rows;
+    if (_x < 0 || _x >= cols || _y < 0 || _y >= rows) {
+        if (dbg_on(DBG_FLOW)) show_debug_message("CHARAT: coordinates out of bounds (" + string(_x) + "," + string(_y) + ")");
+        return;
+    }
+
+    // If fg/bg are undefined, mode1_grid_set should keep existing cell colors
+    mode1_grid_set(_x, _y, char_index, fg, bg);
+
+    if (dbg_on(DBG_FLOW)) show_debug_message("CHARAT: set (" + string(_x) + "," + string(_y) + ")=" + string(char_index)
+        + ((fg != undefined) ? " fg=" + string(fg) : "")
+        + ((bg != undefined) ? " bg=" + string(bg) : ""));
+}
+
+/// @func parse_data_value(raw)
+/// @desc Convert a DATA token to a GML value:
+///       - Quoted -> string with "" -> " unescaped
+///       - Else   -> real(number) if numeric, otherwise keep as string (tolerant)
+function parse_data_value(raw) {
+    var s = string_trim(raw);
+    var L = string_length(s);
+
+    // Quoted string
+    if (L >= 2 && string_char_at(s, 1) == "\"" && string_char_at(s, L) == "\"") {
+        var inner = string_copy(s, 2, L - 2);
+        inner = string_replace_all(inner, "\"\"", "\""); // unescape doubled quotes
+        if (dbg_on(DBG_FLOW)) show_debug_message("parse_data_value: STRING → \"" + inner + "\" from " + s);
+        return inner;
+    }
+
+    // Try numeric
+    var n = real(s);
+    if (string(n) == s || is_real(n)) {
+        // Note: GML will give us 0 for non-numeric too; we try a tighter check:
+        // If s contains any alpha (not e/E for exponent), treat as string.
+        var _has_alpha = false;
+        for (var i = 1; i <= L; i++) {
+            var ch = string_char_at(s, i);
+            if ( (ch >= "A" && ch <= "Z") || (ch >= "a" && ch <= "z") ) {
+                if (ch != "E" && ch != "e") { _has_alpha = true; break; }
+            }
+        }
+        if (!_has_alpha) {
+            if (dbg_on(DBG_FLOW)) show_debug_message("parse_data_value: NUMBER → " + string(n) + " from " + s);
+            return n;
+        }
+    }
+
+    // Fallback: keep as literal string (lets users store symbolic tokens)
+    if (dbg_on(DBG_FLOW)) show_debug_message("parse_data_value: FALLBACK STRING → \"" + s + "\"");
+    return s;
+}
+
+function tokenize_expression(expr) {
+    var tokens = [];
+    var i = 1;
+    while (i <= string_length(expr)) {
+        var ch = string_char_at(expr, i);
+
+        if (ch == " " || ch == "\t") {
+            i++;
+            continue;
+        }
+
+        if (ch == "+" || ch == "-" || ch == "*" || ch == "/" || ch == "^" || ch == "(" || ch == ")") {
+            array_push(tokens, ch);
+            i++;
+        }
+        else if (ord(ch) >= 48 && ord(ch) <= 57) {
+            var num = "";
+            while (i <= string_length(expr) && (ord(string_char_at(expr, i)) >= 48 && ord(string_char_at(expr, i)) <= 57)) {
+                num += string_char_at(expr, i);
+                i++;
+            }
+            array_push(tokens, num);
+        }
+        else if (is_letter(ch)) {
+            var ident = "";
+            while (i <= string_length(expr) && (is_letter_or_digit(string_char_at(expr, i)))) {
+                ident += string_char_at(expr, i);
+                i++;
+            }
+            if (string_char_at(expr, i) == "(") {
+                array_push(tokens, ident); // Function name
+            } else {
+                array_push(tokens, ident); // Variable
+            }
+        }
+        else if (ch == ",") {
+            array_push(tokens, ",");
+            i++;
+        }
+        else {
+            if (dbg_on(DBG_FLOW)) show_debug_message("Unknown character in expression: " + ch);
+            i++;
+        }
+    }
+
+    return tokens;
+}
+
+
+/// @function editor_import_text_to_program(_text)
+/// @desc Parse plain text into numbered BASIC lines and import.
+/// Lines in form "NNN CODE..."; a bare "NNN" deletes that line.
+function editor_import_text_to_program(_text) {
+    if (!is_string(_text)) return 0;
+
+    // Normalize line endings
+    var blob = string_replace_all(string_replace_all(_text, "\r\n", "\n"), "\r", "\n");
+
+    var count = 0;
+    var i = 1, len = string_length(blob), start = 1;
+    while (i <= len + 1) {
+        if (i > len || string_char_at(blob, i) == "\n") {
+            var line = string_trim(string_copy(blob, start, i - start));
+            if (line != "") {
+                var sp = string_pos(" ", line);
+                var ln_str = (sp > 0) ? string_copy(line, 1, sp - 1) : line;
+                var code   = (sp > 0) ? string_trim(string_copy(line, sp + 1, string_length(line))) : "";
+                var _ln = real(ln_str);
+                if (ln_str != "" && is_real(_ln) && _ln > 0) {
+                    if (code == "") {
+                        // delete empty-numbered line
+                        if (function_exists("delete_program_line")) delete_program_line(_ln);
+                    } else {
+                        if (function_exists("add_or_update_program_line")) add_or_update_program_line(_ln, code);
+                    }
+                    count++;
+                }
+            }
+            start = i + 1;
+        }
+        i++;
+    }
+    return count;
+}
+
+function save_undo_state() {
+    // Placeholder for undo system
+    // Eventually, you could push a copy of global.program_lines to a stack
+	/// TODO: Implement undo functionality for BASIC editor
+/// --------------------------------------------------
+/// This function should snapshot the current program state so it can be restored later via an "UNDO" command.
+/// A stack-based approach is recommended, where each saved state is pushed onto a list (e.g., global.undo_stack).
+///
+/// Suggested structure per snapshot:
+/// - A ds_map with keys like "global.program_lines", "global.line_numbers", and optionally "cursor_pos"
+/// - Each key maps to a *copy* (not a reference) of the original ds_map or ds_list
+///
+/// Pseudocode for future implementation:
+/// ```gml
+/// var snapshot = ds_map_create();
+/// ds_map_add_list(snapshot, "global.line_numbers", ds_list_copy(global.line_numbers));
+/// ds_map_add_map(snapshot, "global.program_lines", ds_map_copy(global.program_lines));
+/// ds_stack_push(global.undo_stack, snapshot);
+/// ```
+///
+/// Don't forget to:
+/// - Create `global.undo_stack` once during initialization (e.g., in obj_globals)
+/// - Clean up with `ds_map_destroy()` and `ds_list_destroy()` when popping or discarding states
+///
+/// For now, this is a placeholder to suppress runtime errors.
+
+}
+
+function basic_evaluate_expression(expr) {
+    expr = string_trim(expr);
+
+    // Variable lookup
+    if (ds_map_exists(global.basic_variables, string_upper(expr))) {
+        return global.basic_variables[? string_upper(expr)];
+    }
+
+    // Handle MOD
+    if (string_pos("MOD", string_upper(expr)) > 0) {
+        var parts = string_split(string_upper(expr), "MOD");
+        if (array_length(parts) == 2) {
+            var a = real(basic_evaluate_expression_v2(parts[0]));
+            var b = real(basic_evaluate_expression_v2(parts[1]));
+            return a mod b;
+        }
+    }
+
+    // Handle RND(n)
+    if (string_upper(string_copy(expr, 1, 4)) == "RND(" && string_char_at(expr, string_length(expr)) == ")") {
+        var inner = string_copy(expr, 5, string_length(expr) - 5);
+        return irandom(real(basic_evaluate_expression_v2(inner)));
+    }
+
+    // Handle ABS(x)
+    if (string_upper(string_copy(expr, 1, 4)) == "ABS(" && string_char_at(expr, string_length(expr)) == ")") {
+        var inner = string_copy(expr, 5, string_length(expr) - 5);
+        return abs(real(basic_evaluate_expression_v2(inner)));
+    }
+
+    // Fallback to real()
+    return real(expr);
+}
+
+/// @function screen_editor_display_line(editor_inst, line_text, screen_row)
+function screen_editor_display_line(editor_inst, line_text, screen_row) {
+    with (editor_inst) {
+        // Clear the row first
+        for (var clear_x = 0; clear_x < screen_cols; clear_x++) {
+            screen_editor_set_char_at(id, clear_x, screen_row, ord(" "));
+        }
+        
+        // Apply horizontal offset only to cursor line
+        var display_text = line_text;
+        if (screen_row == cursor_y && horizontal_offset > 0) {
+            display_text = string_copy(line_text, horizontal_offset + 1, screen_cols);
+        }
+        
+        // Display the text
+        var text_len = min(string_length(display_text), screen_cols);
+        for (var j = 1; j <= text_len; j++) {
+            var ch = string_char_at(display_text, j);
+            screen_editor_set_char_at(id, j - 1, screen_row, ord(ch));
+        }
+        
+       if (dbg_on(DBG_FLOW)) show_debug_message("SCREEN_EDITOR: Displayed line " + string(screen_row) + 
+                          (screen_row == cursor_y ? " (with offset " + string(horizontal_offset) + ")" : " (no offset)"));
+    }
+}
+// Clear background
+draw_set_color(c_black);
+draw_rectangle(0, 0, room_width, room_height, false);
+
+// Font/color
+if (font_exists(fnt_basic)) draw_set_font(fnt_basic);
+draw_set_color(make_color_rgb(255,191,64)); // your C64 yellow
+
+// Draw any backing buffer you still use (safe-guarded)
+if (is_array(screen_buffer)) {
+    for (var _y = 0; _y < screen_rows; _y++) {
+        for (var _x = 0; _x < screen_cols; _x++) {
+            var idx = _x + _y * screen_cols;
+            if (idx < array_length(screen_buffer)) {
+                var ch = chr(screen_buffer[idx]);
+                if (ch != " ") {
+                    var draw_x = margin_x + (_x * char_width);
+                    var draw_y = margin_y + (_y * char_height);
+                    draw_text(draw_x, draw_y, ch);
+                }
+            }
+        }
+    }
+}
+
+// Draw caret on top of the existing buffer (no row_text/current_row)
+if (cursor_visible) {
+    draw_set_color(c_white);
+    var caret_x = margin_x + (cursor_x * char_width);
+    var caret_y = margin_y + (cursor_y * char_height);
+    draw_text(caret_x, caret_y, "_");
+}
+
+/// help_snapshot_program()
+function help_snapshot_program() {
+    // destroy any old snapshot
+    if (variable_global_exists("help_snapshot_lines") && ds_exists(global.help_snapshot_lines, ds_type_map)) {
+        ds_map_destroy(global.help_snapshot_lines);
+    }
+    if (variable_global_exists("help_snapshot_nums") && ds_exists(global.help_snapshot_nums, ds_type_list)) {
+        ds_list_destroy(global.help_snapshot_nums);
+    }
+
+    // deep copy maps/lists you mutate during load/run
+    global.help_snapshot_lines = ds_map_create();
+    var key = ds_map_find_first(global.program_lines);
+    while (!is_undefined(key)) {
+        var val = ds_map_find_value(global.program_lines, key);
+        ds_map_add(global.help_snapshot_lines, key, val);
+        key = ds_map_find_next(global.program_lines, key);
+    }
+
+    global.help_snapshot_nums = ds_list_create();
+    for (var i = 0; i < ds_list_size(global.line_numbers); i++) {
+        ds_list_add(global.help_snapshot_nums, ds_list_find_value(global.line_numbers, i));
+    }
+}
+
+
+/// @file scripts/basic_cmd_return/basic_cmd_return.gml
+function basic_cmd_return() {
+    if (ds_stack_empty(global.gosub_stack)) {
+        basic_syntax_error("RETURN without matching GOSUB",
+            global.current_line_number, global.interpreter_current_stmt_index, "GOSUB_MISMATCH");
+        return;
+    }
+
+    var frame = ds_stack_pop(global.gosub_stack);
+
+    // Backward-compat: older frames were numeric line indexes
+    if (is_real(frame)) {
+        global.interpreter_next_line = frame;
+        return;
+    }
+
+    // === CHANGE: statement-level resume ===
+    if (is_struct(frame) && frame.kind == "stmt") {
+        global.interpreter_use_stmt_jump = true;
+        global.interpreter_target_line  = frame.line_index;
+        global.interpreter_target_stmt  = max(0, frame.stmt_index);
+        return;
+    }
+
+    // Fallback: if unknown, behave like legacy
+    global.interpreter_next_line = is_real(frame) ? frame : (line_index + 1);
+}
+
+/// @function string_is_number(str)
+/// @desc Returns true if the input string can be safely converted to a number.
+/// @param {string} str - The string to check
+function string_is_number(str) {
+    if (is_real(str)) return true; // Already a number
+    var trimmed = string_trim(str);
+    if (trimmed == "") return false;
+
+    var dot_found = false;
+    var start = 1;
+
+    // Allow for optional leading minus sign
+    if (string_char_at(trimmed, 1) == "-") {
+        if (string_length(trimmed) == 1) return false;
+        start = 2;
+    }
+
+    for (var i = start; i <= string_length(trimmed); i++) {
+        var ch = string_char_at(trimmed, i);
+        if (ch >= "0" && ch <= "9") continue;
+        else if (ch == ".") {
+            if (dot_found) return false; // only one dot allowed
+            dot_found = true;
+        } else {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+function set_color_scheme(scheme) {
+    scheme = string_upper(scheme);
+    switch (scheme) {
+        case "GREEN":
+            keyword_color = c_lime;
+            text_color = c_green;
+            number_color = c_yellow;
+            break;
+        case "BLUE":
+            keyword_color = c_cyan;
+            text_color = c_blue;
+            number_color = c_white;
+            break;
+        case "AMBER":
+            keyword_color = c_orange;
+            text_color = c_yellow;
+            number_color = c_white;
+            break;
+        default:
+            show_error_message("UNKNOWN COLOR SCHEME");
+            return;
+    }
+    basic_show_message("COLOR SCHEME: " + scheme);
+    update_display();
+ }
+/// @function split_on_unquoted_colons(line)
+/// @description Split a line on top-level colons, ignoring any inside "quoted strings"
+function split_on_unquoted_colons(line) {
+    var parts = [];
+    var buf    = "";
+    var inStr  = false;
+    var len    = string_length(line);
+    for (var i = 1; i <= len; i++) {
+        var ch = string_char_at(line, i);
+        if (ch == "\"") {
+            // toggle string state and keep the quote
+            inStr = !inStr;
+            buf  += ch;
+        }
+        else if (ch == ":" && !inStr) {
+            // top-level colon → break here
+            array_push(parts, buf);
+            buf = "";
+        }
+        else {
+            buf += ch;
+        }
+    }
+    // push whatever’s left
+    array_push(parts, buf);
+    return parts;
+}
+
+/// @script basic_cmd_endif
+/// @description Handle ENDIF—pop IF-stack and continue
+function basic_cmd_endif() {
+  if (dbg_on(DBG_FLOW))  show_debug_message("ENDIF START");
+    // ← GUARD: must have an open IF
+    if (ds_stack_empty(global.if_stack)) {
+        if (dbg_on(DBG_FLOW))  show_debug_message("?ENDIF ERROR: ENDIF without matching IF");
+        return;
+    }
+    var frame = ds_stack_pop(global.if_stack);
+
+    var current_index = global.interpreter_current_line_index;
+    // Pop and destroy the frame
+
+    ds_map_destroy(frame);
+
+    // Continue immediately after ENDIF
+    global.interpreter_next_line = current_index + 1;
+    if (dbg_on(DBG_FLOW))  show_debug_message("ENDIF done, next index " + string(global.interpreter_next_line));
+}
+
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+ function save_program_json(filename) {
+    try {
+        var save_data = ds_map_create();
+        ds_map_copy(save_data, global.program_lines);
+        
+        var json_string = json_encode(save_data);
+        var file_path = working_directory + filename + ".json";
+        var file = file_text_open_write(file_path);
+        file_text_write_string(file, json_string);
+        file_text_close(file);
+        
+        ds_map_destroy(save_data);
+        basic_show_message("SAVED: " + filename + " (JSON)");
+    } catch (e) {
+        show_error_message("JSON SAVE ERROR");
+    }
+ }
+function basic_parse_csv_args(str) {
+    var args = [];
+    var current = "";
+    var in_quotes = false;
+    var i = 1;
+    var len = string_length(str);
+
+    while (i <= len) {
+        var c = string_char_at(str, i);
+
+        if (c == "\"") {
+            in_quotes = !in_quotes;
+            current += c; // Preserve quote so later commands can detect strings
+        }
+        else if (c == "," && !in_quotes) {
+            array_push(args, string_trim(current));
+            current = "";
+        }
+        else {
+            current += c;
+        }
+
+        i += 1;
+    }
+
+    if (string_length(current) > 0) {
+        array_push(args, string_trim(current));
+    }
+
+    return args;
+}
+
+// FILE: scripts/screen_editor_get_row_text/screen_editor_get_row_text.gml
+/// @function screen_editor_get_row_text(editor_inst, _row)
+function screen_editor_get_row_text(editor_inst, _row) {
+    with (editor_inst) {
+        if (_row < 0 || _row >= screen_rows) return "";
+        
+        var text = "";
+        var last_non_space = -1;
+        
+        for (var _x = 0; _x < screen_cols; _x++) {
+            var ch = chr(screen_editor_get_char_at(id, _x, _row));
+            text += ch;
+            if (ch != " ") last_non_space = _x;
+        }
+        
+        return (last_non_space >= 0) ? string_copy(text, 1, last_non_space + 1) : "";
+    }
+}
+function get_precedence(op) {
+    switch (string_upper(op)) {
+        // Logical operators (lowest precedence)
+        case "OR":
+            return 0;
+        case "AND": 
+            return 1;
+        // Relational comparisons
+        case "=": case "<>": case "<": case ">": case "<=": case ">=":
+            return 2;
+        // Add/subtract
+        case "+": case "-":
+            return 3;
+        // Multiply/divide/mod
+        case "*": case "/": case "\\": case "%": case "MOD":
+            return 4;
+        // Exponentiation (highest precedence)
+        case "^":
+            return 5;
+        default:
+            return 0;
+    }
+}
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+ function navigate_history_down() {
+	 if (global.justreturned == 1) return; // 🛑 Block history on return
+	 
+    if (global.history_index != -1) {
+        global.history_index++;
+        if (global.history_index >= ds_list_size(global.input_history)) {
+            global.history_index = -1;
+            current_input = "";
+        } else {
+            current_input = ds_list_find_value(global.input_history, global.history_index);
+        }
+        cursor_pos = string_length(current_input);
+    }
+ }
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+function handle_program_line(input_text) {
+    var space_pos = string_pos(" ", input_text);
+    var line_num = real(string_copy(input_text, 1, space_pos - 1));
+    var code_content = string_copy(input_text, space_pos + 1, string_length(input_text));
+    
+    // If no code content, delete the line
+    if (string_trim(code_content) == "") {
+        delete_program_line(line_num);
+    } else {
+        add_or_update_program_line(line_num, code_content);
+    }
+    
+    update_display();
+ }
+/// @function editor_html_save_program
+/// @desc HTML-only wrapper mirroring save_program()
+/// Uses global current_filename (parity with desktop)
+function editor_html_save_program() {
+    if (os_browser == browser_not_a_browser) {
+        show_error_message("HTML save is only available in browser builds.");
+        return false;
+    }
+    if (!variable_global_exists("current_filename") || string_length(current_filename) == 0) {
+        show_error_message("NO FILENAME");
+        return false;
+    }
+    return editor_html_save_program_as(current_filename);
+}
+
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+ function add_to_history(input_text) {
+    if (input_text != "" && (ds_list_size(global.input_history) == 0 || 
+        ds_list_find_value(global.input_history, ds_list_size(global.input_history) - 1) != input_text)) {
+        ds_list_add(global.input_history, input_text);
+        // Limit history size
+        while (ds_list_size(global.input_history) > 50) {
+            ds_list_delete(global.input_history, 0);
+        }
+	}
+ }
+// FILE: scripts/screen_editor_set_char_at/screen_editor_set_char_at.gml
+/// @function screen_editor_set_char_at(editor_inst, _x, _y, _char)
+function screen_editor_set_char_at(editor_inst, _x, _y, _char) {
+    with (editor_inst) {
+        if (_x < 0 || _x >= screen_cols || _y < 0 || _y >= screen_rows) return;
+        var idx = _y * screen_cols + _x;
+        screen_buffer[idx] = _char;
+        //show_debug_message("SCREEN_EDITOR: Set char '" + chr(_char) + "' at (" + string(_x) + "," + string(_y) + ")");
+    }
+}
+// ===============================================
+// FILE: scripts/get_full_line_text/get_full_line_text.gml
+// NEW: Helper function to get complete line text
+// ===============================================
+
+/// @function get_full_line_text(editor_inst, row)
+function get_full_line_text(editor_inst, row) {
+    with (editor_inst) {
+        if (ds_map_exists(extended_lines, row)) {
+            return extended_lines[? row];
+        }
+        return screen_editor_get_row_text(id, row);
+    }
+}
+/// @function mode1_get_char(col, row)
+/// @description Get character at grid position
+function mode1_get_char(col, row) {
+    var grid_obj = instance_find(obj_mode1_grid, 0);
+    if (!instance_exists(grid_obj)) return 32;
+    
+    var cols = 40;
+    var rows = 25;
+    
+    if (col < 0 || col >= cols || row < 0 || row >= rows) {
+        return 32; // Return space for out of bounds
+    }
+    
+    var i = col + row * cols;
+    return grid_obj.grid[i].char;
+}
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+function add_or_update_program_line(line_num, code) {
+    ds_map_set(global.program_lines, line_num, code);
+    
+    // Update ordered line numbers list
+    var pos = ds_list_find_index(global.line_numbers, line_num);
+    if (pos == -1) {
+        // Insert in correct order
+        insert_line_number_ordered(line_num);
+    }
+ }
+/// @function is_function_token(token)
+/// @description Checks if a given token is a recognized BASIC function.
+/// @param {string} token The token to check.
+/// @returns {boolean} True if it's a function, false otherwise.
+function is_function_token(token) {
+    var upper_token = string_upper(token);
+    // Add more functions here as you implement them in evaluate_postfix
+    return upper_token == "RND" || upper_token == "ABS";
+}
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+function delete_program_line(line_num) {
+    ds_map_delete(global.program_lines, line_num);
+    var pos = ds_list_find_index(global.line_numbers, line_num);
+    if (pos != -1) {
+        ds_list_delete(global.line_numbers, pos);
+    }
+ }
+function is_operator(op) {
+    return (op == "+" || op == "-" || op == "*" || op == "/" || op == "\\" || op == "^" || 
+            op == "%" || string_upper(op) == "MOD" ||
+            op == "=" || op == "<>" || op == "<" || op == ">" || op == "<=" || op == ">=" ||
+            string_upper(op) == "AND" || string_upper(op) == "OR");
+}
+/// @description obj_inkeyfeeder/create.gml
+// You can write your code in this editor
+// Make sure queue exists even if we entered a different room first
+if (!variable_global_exists("inkey_queue")) {
+    global.__inkey_queue = ds_queue_create();
+}
+// Optional: if you want it to survive room switches
+persistent = true;
+
+function basic_evaluate_expression_v2(expr) {
+    var tokens = basic_tokenize_expression_v2(expr);
+    if (dbg_on(DBG_FLOW)) show_debug_message("Tokens: " + string(tokens)); // for debug
+    var postfix = infix_to_postfix(tokens);
+    return evaluate_postfix(postfix);
+}
+
+/// Helper function to check if a variable name is an array reference
+function basic_is_array_reference(varName) {
+    var open_paren = string_pos("(", varName);
+    var close_paren = string_pos(")", varName);
+    return (open_paren > 0 && close_paren > open_paren);
+}
+
+
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+ function show_stat_message(msg) {
+    message_text = msg;
+    message_timer = 120; // Show for 2 seconds at 60 FPS
+ }
+// Script assets have changed for v2.3.0 see
+// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+ function show_error_message(error) {
+    basic_show_message("?" + error);
+ }
+// Call this to display a message for roughly 2 seconds (120 frames at 60 fps).
+function basic_show_message(msg) {
+    message_text  = msg;
+    global.message_timer = 120;
+}
+/// @event obj_globals/Step
+if (room == rm_editor) {
+    if (!instance_exists(obj_editor)) {
+        instance_create_layer(0, 0, "Instances", obj_editor);
+    }
+}
+
+/// Persistent filter for YAL open dialog (files only)
+function editor_html_dir__open_filter(kind, type) {
+    return (kind == "file");
+}
+
+function basic_cmd_rem() {
+    // Do nothing — comment line
+}
+
+function quit_program()
+{
+	game_end();
+}

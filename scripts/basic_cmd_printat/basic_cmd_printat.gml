@@ -50,6 +50,23 @@ function basic_cmd_printat(arg) {
         if (dbg_on(DBG_FLOW)) show_debug_message("PRINTAT: start out of bounds"); return;
     }
 
+var _grid_obj = instance_find(obj_mode1_grid, 0);
+if (!instance_exists(_grid_obj)) {
+    if (dbg_on(DBG_FLOW)) show_debug_message("PRINTAT: No grid; creating now");
+    // create your grid instance (room already in MODE 1)
+    instance_create_layer(0, 0, "Instances", obj_mode1_grid);
+    _grid_obj = instance_find(obj_mode1_grid, 0);
+    if (!instance_exists(_grid_obj)) {
+        if (dbg_on(DBG_FLOW)) show_debug_message("PRINTAT: still no grid after create; abort");
+        return;
+    }
+}
+
+
+
+
+
+
     // Write characters, clamped to right edge
     var max_len = min(string_length(str), cols - _x);
     if (dbg_on(DBG_FLOW)) show_debug_message("PRINTAT: str len=" + string(string_length(str)) + " -> max_len=" + string(max_len));

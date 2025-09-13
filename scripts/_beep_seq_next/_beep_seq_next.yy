@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"_beep_seq_next",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"_beep_seq_next",
+  "parent":{
+    "name":"AUDIO",
+    "path":"folders/Scripts/AUDIO.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

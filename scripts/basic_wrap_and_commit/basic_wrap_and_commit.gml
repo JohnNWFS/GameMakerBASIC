@@ -8,15 +8,20 @@ function basic_wrap_and_commit(_text, _color) {
         return;
     }
 
-    // Width: default 64 unless caller set global.wrap_width
+    // Width: default 70 unless caller set global.wrap_width (>0)
     var wrap_width = (variable_global_exists("wrap_width") && is_real(global.wrap_width) && global.wrap_width > 0)
         ? floor(global.wrap_width) : 70;
+    if (wrap_width < 4) wrap_width = 4; // safety
 
-    var remaining = string(_text);
+    // Defensive copy of input text (prevents any aliasing/truncation surprises)
+    var src       = string(_text);
+    var src_len   = string_length(src);
+    var remaining = (src_len > 0) ? string_copy(src, 1, src_len) : "";
 
+    // Wrap loop
     while (string_length(remaining) > wrap_width) {
-        var len_rem = string_length(remaining);
-        var cut = wrap_width;
+        var len_rem    = string_length(remaining);
+        var cut        = wrap_width;
         var last_space = 0;
         var found_space = false;
 
@@ -31,7 +36,7 @@ function basic_wrap_and_commit(_text, _color) {
             cut = last_space - 1;
             found_space = true;
         } else {
-            // Hard break … but avoid dangling punctuation on next line
+            // Hard break … try not to strand punctuation on next line
             var next_char = (wrap_width + 1 <= len_rem) ? string_char_at(remaining, wrap_width + 1) : "";
             if (next_char == ")" || next_char == "]" || next_char == "}" ||
                 next_char == "!" || next_char == "?" || next_char == "." ||
@@ -48,6 +53,7 @@ function basic_wrap_and_commit(_text, _color) {
         if (cut < 1) cut = wrap_width; // safety for huge first word
 
         var line = string_copy(remaining, 1, cut);
+        if (dbg_on(DBG_FLOW)) show_debug_message("wrap: COMMIT(line) ← \"" + line + "\"");
         ds_list_add(global.output_lines, line);
         ds_list_add(global.output_colors, _color);
 
@@ -65,7 +71,11 @@ function basic_wrap_and_commit(_text, _color) {
         }
     }
 
-    // Tail
-    ds_list_add(global.output_lines, remaining);
-    ds_list_add(global.output_colors, _color);
+    // Tail (commit only if there's content OR the original string was truly empty)
+    // This avoids accidental commits of stray empties while preserving empty-line intent.
+    if (string_length(remaining) > 0 || src_len == 0) {
+        if (dbg_on(DBG_FLOW)) show_debug_message("wrap: COMMIT(tail) ← \"" + remaining + "\"");
+        ds_list_add(global.output_lines, remaining);
+        ds_list_add(global.output_colors, _color);
+    }
 }

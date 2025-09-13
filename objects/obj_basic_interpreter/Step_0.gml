@@ -20,6 +20,12 @@ if (global.dbg_dropped_count > 0) {
     global.dbg_dropped_count = 0;
 }
 
+// --- SAFE DEFAULTS for INPUT state (avoid undefined lookups) ---
+if (is_undefined(global.awaiting_input))     global.awaiting_input     = false;
+if (is_undefined(global.pause_mode))         global.pause_mode         = false;
+if (is_undefined(global.input_target_var))   global.input_target_var   = "";
+if (is_undefined(global.interpreter_input))  global.interpreter_input  = "";
+
 // ==============================
 // Sort program lines in ascending order
 // ==============================
@@ -53,7 +59,7 @@ if (global.program_has_ended) {
 
         var _ret = variable_global_exists("editor_return_room")
                ? global.editor_return_room
-               : room_first; // fallback if something goes weird
+               : room_first;
 
         room_goto(_ret);
     }
@@ -62,7 +68,7 @@ if (global.program_has_ended) {
 
 
 // ==============================
-// INPUT mode (line editor) routing — keep your working flow
+// INPUT mode (line editor) — commit on Enter (non-pause)
 // ==============================
 if (global.awaiting_input) {
     if (global.pause_mode) {
@@ -73,11 +79,42 @@ if (global.awaiting_input) {
             global.pause_in_effect  = false;
             global.input_target_var = "";
             global.interpreter_input = "";
+            // Existing behavior in pause-mode:
             global.interpreter_resume_stmt_index = global.interpreter_current_stmt_index + 1;
         }
     } else {
-        for (var _k = 32; _k <= 126; _k++) if (keyboard_check_pressed(_k)) handle_interpreter_character_input(_k);
-        if (keyboard_check_pressed(vk_enter))     handle_interpreter_character_input(vk_enter);
+        // Enter commits; basic_cmd_input() already scheduled stmt-jump to p+1
+        if (keyboard_check_pressed(vk_enter)) {
+            if (dbg_on(DBG_FLOW)) show_debug_message("INPUT: Enter pressed — committing value");
+
+            var _name = basic_normvar(global.input_target_var);
+            var _val  = global.interpreter_input;
+            var _val_trim = string_trim(string(_val));
+
+            // String typed variable → always store as string
+            if (string_length(_name) > 0 && string_char_at(_name, string_length(_name)) == "$") {
+                global.basic_variables[? _name] = _val;
+            } else {
+                if (is_numeric_string(_val_trim)) {
+                    global.basic_variables[? _name] = real(_val_trim);
+                } else {
+                    global.basic_variables[? _name] = _val; // keep literal if non-numeric
+                }
+            }
+
+            // Clear INPUT state; DO NOT set interpreter_resume_stmt_index here.
+            global.awaiting_input    = false;
+            global.input_expected    = false;
+            global.input_target_var  = "";
+            global.interpreter_input = "";
+
+            return; // yield; next frame stmt-jump resumes tail of the line
+        }
+
+        // Normal typing & backspace
+        for (var _k = 32; _k <= 126; _k++) {
+            if (keyboard_check_pressed(_k)) handle_interpreter_character_input(_k);
+        }
         if (keyboard_check_pressed(vk_backspace)) handle_interpreter_character_input(vk_backspace);
     }
     return;
@@ -91,13 +128,11 @@ if (global.awaiting_input) {
 // ==============================
 if (global.inkey_waiting) {
     // If we ALREADY have a captured char, DO NOT pause or return here.
-    // Let the interpreter proceed so LET ... = INKEY$ can commit and clear flags.
     if (string_length(global.inkey_captured) > 0) {
-        global.pause_in_effect = false; // allow interpreter to advance
+        global.pause_in_effect = false;
         if (dbg_on(DBG_FLOW)) show_debug_message("INKEY WAIT: resume for commit (cached='" + global.inkey_captured + "')");
-        // NOTE: NO 'return' here — fall through to the interpreter loop
+        // fall through
     } else {
-        // Try to obtain exactly one key this frame
         var _ch = "";
 
         // Prefer queued key captured by inkey_capture_keys()
@@ -114,19 +149,65 @@ if (global.inkey_waiting) {
         }
 
         if (_ch != "") {
-            // Stash and allow interpreter to proceed THIS frame to re-run LET
             global.inkey_captured  = string(_ch);
             global.pause_in_effect = false;
             if (dbg_on(DBG_FLOW)) show_debug_message("INKEY WAIT: captured '" + global.inkey_captured + "', resuming for commit");
-            // NOTE: NO 'return' here — fall through to the interpreter loop
+            // fall through
         } else {
-            // Nothing yet: keep interpreter paused and try again next frame
             global.pause_in_effect = true;
             if (dbg_on(DBG_FLOW)) show_debug_message("INKEY WAIT: still waiting for key");
-            return; // only return when we truly don't have a key this frame
+            return;
         }
     }
 }
+
+// ---- Beep wait release / sequence driver ----
+if (variable_global_exists("beep_waiting") && global.beep_waiting) {
+    if (current_time >= global.beep_release_time) {
+        // stop instance for crisp cutoff
+        if (variable_global_exists("beep_instance")) {
+            if (is_real(global.beep_instance) && global.beep_instance >= 0) {
+                audio_stop_sound(global.beep_instance);
+            }
+            global.beep_instance = -1;
+        }
+
+        global.beep_waiting = false;
+
+        // If a sequence is active, either advance or finish
+        if (variable_global_exists("beep_seq_active") && global.beep_seq_active) {
+            if (ds_exists(global.beep_seq_queue, ds_type_queue) && ds_queue_size(global.beep_seq_queue) > 0) {
+                // Play next note; remain paused
+                _beep_seq_next(); // separate script
+                global.pause_in_effect = true;
+                return;
+            } else {
+                // Sequence finished → schedule resume at next colon segment
+                global.beep_seq_active = false;
+
+                global.interpreter_use_stmt_jump = true;
+                global.interpreter_target_line   = global.beep_resume_line;
+                global.interpreter_target_stmt   = global.beep_resume_stmt;
+
+                global.pause_in_effect = false; // let interpreter proceed
+                // fall through; interpreter loop can run this frame
+            }
+        } else {
+            // Single-note case — just resume
+            global.pause_in_effect = false;
+            // fall through
+        }
+    } else {
+        // Still waiting → keep interpreter paused and skip the loop this frame
+        global.pause_in_effect = true;
+        return;
+    }
+}
+
+
+
+
+
 
 // ==============================
 // Synchronize for structured IF…ELSE handling
@@ -142,7 +223,6 @@ if (global.interpreter_next_line >= 0) {
     global.interpreter_current_line_index = global.interpreter_next_line;
     global.interpreter_resume_stmt_index = 0;
 
-    // Clear any stale statement-level jump
     global.interpreter_use_stmt_jump = false;
     global.interpreter_target_line   = -1;
     global.interpreter_target_stmt   = 0;
@@ -241,7 +321,22 @@ if (line_index < ds_list_size(global.line_list)) {
     if (!(global.interpreter_use_stmt_jump && global.interpreter_target_line >= 0)
      && !(global.interpreter_next_line >= 0)
      && !global.pause_in_effect) {
-        line_index++;
+ var nxt = line_index + 1;
+
+    // Skip any call-only subroutines unless we *jumped into* them
+    while (nxt < ds_list_size(global.line_list)) {
+        var next_ln = ds_list_find_value(global.line_list, nxt);
+        if (ds_exists(global.gosub_targets, ds_type_map)
+         && ds_map_exists(global.gosub_targets, string(next_ln))) {
+            if (dbg_on(DBG_FLOW)) show_debug_message("SKIP subroutine line " + string(next_ln) + " in straight-line flow");
+            nxt += 1;
+        } else {
+            break;
+        }
+    }
+
+    line_index = nxt;
+
     }
 } else {
     global.interpreter_running = false;
@@ -278,4 +373,8 @@ if (keyboard_check_pressed(vk_pagedown)) {
 if (global.pause_in_effect && global.inkey_mode) {
     handle_inkey_input();
 }
+
+
+
+
 // === END: obj_basic_interpreter.Step ===

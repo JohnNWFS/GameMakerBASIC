@@ -63,6 +63,20 @@ if (!ds_map_exists(global.basic_variables, varName)) {
 
     
     if (dbg_on(DBG_FLOW)) show_debug_message("INPUT: Awaiting input for variable " + varName);
+	
+	// NEW: schedule "resume at next colon segment" and yield now
+	global.interpreter_use_stmt_jump = true;
+	global.interpreter_target_line   = global.interpreter_current_line_index;
+	global.interpreter_target_stmt   = global.interpreter_current_stmt_index + 1;
+	if (dbg_on(DBG_FLOW)) show_debug_message(
+	    "INPUT: scheduling resume at stmt " + string(global.interpreter_target_stmt)
+	    + " on line-index " + string(global.interpreter_target_line)
+	);
+	return; // IMPORTANT: stop dispatching the rest of this line now	
+	
+	
+	
+	
 }
 /*function basic_cmd_input(arg) {
     var s = string_trim(arg);

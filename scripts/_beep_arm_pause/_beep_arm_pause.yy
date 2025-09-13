@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"_beep_arm_pause",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"_beep_arm_pause",
+  "parent":{
+    "name":"AUDIO",
+    "path":"folders/Scripts/AUDIO.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

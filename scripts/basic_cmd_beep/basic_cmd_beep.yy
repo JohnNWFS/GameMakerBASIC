@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"basic_cmd_beep",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"basic_cmd_beep",
+  "parent":{
+    "name":"AUDIO",
+    "path":"folders/Scripts/AUDIO.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

@@ -43,6 +43,45 @@ function run_program() {
         ds_list_clear(global.basic_line_numbers);
     }
     ds_list_copy(global.basic_line_numbers, global.line_numbers);
+	
+// === Build call-only subroutine index (gosub_targets) ===
+// Place this RIGHT AFTER you finalize global.program_map & global.line_list
+// (i.e., after ds_list_sort(global.line_list, true) / your copy steps)
+
+if (!variable_global_exists("gosub_targets")) {
+    global.gosub_targets = ds_map_create();
+} else if (is_undefined(global.gosub_targets) || !ds_exists(global.gosub_targets, ds_type_map)) {
+    // If something else overwrote the var, recreate it as a map
+    global.gosub_targets = ds_map_create();
+} else {
+    ds_map_clear(global.gosub_targets);
+}
+
+// Scan current program to find all GOSUB targets (call-only entry points)
+for (var i = 0; i < ds_list_size(global.line_list); i++) {
+    var _ln  = ds_list_find_value(global.line_list, i);
+    var raw = ds_map_find_value(global.program_map, _ln);
+    if (is_undefined(raw)) continue;
+
+    var parts = split_on_unquoted_colons(string_trim(raw));
+    for (var p = 0; p < array_length(parts); p++) {
+        var stmt = string_trim(parts[p]);
+        if (stmt == "") continue;
+
+        var sp  = string_pos(" ", stmt);
+        var v0  = (sp > 0) ? string_upper(string_copy(stmt, 1, sp - 1)) : string_upper(stmt);
+        var r0  = (sp > 0) ? string_trim(string_copy(stmt, sp + 1, string_length(stmt))) : "";
+
+        if (v0 == "GOSUB") {
+            var tgt = real(r0);
+            if (!is_nan(tgt)) ds_map_set(global.gosub_targets, string(tgt), true);
+        }
+    }
+}
+
+	
+	
+	
 
     // ── Make sure output buffers exist BEFORE validation (errors print into them) ──
     if (!is_real(global.output_lines) || !ds_exists(global.output_lines, ds_type_list)) {

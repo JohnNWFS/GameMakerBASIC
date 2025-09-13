@@ -4,7 +4,6 @@ function basic_assign_to_array(varName, val) {
     var open_paren  = string_pos("(", varName);
     var close_paren = string_pos(")", varName);
     if (open_paren <= 0 || close_paren <= open_paren) {
-        // 4-arg syntax error: message, line_no, stmt_idx, code
         basic_syntax_error("Invalid array syntax: " + varName,
                            /*line_no*/ undefined,
                            /*stmt_idx*/ global.interpreter_current_stmt_index,
@@ -22,6 +21,15 @@ function basic_assign_to_array(varName, val) {
     var indexTokens  = basic_tokenize_expression_v2(indexExpr);
     var indexPostfix = infix_to_postfix(indexTokens);
     var indexVal     = evaluate_postfix(indexPostfix);
+
+    // Safeguard against invalid index evaluation
+    if (is_string(indexVal) || is_undefined(indexVal)) {
+        basic_syntax_error("Invalid array index expression: " + indexExpr + " (evaluated to " + string(indexVal) + ")",
+                           /*line_no*/ undefined,
+                           /*stmt_idx*/ global.interpreter_current_stmt_index,
+                           "ARRAY_INDEX_EVAL");
+        return;
+    }
 
     // Coerce to integer and enforce 1-based external indexing
     var idx1 = floor(real(indexVal));

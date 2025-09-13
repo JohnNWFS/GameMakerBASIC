@@ -197,3 +197,21 @@ if (!variable_global_exists("help_topics") || !ds_exists(global.help_topics, ds_
 global.print_zone = 14; // width
 global.print_tab_mode = 1; 
 // 0 = zones (BASIC default), 1 = fixed-width tabs
+// === Beep subsystem ===
+global.beep_tempo = 120; // BPM
+global.beep_waiting = false;
+global.beep_release_time = 0;
+
+// Point this at your middle-C piezo sample asset
+global.beep_sound = snd_beep_c4;  // <-- replace with your actual sound asset name
+// Map any you actually have; missing ones are auto-skipped
+global.beep_samples = ds_map_create();
+ds_map_set(global.beep_samples, "C2", snd_beep_c4_3);
+ds_map_set(global.beep_samples, "C3", snd_beep_c4_2);
+ds_map_set(global.beep_samples, "C4", snd_beep_c4);
+ds_map_set(global.beep_samples, "C5", snd_beep_c4_5);
+ds_map_set(global.beep_samples, "C6", snd_beep_c4_6);
+
+// Fallback single-sample (still supported)
+global.beep_sound = snd_beep_c4;
+
