@@ -1,0 +1,59 @@
+Filling the Screen in NW-BASIC (MODE 1)
+
+When working in MODE 1,32, the screen is a fixed grid of tile cells. Each cell can be addressed by column and row coordinates, starting at (0,0) in the top-left corner. The coordinate order for drawing functions is:
+
+    col, row, character
+
+This has been verified by placing characters at (0,0) and (1,0) and observing that the second character appears to the right of the first.
+
+There are two main ways to fill the screen with a repeated character:
+
+---
+
+1. Using CHARAT in Nested Loops  
+This is the direct but slow method. It places one character at a time by iterating over every column and row.
+
+10 MODE 1,32 : BGCOLOR BLACK : COLOR WHITE : CLS
+20 FONT "DEFAULT_32"
+30 COLS = 40
+40 ROWS = 25
+50 FOR R = 0 TO ROWS - 1
+60   FOR C = 0 TO COLS - 1
+70     CHARAT C, R, 64
+80   NEXT C
+90 NEXT R
+100 PAUSE
+110 END
+
+- 64 is the ASCII code for "@".  
+- This guarantees every cell is set, but runs more slowly since each tile is updated individually.
+
+---
+
+2. Using PRINTAT with REPEAT$  
+This is the fast method. It builds a full line of repeated characters and prints the string at once.
+
+10 MODE 1,32 : BGCOLOR BLACK : COLOR WHITE : CLS
+20 FONT "DEFAULT_32"
+30 COLS = 40
+40 ROWS = 25
+50 LINE$ = REPEAT$("@", COLS)
+60 FOR R = 0 TO ROWS - 1
+70   PRINTAT 0, R, LINE$
+80 NEXT R
+90 PAUSE
+100 END
+
+- REPEAT$("@", COLS) generates a single string with 40 "@" characters.  
+- PRINTAT 0, R, LINE$ writes the whole row in one call, which is much faster than updating cell by cell.
+
+---
+
+Notes for Developers
+- Use the CHARAT loop if you need fine-grained control (e.g., placing different characters per column).  
+- Use the PRINTAT + REPEAT$ method if you want to quickly fill rows with the same character.  
+- Both approaches are correct and respect the (col, row, char) coordinate system of NW-BASIC.
+
+Performance tip:
+- PRINTAT is preferable for drawing menus and banners.  
+- CHARAT is better for per-cell graphics (like a tilemap).  

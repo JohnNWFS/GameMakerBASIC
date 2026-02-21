@@ -1,3 +1,4 @@
+/// MODE 1 COMMAND
 /// @function basic_cmd_charat(arg)
 /// @desc CHARAT x, y, charIndex [, fg [, bg]]
 function basic_cmd_charat(arg) {
@@ -12,7 +13,7 @@ function basic_cmd_charat(arg) {
     var _y = floor(real(basic_evaluate_expression_v2(string_trim(args[1]))));
     var char_index = floor(real(basic_evaluate_expression_v2(string_trim(args[2]))));
 
-    // Optional colors
+    // Optional colors (undefined => preserve existing cell colors)
     var fg = (array_length(args) > 3) ? basic_parse_color(string_trim(args[3])) : undefined;
     var bg = (array_length(args) > 4) ? basic_parse_color(string_trim(args[4])) : undefined;
 
@@ -29,10 +30,13 @@ function basic_cmd_charat(arg) {
         return;
     }
 
-    // If fg/bg are undefined, mode1_grid_set should keep existing cell colors
+    // If fg/bg are undefined, mode1_grid_set keeps existing colors
     mode1_grid_set(_x, _y, char_index, fg, bg);
 
-    if (dbg_on(DBG_FLOW)) show_debug_message("CHARAT: set (" + string(_x) + "," + string(_y) + ")=" + string(char_index)
-        + ((fg != undefined) ? " fg=" + string(fg) : "")
-        + ((bg != undefined) ? " bg=" + string(bg) : ""));
+    if (dbg_on(DBG_FLOW)) {
+        var msg = "CHARAT: set (" + string(_x) + "," + string(_y) + ")=" + string(char_index);
+        if (!is_undefined(fg)) msg += " fg=" + string(fg);
+        if (!is_undefined(bg)) msg += " bg=" + string(bg);
+        show_debug_message(msg);
+    }
 }

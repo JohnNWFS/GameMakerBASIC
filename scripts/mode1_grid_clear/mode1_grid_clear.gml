@@ -1,3 +1,4 @@
+/// MODE 1 COMMAND
 // FILE: scripts/mode1_grid_clear.gml
 // FUNCTION: mode1_grid_clear(char_index)
 // CHANGE: Remove 15x18 constants; iterate over actual grid

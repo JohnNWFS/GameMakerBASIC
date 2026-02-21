@@ -3,6 +3,15 @@
 /// Expects: global.beep_samples map like {"C2": snd_beep_c2, "C3": snd_beep_c3, ..., "C6": snd_beep_c6}
 function _beep_seq_next()
 {
+	
+	// --- BREAK GUARD: allow ESC to abort mid-sequence ---
+	if (variable_global_exists("beep_break_requested") && global.beep_break_requested) {
+	    global.beep_break_requested = false;
+	    beep_cancel(true); // stop and END
+	    return;
+	}
+
+
     if (!ds_exists(global.beep_seq_queue, ds_type_queue) || ds_queue_size(global.beep_seq_queue) == 0) {
         // Sequence finished: resume after the original statement
         global.beep_seq_active  = false;

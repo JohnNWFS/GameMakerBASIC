@@ -1,4 +1,5 @@
-// @function basic_cmd_print_mode1(arg)
+/// MODE 1 COMMAND
+/// @function basic_cmd_print_mode1(arg)
 /// @description MODE 1 version of PRINT that writes to the grid using cursor position
 function basic_cmd_print_mode1(arg) {
     // Initialize cursor if not set
@@ -7,7 +8,7 @@ function basic_cmd_print_mode1(arg) {
     
     var suppress_newline = false;
     
-    // Check for trailing semicolon
+    // Check for trailing semicolon (do not trim first so semicolon at true end detected)
     if (string_length(arg) > 0 && string_char_at(arg, string_length(arg)) == ";") {
         suppress_newline = true;
         arg = string_copy(arg, 1, string_length(arg) - 1);
@@ -17,9 +18,11 @@ function basic_cmd_print_mode1(arg) {
     arg = string_trim(arg);
     if (arg == "") {
         if (!suppress_newline) {
-            // Move cursor to next line
+            // Move cursor to next line (use grid height if available)
+            var _grid = instance_find(obj_mode1_grid, 0);
+            var _rows = (instance_exists(_grid)) ? _grid.grid_rows : 25;
             global.mode1_cursor_x = 0;
-            global.mode1_cursor_y = min(24, global.mode1_cursor_y + 1);
+            global.mode1_cursor_y = min(_rows - 1, global.mode1_cursor_y + 1);
             if (dbg_on(DBG_FLOW)) show_debug_message("PRINT MODE1: Empty line, cursor now at (" + string(global.mode1_cursor_x) + "," + string(global.mode1_cursor_y) + ")");
         }
         return;
@@ -48,27 +51,48 @@ function basic_cmd_print_mode1(arg) {
     
     if (dbg_on(DBG_FLOW)) show_debug_message("PRINT MODE1: Starting at cursor (" + string(global.mode1_cursor_x) + "," + string(global.mode1_cursor_y) + ")");
     
+    // Ensure grid exists and get cols/rows
+    var grid_inst = instance_find(obj_mode1_grid, 0);
+    if (!instance_exists(grid_inst)) {
+        if (dbg_on(DBG_FLOW)) show_debug_message("PRINT MODE1: grid not found; creating");
+        instance_create_layer(0, 0, "Instances", obj_mode1_grid);
+        grid_inst = instance_find(obj_mode1_grid, 0);
+        if (!instance_exists(grid_inst)) {
+            if (dbg_on(DBG_FLOW)) show_debug_message("PRINT MODE1: grid creation failed; falling back to defaults");
+        }
+    }
+    var cols = (instance_exists(grid_inst)) ? grid_inst.grid_cols : 40;
+    var rows = (instance_exists(grid_inst)) ? grid_inst.grid_rows : 25;
+    
     // Print each character at cursor position using mode1_grid_set
     for (var i = 0; i < string_length(output_text); i++) {
         var ch = ord(string_char_at(output_text, i + 1));
         
         if (dbg_on(DBG_FLOW)) show_debug_message("PRINT MODE1: Setting char '" + string_char_at(output_text, i + 1) + "' (code " + string(ch) + ") at (" + string(global.mode1_cursor_x) + "," + string(global.mode1_cursor_y) + ")");
         
-        // Use mode1_grid_set to place character
-        mode1_grid_set(global.mode1_cursor_x, global.mode1_cursor_y, ch, c_white, c_black);
+        // Preserve existing cell colors unless explicitly changed elsewhere: pass undefined for fg/bg
+        mode1_grid_set(global.mode1_cursor_x, global.mode1_cursor_y, ch, undefined, undefined);
         
         // Advance cursor
         global.mode1_cursor_x++;
-        if (global.mode1_cursor_x >= 40) {
+        if (global.mode1_cursor_x >= cols) {
             global.mode1_cursor_x = 0;
-            global.mode1_cursor_y = min(24, global.mode1_cursor_y + 1);
+            global.mode1_cursor_y = min(rows - 1, global.mode1_cursor_y + 1);
             if (dbg_on(DBG_FLOW)) show_debug_message("PRINT MODE1: Wrapped to next line, cursor now at (" + string(global.mode1_cursor_x) + "," + string(global.mode1_cursor_y) + ")");
         }
     }
     
+    // If not suppressed, clear the remainder of the row (removes leftover glyphs), then newline
     if (!suppress_newline) {
+        var cur_x = global.mode1_cursor_x;
+        var cur_y = global.mode1_cursor_y;
+        // Clear from current column to end-of-row (char -> 32), keep colors unchanged
+        for (var cx = cur_x; cx < cols; cx++) {
+            mode1_grid_set(cx, cur_y, 32, undefined, undefined);
+        }
+        // Move cursor to next line
         global.mode1_cursor_x = 0;
-        global.mode1_cursor_y = min(24, global.mode1_cursor_y + 1);
+        global.mode1_cursor_y = min(rows - 1, cur_y + 1);
         if (dbg_on(DBG_FLOW)) show_debug_message("PRINT MODE1: Newline, cursor now at (" + string(global.mode1_cursor_x) + "," + string(global.mode1_cursor_y) + ")");
     }
     

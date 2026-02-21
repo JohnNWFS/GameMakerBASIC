@@ -1,4 +1,4 @@
-
+/// MODE 1 COMMAND
 /// @param char_index
 /// @param fg_color
 /// @param bg_color

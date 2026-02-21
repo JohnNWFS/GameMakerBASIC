@@ -1,6 +1,20 @@
 function basic_wrap_and_commit(_text, _color) {
     if (dbg_on(DBG_FLOW)) show_debug_message("=== basic_wrap_and_commit START ===");
 
+// Normalize and split on explicit newlines first
+var src = string(_text);
+src = string_replace_all(src, "\r\n", "\n");
+src = string_replace_all(src, "\r",   "\n");
+
+if (string_pos("\n", src) > 0) {
+    var parts = string_split(src, "\n"); // GMS2.3+
+    for (var i = 0; i < array_length(parts); i++) {
+        basic_wrap_and_commit(parts[i], _color); // recurse per physical line
+    }
+    return;
+}
+
+
     // Output buffers must already exist
     if (is_undefined(global.output_lines) || !ds_exists(global.output_lines, ds_type_list)
     ||  is_undefined(global.output_colors) || !ds_exists(global.output_colors, ds_type_list)) {
@@ -52,10 +66,13 @@ function basic_wrap_and_commit(_text, _color) {
 
         if (cut < 1) cut = wrap_width; // safety for huge first word
 
-        var line = string_copy(remaining, 1, cut);
-        if (dbg_on(DBG_FLOW)) show_debug_message("wrap: COMMIT(line) ← \"" + line + "\"");
-        ds_list_add(global.output_lines, line);
-        ds_list_add(global.output_colors, _color);
+var line = string_copy(remaining, 1, cut);
+var padN = max(0, wrap_width - string_length(line));
+if (padN > 0) line += string_repeat(" ", padN);
+if (dbg_on(DBG_FLOW)) show_debug_message("wrap: COMMIT(line) ← \"" + line + "\"");
+ds_list_add(global.output_lines, line);
+ds_list_add(global.output_colors, _color);
+
 
         // Advance; skip the space when we broke on a space
         var next_start = cut + (found_space ? 2 : 1);
@@ -73,9 +90,12 @@ function basic_wrap_and_commit(_text, _color) {
 
     // Tail (commit only if there's content OR the original string was truly empty)
     // This avoids accidental commits of stray empties while preserving empty-line intent.
-    if (string_length(remaining) > 0 || src_len == 0) {
-        if (dbg_on(DBG_FLOW)) show_debug_message("wrap: COMMIT(tail) ← \"" + remaining + "\"");
-        ds_list_add(global.output_lines, remaining);
-        ds_list_add(global.output_colors, _color);
+var tail = remaining;
+var padT = max(0, wrap_width - string_length(tail));
+if (padT > 0) tail += string_repeat(" ", padT);
+if (dbg_on(DBG_FLOW)) show_debug_message("wrap: COMMIT(tail) ← \"" + tail + "\"");
+ds_list_add(global.output_lines, tail);
+ds_list_add(global.output_colors, _color);
+
     }
-}
+

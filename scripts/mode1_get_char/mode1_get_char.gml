@@ -1,3 +1,4 @@
+/// MODE 1 COMMAND
 /// @function mode1_get_char(col, row)
 /// @description Get character at grid position
 function mode1_get_char(col, row) {

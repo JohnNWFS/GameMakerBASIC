@@ -1,5 +1,6 @@
 /// @event obj_inkey_feeder/Step
 if (os_browser != browser_not_a_browser) exit;
+
 // === EARLY EXIT GUARDS ===
 var _is_editor_room =
     (variable_global_exists("editor_return_room") && room == global.editor_return_room)
@@ -19,12 +20,13 @@ if (!variable_global_exists("inkey_queue") || is_undefined(global.inkey_queue)) 
 var _enq = function(val, cap) {
     while (ds_queue_size(global.inkey_queue) >= cap) ds_queue_dequeue(global.inkey_queue);
     ds_queue_enqueue(global.inkey_queue, val);
-    if (dbg_on(DBG_PARSE)) {
+    if (variable_global_exists("DBG_PARSE") && dbg_on(DBG_PARSE)) {
        if (dbg_on(DBG_FLOW)) show_debug_message("##KEYFEED## ENQ='" + string(val) + "'"
             + " A1=" + string((is_string(val) && string_length(val)>=1) ? ord(string_char_at(val,1)) : -1)
             + " A2=" + string((is_string(val) && string_length(val)>=2) ? ord(string_char_at(val,2)) : -1));
     }
 };
+
 var _CAP = 128;
 
 // === 1) DISPLAYABLE TEXT (letters, digits, punctuation, space, shifted forms) ===
@@ -56,11 +58,11 @@ if (keyboard_check_pressed(vk_numpad8)) _enq("8", _CAP);
 if (keyboard_check_pressed(vk_numpad9)) _enq("9", _CAP);
 
 // === 4) EXTENDED KEYS (QBASIC style: CHR$(0)+CHR$(scan)) ===
-var _enqueue_ext = function(sc) { _enq(chr(0) + chr(sc), _CAP); };
-if (keyboard_check_pressed(vk_up))    _enqueue_ext(72); // Up
-if (keyboard_check_pressed(vk_down))  _enqueue_ext(80); // Down
-if (keyboard_check_pressed(vk_left))  _enqueue_ext(75); // Left
-if (keyboard_check_pressed(vk_right)) _enqueue_ext(77); // Right
+// Inline the extended key functionality to avoid scope issues
+if (keyboard_check_pressed(vk_up))    _enq(chr(0) + chr(72), _CAP); // Up
+if (keyboard_check_pressed(vk_down))  _enq(chr(0) + chr(80), _CAP); // Down
+if (keyboard_check_pressed(vk_left))  _enq(chr(0) + chr(75), _CAP); // Left
+if (keyboard_check_pressed(vk_right)) _enq(chr(0) + chr(77), _CAP); // Right
 
 // Convenience WASD (uppercase; add lowercase if desired)
 if (keyboard_check_pressed(ord("W"))) _enq("W", _CAP);

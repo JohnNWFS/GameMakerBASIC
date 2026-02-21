@@ -37,6 +37,8 @@ function basic_cmd_bgcolor(arg) {
 
     global.background_draw_color = bg_color;
     global.background_draw_enabled = (bg_color != c_black);
+	// NEW: also set Mode 1 bg so CLS (in Mode 1) will use it
+	global.mode1_bg_color = bg_color;
 
     if (dbg_on(DBG_FLOW))  show_debug_message("BGCOLOR: Final color set to " + string(bg_color) + ", background_draw_enabled: " + string(global.background_draw_enabled));
 }

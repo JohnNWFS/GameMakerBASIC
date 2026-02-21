@@ -1,5 +1,8 @@
-function basic_cmd_pause() {
-    if (dbg_on(DBG_FLOW)) show_debug_message("PAUSE: Execution paused. Waiting for user to press ENTER...");
+function basic_cmd_pause(arg1) {
+    // Defensive: ensure arg1 is always a string for debug concat
+    if (is_undefined(arg1)) arg1 = "";
+
+    if (dbg_on(DBG_FLOW)) show_debug_message("PAUSE: Execution paused. Waiting for user to press ENTER... Reason: " + arg1);
 
     // Arm pause and reuse the INPUT pathway in Step (pause branch)
     global.pause_in_effect  = true;

@@ -10,8 +10,8 @@ if (save_dir != "") {
     }
 }
 
-//global.debug_mask = DBG_ALL;// allow all debug;
-global.debug_mask = 0; //No Debug
+global.debug_mask = DBG_ALL;// allow all debug;
+//global.debug_mask = 0; //No Debug
 
 global.dbg_dropped_count = 0;
 
@@ -214,4 +214,7 @@ ds_map_set(global.beep_samples, "C6", snd_beep_c4_6);
 
 // Fallback single-sample (still supported)
 global.beep_sound = snd_beep_c4;
+global.beep_seq_active = 0;
+global.beep_break_requested = false;
 
+ global.gosub_targets = ds_map_create();

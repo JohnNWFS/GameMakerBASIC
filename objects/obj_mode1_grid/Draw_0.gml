@@ -1,13 +1,11 @@
-/// @event obj_mode1_grid/Draw
-//draw_sprite(spr_charactersheet,10,10,10);
+/// MODE 1 Draw - renders the MODE1 grid (uses global.active_font_sprite)
 var tile_w    = global.mode1_cell_px; // 32 (default), 16, or 8
 var tile_h    = global.mode1_cell_px;
 var cols      = floor(room_width  / tile_w);
 var rows      = floor(room_height / tile_h);
 var max_chars = sprite_get_number(global.active_font_sprite);
 
-
-
+// Optional grid refresh (unchanged)
 if (global.grid_refresh_needed) {
     global.grid_refresh_needed = false;
     for (var row = 0; row < rows; row++) {
@@ -20,67 +18,88 @@ if (global.grid_refresh_needed) {
     }
 }
 
+// Set stable draw state once
+gpu_set_blendmode(bm_normal);
+draw_set_alpha(1.0);
+
+// local helper: check if a candidate subimage index is usable for current font
+function _mode1_valid_subimg(idx) {
+    return is_real(idx) && idx >= 0 && idx < max_chars;
+}
+
 for (var _y = 0; _y < rows; _y++) {
     for (var _x = 0; _x < cols; _x++) {
         var i = _x + _y * cols;
         if (i < array_length(grid)) {
             var tile = grid[i];
-            // Draw background
+
+            // Precompute cell bounds
+            var x0 = _x * tile_w;
+            var y0 = _y * tile_h;
+            var x1 = (_x + 1) * tile_w;
+            var y1 = (_y + 1) * tile_h;
+
+            // 1) ALWAYS paint background (even if char == 32 and sprite is transparent)
             draw_set_color(tile.bg);
-            draw_rectangle(
-                _x * tile_w, _y * tile_h,
-                (_x + 1) * tile_w, (_y + 1) * tile_h,
-                false
-            );
-            // Draw foreground (sprite tint)
-            draw_set_color(tile.fg);
-            // Force proper blending
-            gpu_set_blendmode(bm_normal);
-            draw_set_alpha(1.0);
-            var subimg = clamp(tile.char, 0, max_chars - 1);
-            // Draw character sprite
-            draw_sprite_ext(
-                global.active_font_sprite,
-                subimg,
-                _x * tile_w,
-                _y * tile_h,
-                1, 1, 0,
-                tile.fg,
-                1.0
-            );
-            // Debug helpers (commented out)
-            //if (drewfont < 5000) { show_debug_message(global.active_font_sprite); drewfont++; }
-            //draw_text(_x * tile_w, _y * tile_h + tile_h - 12, string(tile.char));
+            draw_rectangle(x0, y0, x1, y1, false);
+
+            // 2) Decide whether to draw a glyph and which subimage to use
+            var intent_subimg = clamp(tile.char, 0, max_chars - 1);
+
+            // Special-case SPACE (32): if a substitute subimage is configured, use it.
+            if (tile.char == 32) {
+                if (variable_global_exists("mode1_space_subimg")) {
+                    var sidx = global.mode1_space_subimg;
+                    if (_mode1_valid_subimg(sidx)) {
+                        intent_subimg = sidx;
+                    } else {
+                        // invalid configured subimg -> skip drawing glyph (space stays invisible)
+                        intent_subimg = undefined;
+                    }
+                } else {
+                    // no substitute provided -> skip drawing glyph for space
+                    intent_subimg = undefined;
+                }
+            }
+
+            // Finally draw glyph if we have a valid subimage index
+            if (intent_subimg != undefined) {
+                // ensure subimg is in range
+                intent_subimg = clamp(intent_subimg, 0, max_chars - 1);
+                draw_sprite_ext(
+                    global.active_font_sprite,
+                    intent_subimg,
+                    x0, y0,
+                    1, 1, 0,
+                    tile.fg,
+                    1.0
+                );
+            }
         }
     }
 }
 
-//    draw_set_color(c_white);
-//	draw_text(4, room_height - 40, "FONT=" + global.active_font_name + "  spr=" + string(global.active_font_sprite) + "  num=" + string(sprite_get_number(global.active_font_sprite)));
-	
-// Reset draw state after the loop
+// Reset draw state
 draw_set_color(c_white);
 gpu_set_blendmode(bm_normal);
 
-// === END MESSAGE (MODE 1 style) === //
+// === END MESSAGE (MODE 1 style) ===
 if (global.program_has_ended) {
-    // Find a good position for the message - bottom of screen, centered
     var msg = "Program ended - ESC or ENTER to return";
     var msg_chars = string_length(msg);
-    var start_col = max(0, floor((cols - msg_chars) / 2)); // Center horizontally
-    var msg_row = rows - 2; // Two rows from bottom
-    
-    // Draw message character by character using the current font sprite
+    var start_col = max(0, floor((cols - msg_chars) / 2));
+    var msg_row = rows - 2;
+
     for (var i = 0; i < msg_chars; i++) {
         var char_code = ord(string_char_at(msg, i + 1));
         var char_x = (start_col + i) * tile_w;
         var char_y = msg_row * tile_h;
-        
-        // Draw a background highlight for better visibility
+
+        // Background highlight behind message char
         draw_set_color(c_black);
         draw_rectangle(char_x, char_y, char_x + tile_w, char_y + tile_h, false);
-        
-        // Draw the character in lime color to match MODE 0
+
+        // Lime text glyph
         var subimg = clamp(char_code, 0, max_chars - 1);
         draw_sprite_ext(
             global.active_font_sprite,
@@ -91,10 +110,4 @@ if (global.program_has_ended) {
             1.0
         );
     }
-    
-    // Reset draw state
-	
 }
-
-//draw_text(10, 24, "Font: " + global.active_font_name);
-

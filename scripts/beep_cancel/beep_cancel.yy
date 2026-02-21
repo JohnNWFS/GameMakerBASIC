@@ -1,12 +1,12 @@
 {
   "$GMScript":"v1",
-  "%Name":"Script163",
+  "%Name":"beep_cancel",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"Script163",
+  "name":"beep_cancel",
   "parent":{
-    "name":"BASIC COMMANDS HELPERS",
-    "path":"folders/Scripts/BASIC COMMANDS HELPERS.yy",
+    "name":"AUDIO",
+    "path":"folders/Scripts/AUDIO.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

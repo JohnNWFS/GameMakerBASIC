@@ -1,3 +1,4 @@
+/// MODE 1 COMMAND
 /// @function basic_cmd_font(arg)
 /// @desc FONTSET "KEY" -> switch active font sprite by registry key
 function basic_cmd_font(arg) {
@@ -10,9 +11,11 @@ function basic_cmd_font(arg) {
 
     // Strip quotes if present
     if (string_length(key) >= 2) {
-        var f = string_char_at(key,1);
-        var l = string_char_at(key,string_length(key));
-        if ((f == "\"" || f == "'") && f == l) key = string_copy(key,2,string_length(key)-2);
+        var f = string_char_at(key, 1);
+        var l = string_char_at(key, string_length(key));
+        if ((f == "\"" || f == "'") && f == l) {
+            key = string_copy(key, 2, string_length(key) - 2);
+        }
     }
 
     key = string_upper(key);
@@ -35,7 +38,7 @@ function basic_cmd_font(arg) {
                 + " subimages=" + string(n));
         }
 
-        // Trigger a lightweight refresh (keeps existing fg/bg)
+        // Lightweight refresh: keep existing fg/bg, just ensure space tiles update
         global.grid_refresh_needed = true;
         global.grid_refresh_char   = 32; // space
 

@@ -48,36 +48,55 @@ function run_program() {
 // Place this RIGHT AFTER you finalize global.program_map & global.line_list
 // (i.e., after ds_list_sort(global.line_list, true) / your copy steps)
 
+// --- Build call-only subroutine set (targets of GOSUB) ---
+// Make sure the variable exists before we touch it
 if (!variable_global_exists("gosub_targets")) {
     global.gosub_targets = ds_map_create();
-} else if (is_undefined(global.gosub_targets) || !ds_exists(global.gosub_targets, ds_type_map)) {
-    // If something else overwrote the var, recreate it as a map
+} else if (!ds_exists(global.gosub_targets, ds_type_map)) {
+    // If something else used the name, reset it to a map
     global.gosub_targets = ds_map_create();
 } else {
     ds_map_clear(global.gosub_targets);
 }
 
-// Scan current program to find all GOSUB targets (call-only entry points)
+// Scan the current program using the same ordering the interpreter uses
+// (global.line_list must already be built & sorted)
 for (var i = 0; i < ds_list_size(global.line_list); i++) {
-    var _ln  = ds_list_find_value(global.line_list, i);
-    var raw = ds_map_find_value(global.program_map, _ln);
+    var _ln  = global.line_list[| i];
+    var raw  = ds_map_find_value(global.program_map, _ln);
     if (is_undefined(raw)) continue;
 
+    // Split the physical line into colon segments
     var parts = split_on_unquoted_colons(string_trim(raw));
     for (var p = 0; p < array_length(parts); p++) {
         var stmt = string_trim(parts[p]);
         if (stmt == "") continue;
 
+        // Strip remarks BEFORE tokenizing (handles: GOSUB 1000 ' comment)
+        stmt = strip_basic_remark(stmt);
+        if (stmt == "") continue;
+
+        // verb/rest
         var sp  = string_pos(" ", stmt);
         var v0  = (sp > 0) ? string_upper(string_copy(stmt, 1, sp - 1)) : string_upper(stmt);
         var r0  = (sp > 0) ? string_trim(string_copy(stmt, sp + 1, string_length(stmt))) : "";
 
         if (v0 == "GOSUB") {
-            var tgt = real(r0);
-            if (!is_nan(tgt)) ds_map_set(global.gosub_targets, string(tgt), true);
+            // Keep only first token after GOSUB; ignore expressions during pre-scan
+            var tok = r0;
+            var sp2 = string_pos(" ", tok);
+            if (sp2 > 0) tok = string_copy(tok, 1, sp2 - 1);
+            tok = string_trim(tok);
+
+            if (is_numeric_string(tok)) {
+                var tgt = real(tok);
+                ds_map_set(global.gosub_targets, string(tgt), true);
+            }
         }
     }
 }
+// --- end GOSUB pre-scan ---
+
 
 	
 	
@@ -99,6 +118,53 @@ for (var i = 0; i < ds_list_size(global.line_list); i++) {
     build_data_streams();     // harvest DATA / prep READ/RESTORE
     build_if_block_map();     // multi-line IF/ELSE structure
     if (dbg_on(DBG_FLOW)) show_debug_message("IF-block map built (" + string(ds_map_size(global.if_block_map)) + " blocks)");
+
+// === GOSUB PRE-SCAN: build call-only subroutine set ===
+// ANCHOR: place this immediately after your "IF-block map built (...)" log in run_program
+
+// Ensure the map exists
+if (!variable_global_exists("gosub_targets") || !ds_exists(global.gosub_targets, ds_type_map)) {
+    global.gosub_targets = ds_map_create();
+} else {
+    ds_map_clear(global.gosub_targets);
+}
+
+// Walk physical line order used by the interpreter
+for (var i = 0; i < ds_list_size(global.line_list); i++) {
+    var _ln  = global.line_list[| i];
+    var raw  = ds_map_find_value(global.program_map, _ln);
+    if (is_undefined(raw)) continue;
+
+    // Split line into colon segments
+    var parts = split_on_unquoted_colons(string_trim(raw));
+    for (var p = 0; p < array_length(parts); p++) {
+        var stmt = string_trim(parts[p]);
+        if (stmt == "") continue;
+
+        // Strip inline remark BEFORE tokenizing (handles: GOSUB 1000 ' comment)
+        stmt = strip_basic_remark(stmt);
+        if (stmt == "") continue;
+
+        // verb/rest
+        var sp  = string_pos(" ", stmt);
+        var v0  = (sp > 0) ? string_upper(string_copy(stmt, 1, sp - 1)) : string_upper(stmt);
+        var r0  = (sp > 0) ? string_trim(string_copy(stmt, sp + 1, string_length(stmt))) : "";
+
+        if (v0 == "GOSUB") {
+            // consider only first token after GOSUB for pre-scan (numeric labels)
+            var tok = r0;
+            var sp2 = string_pos(" ", tok);
+            if (sp2 > 0) tok = string_copy(tok, 1, sp2 - 1);
+            tok = string_trim(tok);
+
+            if (is_numeric_string(tok)) {
+                ds_map_set(global.gosub_targets, string(real(tok)), true);
+            }
+        }
+    }
+}
+// === end GOSUB PRE-SCAN ===
+
 
     // ── VALIDATE: visible errors + correct room ───────────────────────────
     // Assumes basic_validate_program() exists.

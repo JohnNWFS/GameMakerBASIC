@@ -67,6 +67,20 @@ function basic_validate_program() {
             var stmt_raw = string_trim(parts[p]);
             if (stmt_raw == "") continue;
 
+// === NEW: remark position lint (must start segment or be standalone) ===
+var badpos = _lint_illegal_remark_position(stmt_raw);
+if (badpos > 0) {
+    basic_syntax_error(
+        "Remark must be standalone on a line or begin a colon-separated statement.\n" +
+        "Use  : ' comment   or   : REM comment\nOffending: " + stmt_raw,
+        line_no,  // physical line number
+        p,        // colon-segment index
+        "REMARK_POSITION"
+    );
+    return false;
+}
+
+
             // Ignore REM / apostrophe comments entirely
             var sp  = string_pos(" ", stmt_raw);
             var verb = (sp > 0) ? string_upper(string_copy(stmt_raw, 1, sp - 1)) : string_upper(stmt_raw);

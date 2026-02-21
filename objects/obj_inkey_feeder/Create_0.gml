@@ -6,3 +6,5 @@ if (!variable_global_exists("inkey_queue")) {
 }
 // Optional: if you want it to survive room switches
 persistent = true;
+
+ _CAP = 128;

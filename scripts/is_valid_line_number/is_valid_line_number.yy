@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"is_valid_line_number",
   "parent":{
-    "name":"EDITOR_SCRIPTS",
-    "path":"folders/Scripts/EDITOR_SCRIPTS.yy",
+    "name":"PROGRAM  VALIDATION",
+    "path":"folders/Scripts/PROGRAM  VALIDATION.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

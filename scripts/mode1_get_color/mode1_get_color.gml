@@ -1,3 +1,4 @@
+/// MODE 1 COMMAND
 /// @function mode1_get_color(col, row)
 /// @description Get foreground color at grid position  
 function mode1_get_color(col, row) {

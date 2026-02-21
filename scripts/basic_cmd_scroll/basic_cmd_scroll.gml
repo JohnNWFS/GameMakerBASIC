@@ -1,3 +1,4 @@
+/// MODE 1 COMMAND
 /// @function basic_cmd_scroll(arg)
 /// @description SCROLL [direction,] amount  -- direction defaults to UP when omitted or numeric-first.
 function basic_cmd_scroll(arg) {
@@ -23,12 +24,12 @@ function basic_cmd_scroll(arg) {
         if (array_length(args) == 1) {
             var a0 = string_trim(args[0]);
 
-            // If the single arg is numeric (or an identifier that evals numeric), treat it as AMOUNT, direction=UP
+            // If single arg is numeric (or evaluates numeric), treat as amount; direction stays UP
             var treat_as_amount = false;
             if (is_numeric_string(a0)) {
+                amount = max(1, floor(real(a0)));
                 treat_as_amount = true;
             } else {
-                // try evaluator; if it yields a number, we accept it as amount
                 var v = basic_evaluate_expression_v2(a0);
                 if (is_real(v)) {
                     amount = max(1, floor(real(v)));
@@ -36,31 +37,33 @@ function basic_cmd_scroll(arg) {
                 }
             }
 
-            if (treat_as_amount) {
-                // direction remains default "UP"
-                if (is_numeric_string(a0)) amount = max(1, floor(real(a0)));
-            } else {
-                // Otherwise it’s a direction token
+            if (!treat_as_amount) {
+                // Otherwise treat it as a direction token (quotes allowed)
                 _direction = string_upper(a0);
-                // Remove quotes if present
-                if (string_length(_direction) >= 2 && (string_char_at(_direction,1) == "\"" || string_char_at(_direction,1) == "'")) {
-                    _direction = string_copy(_direction, 2, string_length(_direction) - 2);
-                    _direction = string_upper(_direction);
+                if (string_length(_direction) >= 2) {
+                    var q = string_char_at(_direction, 1);
+                    if (q == "\"" || q == "'") {
+                        _direction = string_copy(_direction, 2, string_length(_direction) - 2);
+                        _direction = string_upper(_direction);
+                    }
                 }
             }
         }
         else if (array_length(args) >= 2) {
-            // direction, amount
+            // direction, amount (direction may be quoted)
             _direction = string_upper(string_trim(args[0]));
-            if (string_length(_direction) >= 2 && (string_char_at(_direction,1) == "\"" || string_char_at(_direction,1) == "'")) {
-                _direction = string_copy(_direction, 2, string_length(_direction) - 2);
-                _direction = string_upper(_direction);
+            if (string_length(_direction) >= 2) {
+                var q0 = string_char_at(_direction, 1);
+                if (q0 == "\"" || q0 == "'") {
+                    _direction = string_copy(_direction, 2, string_length(_direction) - 2);
+                    _direction = string_upper(_direction);
+                }
             }
             amount = max(1, floor(real(basic_evaluate_expression_v2(string_trim(args[1])))));
         }
     }
 
-    // Hand off
+    // Hand off to grid scroller (current signature)
     mode1_scroll_grid(grid_obj, _direction, amount);
     if (dbg_on(DBG_FLOW)) show_debug_message("SCROLL: " + _direction + " by " + string(amount));
 }

@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"basic_validate_program",
   "parent":{
-    "name":"BASIC COMMANDS HELPERS",
-    "path":"folders/Scripts/BASIC COMMANDS HELPERS.yy",
+    "name":"PROGRAM  VALIDATION",
+    "path":"folders/Scripts/PROGRAM  VALIDATION.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

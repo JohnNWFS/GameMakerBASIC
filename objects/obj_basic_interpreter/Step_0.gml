@@ -66,6 +66,15 @@ if (global.program_has_ended) {
     return;
 }
 
+//
+//
+// --- BREAK key for BEEP sequences: ESC aborts & ENDs program ---
+//
+if (global.beep_seq_active && keyboard_check_pressed(vk_escape)) {
+    global.beep_break_requested = true; // lets _beep_seq_next() see it too
+    beep_cancel(true);                  // hard-cancel now and end program
+    return;                             // bail out of Step this frame
+}
 
 // ==============================
 // INPUT mode (line editor) — commit on Enter (non-pause)
@@ -373,6 +382,7 @@ if (keyboard_check_pressed(vk_pagedown)) {
 if (global.pause_in_effect && global.inkey_mode) {
     handle_inkey_input();
 }
+
 
 
 

@@ -1,3 +1,4 @@
+/// MODE 1 COMMAND
 /// FILE: scripts/basic_parse_color.gml
 /// FUNCTION: basic_parse_color(colstr)
 /// Behavior:

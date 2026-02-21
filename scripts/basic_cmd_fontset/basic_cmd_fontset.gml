@@ -1,3 +1,4 @@
+/// MODE 1 COMMAND
 /// @function basic_cmd_fontset(arg)
 /// @description FONTSET "<registry-key>"
 function basic_cmd_fontset(arg) {
@@ -14,9 +15,15 @@ function basic_cmd_fontset(arg) {
         var last  = string_char_at(key, string_length(key));
         if ((first == "\"" || first == "'") && first == last) {
             key = string_copy(key, 2, string_length(key) - 2);
+            key = string_upper(key);
         }
     }
 
+    // Ensure registry exists and the key is present
+    if (!variable_global_exists("font_sheets")) {
+        basic_print_system_message("FONTSET registry not initialized");
+        return;
+    }
     if (!ds_map_exists(global.font_sheets, key)) {
         basic_cmd_print("FONTSET: " + key + " not found", false);
         return;
@@ -33,6 +40,7 @@ function basic_cmd_fontset(arg) {
             + "  subimages=" + string(sprite_get_number(global.active_font_sprite)));
     }
 
-    // Reblank using current sheet's blank char, if you do that
+    // Lightweight refresh: keep existing fg/bg; ensure spaces re-stamp under new atlas
     global.grid_refresh_needed = true;
+    global.grid_refresh_char   = 32; // space
 }

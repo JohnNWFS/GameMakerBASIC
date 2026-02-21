@@ -1,0 +1,14 @@
+Fix when this happens:
+
+1 Close GameMaker
+
+2 Delete *.yy.lock and *.suo manually
+
+3 Run:
+
+
+git add .
+git commit -m "Manual sync cleanup"
+git push
+
+4 Reopen GameMaker and verify source control is working
