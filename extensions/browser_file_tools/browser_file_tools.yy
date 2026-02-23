@@ -16,7 +16,7 @@
   "exportToGame":true,
   "extensionVersion":"1.0.0",
   "files":[
-    {"$GMExtensionFile":"","%Name":"","constants":[],"copyToTargets":32,"filename":"browser_file_tools.gml","final":"","functions":[
+    {"$GMExtensionFile":"v1","%Name":"","constants":[],"copyToTargets":32,"filename":"browser_file_tools.gml","final":"","functions":[
         {"$GMExtensionFunction":"","%Name":"browser_file_tools_init","argCount":0,"args":[],"documentation":"","externalName":"browser_file_tools_init","help":"","hidden":true,"kind":11,"name":"browser_file_tools_init","resourceType":"GMExtensionFunction","resourceVersion":"2.0","returnType":2,},
         {"$GMExtensionFunction":"","%Name":"browser_file_tools_callback_get_name","argCount":1,"args":[],"documentation":"","externalName":"browser_file_tools_callback_get_name","help":"","hidden":true,"kind":11,"name":"browser_file_tools_callback_get_name","resourceType":"GMExtensionFunction","resourceVersion":"2.0","returnType":2,},
         {"$GMExtensionFunction":"","%Name":"browser_file_tools_callback_is_valid","argCount":1,"args":[],"documentation":"","externalName":"browser_file_tools_callback_is_valid","help":"","hidden":true,"kind":11,"name":"browser_file_tools_callback_is_valid","resourceType":"GMExtensionFunction","resourceVersion":"2.0","returnType":2,},
@@ -32,34 +32,13 @@
         {"$GMExtensionFunction":"","%Name":"gmcallback_browser_file_tools_open_filter","argCount":3,"args":[],"documentation":"","externalName":"gmcallback_browser_file_tools_open_filter","help":"","hidden":true,"kind":11,"name":"gmcallback_browser_file_tools_open_filter","resourceType":"GMExtensionFunction","resourceVersion":"2.0","returnType":2,},
         {"$GMExtensionFunction":"","%Name":"browser_show_open_dialog","argCount":-1,"args":[],"documentation":"","externalName":"browser_show_open_dialog","help":"browser_show_open_dialog(accept:string, multiselect:bool, handler_script:function<data:string;name:string;type:string;void>, ?filter_script:function<type:string;bool>)","hidden":false,"kind":2,"name":"browser_show_open_dialog","resourceType":"GMExtensionFunction","resourceVersion":"2.0","returnType":2,},
         {"$GMExtensionFunction":"","%Name":"browser_show_save_dialog","argCount":-1,"args":[],"documentation":"","externalName":"browser_show_save_dialog","help":"browser_show_save_dialog(buffer, name, ?type, ?size)","hidden":false,"kind":2,"name":"browser_show_save_dialog","resourceType":"GMExtensionFunction","resourceVersion":"2.0","returnType":2,},
-      ],"init":"","kind":2,"name":"","order":[
-        {"name":"browser_file_tools_init","path":"extensions/browser_file_tools/browser_file_tools.yy",},
-        {"name":"browser_file_tools_callback_get_name","path":"extensions/browser_file_tools/browser_file_tools.yy",},
-        {"name":"browser_file_tools_callback_is_valid","path":"extensions/browser_file_tools/browser_file_tools.yy",},
-        {"name":"browser_file_tools_callback_invoke3","path":"extensions/browser_file_tools/browser_file_tools.yy",},
-        {"name":"browser_file_tools_cb_invoke","path":"extensions/browser_file_tools/browser_file_tools.yy",},
-        {"name":"gmcallback_browser_file_tools_paste_handler","path":"extensions/browser_file_tools/browser_file_tools.yy",},
-        {"name":"gmcallback_browser_file_tools_paste_filter","path":"extensions/browser_file_tools/browser_file_tools.yy",},
-        {"name":"browser_paste_bind","path":"extensions/browser_file_tools/browser_file_tools.yy",},
-        {"name":"gmcallback_browser_file_tools_drop_handler","path":"extensions/browser_file_tools/browser_file_tools.yy",},
-        {"name":"gmcallback_browser_file_tools_drop_filter","path":"extensions/browser_file_tools/browser_file_tools.yy",},
-        {"name":"browser_drop_bind","path":"extensions/browser_file_tools/browser_file_tools.yy",},
-        {"name":"gmcallback_browser_file_tools_open_handler","path":"extensions/browser_file_tools/browser_file_tools.yy",},
-        {"name":"gmcallback_browser_file_tools_open_filter","path":"extensions/browser_file_tools/browser_file_tools.yy",},
-        {"name":"browser_show_open_dialog","path":"extensions/browser_file_tools/browser_file_tools.yy",},
-        {"name":"browser_show_save_dialog","path":"extensions/browser_file_tools/browser_file_tools.yy",},
-      ],"origname":"extensions\\gml.gml","ProxyFiles":[],"resourceType":"GMExtensionFile","resourceVersion":"2.0","uncompress":true,"usesRunnerInterface":false,},
-    {"$GMExtensionFile":"","%Name":"","constants":[],"copyToTargets":-1,"filename":"browser_file_tools.js","final":"","functions":[
+      ],"init":"","kind":2,"name":"","origname":"extensions\\gml.gml","ProxyFiles":[],"resourceType":"GMExtensionFile","resourceVersion":"2.0","uncompress":true,"usesRunnerInterface":false,},
+    {"$GMExtensionFile":"v1","%Name":"","constants":[],"copyToTargets":-1,"filename":"browser_file_tools.js","final":"","functions":[
         {"$GMExtensionFunction":"","%Name":"browser_paste_bind_raw","argCount":4,"args":[2,2,2,2,],"documentation":"","externalName":"browser_paste_bind_raw","help":"","hidden":true,"kind":11,"name":"browser_paste_bind_raw","resourceType":"GMExtensionFunction","resourceVersion":"2.0","returnType":2,},
         {"$GMExtensionFunction":"","%Name":"browser_drop_bind_raw","argCount":4,"args":[2,2,2,2,],"documentation":"","externalName":"browser_drop_bind_raw","help":"","hidden":true,"kind":11,"name":"browser_drop_bind_raw","resourceType":"GMExtensionFunction","resourceVersion":"2.0","returnType":2,},
         {"$GMExtensionFunction":"","%Name":"browser_show_open_dialog_raw","argCount":6,"args":[2,2,2,2,2,2,],"documentation":"","externalName":"browser_show_open_dialog_raw","help":"","hidden":true,"kind":11,"name":"browser_show_open_dialog_raw","resourceType":"GMExtensionFunction","resourceVersion":"2.0","returnType":2,},
         {"$GMExtensionFunction":"","%Name":"browser_show_save_dialog_raw","argCount":4,"args":[2,2,2,2,],"documentation":"","externalName":"browser_show_save_dialog_raw","help":"","hidden":true,"kind":11,"name":"browser_show_save_dialog_raw","resourceType":"GMExtensionFunction","resourceVersion":"2.0","returnType":2,},
-      ],"init":"","kind":5,"name":"","order":[
-        {"name":"browser_paste_bind_raw","path":"extensions/browser_file_tools/browser_file_tools.yy",},
-        {"name":"browser_drop_bind_raw","path":"extensions/browser_file_tools/browser_file_tools.yy",},
-        {"name":"browser_show_open_dialog_raw","path":"extensions/browser_file_tools/browser_file_tools.yy",},
-        {"name":"browser_show_save_dialog_raw","path":"extensions/browser_file_tools/browser_file_tools.yy",},
-      ],"origname":"","ProxyFiles":[],"resourceType":"GMExtensionFile","resourceVersion":"2.0","uncompress":false,"usesRunnerInterface":false,},
+      ],"init":"","kind":5,"name":"","origname":"","ProxyFiles":[],"resourceType":"GMExtensionFile","resourceVersion":"2.0","uncompress":false,"usesRunnerInterface":false,},
   ],
   "gradleinject":"",
   "hasConvertedCodeInjection":true,

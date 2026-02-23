@@ -29,3 +29,6 @@ Thumbs.db
 .idea/
 .vscode/
 *.code-workspace
+
+#OTHER
+all_gml_files.txt
