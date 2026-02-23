@@ -36,11 +36,9 @@ decide which kinds of messages should print at runtime.
 You also have two helper functions defined in `dbg.gml`:
 
 ```
-function dbg_on(cat) -> bool
     // Returns TRUE if the category bit is enabled in global.debug_mask.
     // Very cheap; use around *occasional* logs.
 
-function dbg(cat, msg) -> void
     // Prints a message if the category bit is enabled AND you haven’t
     // exceeded the per-frame quota. Use inside tight loops to avoid FPS hits.
 ```
