@@ -99,6 +99,14 @@ global.mode_rooms[? 0] = rm_basic_interpreter; // Text
 global.mode_rooms[? 1] = rm_mode1_graphics;    // Tile graphics
 global.mode_rooms[? 2] = rm_mode2_pixel;       // Pixel graphics
 
+// Runtime safety defaults for globals that can be read before explicit assignment
+global.wrap_width = 800; // Pixel width used by text wrapping calculations
+global.system_message_color = c_white; // Draw color used for system/status messages
+global.mode1_cell_size = 32; // Tile cell size (pixels) for MODE 1 grid layout
+global.mode1_fg_color = c_white; // Foreground color used when drawing MODE 1 glyphs
+global.mode1_space_subimg = 0; // Sprite sub-image index to use for a MODE 1 space character
+global.editor_room = rm_editor; // Editor room asset used by run_program and editor-room checks
+
 // MODE 1 sprite sheet container
 // FONT registry for MODE 1
 global.font_sheets = ds_map_create();
