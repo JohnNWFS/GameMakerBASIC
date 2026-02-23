@@ -9,6 +9,5 @@ function dbg(cat, msg) {
     }
     global.dbg_frame_count++;
 
-    // ✅ Print unconditionally now that the category is enabled
-   if (dbg_on(DBG_FLOW)) show_debug_message(msg);
+    show_debug_message(msg);
 }
