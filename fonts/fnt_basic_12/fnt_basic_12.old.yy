@@ -221,7 +221,6 @@
   "pointRounding":0,
   "ranges":[
     {"lower":32,"upper":255,},
-    {"lower":2000,"upper":2200,},
     {"lower":9647,"upper":9647,},
   ],
   "regenerateBitmap":false,
