@@ -12,7 +12,7 @@ function editor_html_handle_paste_command() {
     if (global.__editor_html_paste_bound) {
         // Already waiting for a Ctrl/Cmd+V from the user
         basic_show_message("Paste is already waiting — click the game, then press Ctrl+V (⌘V on Mac).");
-        if (dbg_on(DBG_FLOW)) show_debug_message("[PASTE/HTML] already bound");
+        dbg_log(DBG_FLOW, "[PASTE/HTML] already bound");
         return;
     }
 
@@ -26,7 +26,7 @@ function editor_html_handle_paste_command() {
     var _handler = function(data, name, type) {
         // For text, YellowAfterLife sets name==undefined
         if (!is_undefined(name)) {
-            if (dbg_on(DBG_FLOW)) show_debug_message("[PASTE/HTML] ignored non-text paste: name=" + string(name) + " type=" + string(type));
+            dbg_log(DBG_FLOW, "[PASTE/HTML] ignored non-text paste: name=" + string(name) + " type=" + string(type));
             // unbind and reset
             browser_paste_bind();
             global.__editor_html_paste_bound = false;
@@ -42,7 +42,7 @@ function editor_html_handle_paste_command() {
         }
 
         var lines = string_split(raw_clip, "\n");
-        if (dbg_on(DBG_FLOW)) show_debug_message("PASTE: captured " + string(array_length(lines)) + " raw lines");
+        dbg_log(DBG_FLOW, "PASTE: captured " + string(array_length(lines)) + " raw lines");
 
         for (var i = 0; i < array_length(lines); i++) {
             var line = string_trim(lines[i]);
@@ -65,16 +65,16 @@ function editor_html_handle_paste_command() {
                     if (line_num > 0 && string_length(code_str) > 0) {
                         // INSERT or REPLACE program text
                         ds_map_set(global.program_lines, line_num, code_str);
-                        if (dbg_on(DBG_FLOW)) show_debug_message("PASTE: set " + string(line_num) + " → '" + code_str + "'");
+                        dbg_log(DBG_FLOW, "PASTE: set " + string(line_num) + " → '" + code_str + "'");
 
                         // Maintain ordered line number list — add only if not present
                         var idx = ds_list_find_index(global.line_numbers, line_num);
                         if (idx == -1) {
                             ds_list_add(global.line_numbers, line_num);
                             ds_list_sort(global.line_numbers, true);
-                            if (dbg_on(DBG_FLOW)) show_debug_message("PASTE: added line number " + string(line_num));
+                            dbg_log(DBG_FLOW, "PASTE: added line number " + string(line_num));
                         } else if (dbg_on(DBG_FLOW)) {
-                           if (dbg_on(DBG_FLOW)) show_debug_message("PASTE: updated existing line number " + string(line_num) + " (idx=" + string(idx) + ")");
+                           dbg_log(DBG_FLOW, "PASTE: updated existing line number " + string(line_num) + " (idx=" + string(idx) + ")");
                         }
                     }
                 }
@@ -93,7 +93,7 @@ function editor_html_handle_paste_command() {
     global.__editor_html_paste_bound = true;
 
     // Match your existing UX/logging
-    if (dbg_on(DBG_FLOW)) show_debug_message("[PASTE] Bound. Click the game, then press Ctrl/Cmd+V.");
+    dbg_log(DBG_FLOW, "[PASTE] Bound. Click the game, then press Ctrl/Cmd+V.");
     basic_show_message("Paste ready — click the game, then press Ctrl+V (⌘V on Mac).");
 }
 // === END: editor_html_handle_paste_command ===

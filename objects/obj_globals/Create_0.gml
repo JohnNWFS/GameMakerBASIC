@@ -10,9 +10,14 @@ if (save_dir != "") {
     }
 }
 
-global.debug_mask = DBG_ALL;// allow all debug;
+global.debug_mask = DBG_FLOW | DBG_IO | DBG_ARRAY;
+//global.debug_mask = DBG_ALL; //Very verbose: parser/evaluator tracing
 //global.debug_mask = 0; //No Debug
 
+global.debug_to_file = true;
+global.debug_file_path = "";
+global.dbg_frame_quota = 10000;
+global.dbg_frame_count = 0;
 global.dbg_dropped_count = 0;
 
 global.justreturned = 0;
@@ -43,6 +48,11 @@ global.history_index = -1;
 global.if_block_map = ds_map_create();
 global.if_stack     = ds_stack_create();
 
+global.config = ds_map_create();
+global.config[? "max_line_number"] = 65535;
+global.config[? "max_history_size"] = 50;
+global.config[? "show_error_hints"] = true; // show compact help lines under syntax errors
+
 // Spawn the editor after globals are ready
 instance_create_layer(0, 0, "Instances", obj_editor);
 
@@ -65,6 +75,8 @@ global.awaiting_input = false;
 global.input_target_var = "";
 global.interpreter_input = "";
 global.interpreter_cursor_pos = 0;
+global.input_ignore_enter_until_release = false;
+global.input_guard_frames = 0;
 global.interpreter_running = false;
 global.last_interpreter_string = "";
 global.program_has_ended = false;
@@ -141,16 +153,11 @@ global.interpreter_resume_stmt_index = 0;
 
 global.interpreter_current_stmt_index = 0;
 
-global.config = ds_map_create();
-global.config[? "max_line_number"] = 65535;
-global.config[? "max_history_size"] = 50;
-
-
 // === DATA/READ globals ===
 // Create once; the builder will clear/reuse it each run.
 if (!variable_global_exists("data_streams") || !ds_exists(global.data_streams, ds_type_map)) {
     global.data_streams = ds_map_create();
-    if (dbg_on(DBG_FLOW)) show_debug_message("globals: created global.data_streams");
+    dbg_log(DBG_FLOW, "globals: created global.data_streams");
 }
 
 
@@ -163,6 +170,7 @@ global.pause_in_effect = false;
 global.inkey_waiting    = false;
 global.inkey_captured   = "";
 global.inkey_target_var = "";
+global.inkey_release_guard = false;
 global.interpreter_current_line_index = 0; 
 
 // Archival copy of line numbers used by run_program
@@ -176,10 +184,8 @@ global._abort_after_validation   = false;
 // Where to return when leaving the interpreter
 global.editor_return_room = room; // whatever room the editor lives in at startup
 
-global.config[? "show_error_hints"] = true; // show compact help lines under syntax errors
-
 global.screen_edit_mode = false; //for scree editing
-if (dbg_on(DBG_FLOW)) show_debug_message("GLOBALS: screen_edit_mode initialized to false");
+dbg_log(DBG_FLOW, "GLOBALS: screen_edit_mode initialized to false");
 
 
 /// Put near your other globals the first time you use them:

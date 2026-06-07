@@ -24,7 +24,7 @@ function basic_cmd_mode(arg) {
 if (mode == 1) {
     if (size_px != 8 && size_px != 16 && size_px != 32) size_px = 32;
     global.mode1_cell_px = size_px;
-    if (dbg_on(DBG_FLOW)) show_debug_message("MODE 1: cell size set to " + string(size_px) + " px");
+    dbg_log(DBG_FLOW, "MODE 1: cell size set to " + string(size_px) + " px");
 
     // Pick a matching DEFAULT_* only if user hasn't FONTSET-locked a font
     if (!variable_global_exists("font_locked") || !global.font_locked) {
@@ -35,10 +35,10 @@ if (mode == 1) {
         if (ds_map_exists(global.font_sheets, _key)) {
             global.active_font_name   = _key;
             global.active_font_sprite = global.font_sheets[? _key];
-            if (dbg_on(DBG_FLOW)) show_debug_message("MODE: active font -> " + _key);
+            dbg_log(DBG_FLOW, "MODE: active font -> " + _key);
         }
     } else {
-        if (dbg_on(DBG_FLOW)) show_debug_message("MODE: font locked by user (" + global.active_font_name + "), leaving as-is");
+        dbg_log(DBG_FLOW, "MODE: font locked by user (" + global.active_font_name + "), leaving as-is");
     }
 }
 
@@ -50,6 +50,6 @@ if (mode == 1) {
     // --- Switch to the room for the requested mode ---
     global.current_mode = mode;
     var target_room = ds_map_find_value(global.mode_rooms, mode);
-    if (dbg_on(DBG_FLOW)) show_debug_message("Switching to MODE " + string(mode) + " → room: " + string(target_room));
+    dbg_log(DBG_FLOW, "Switching to MODE " + string(mode) + " → room: " + string(target_room));
     room_goto(target_room);
 }

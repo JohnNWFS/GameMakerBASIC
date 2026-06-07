@@ -3,13 +3,13 @@
 /// @description SCROLL [direction,] amount  -- direction defaults to UP when omitted or numeric-first.
 function basic_cmd_scroll(arg) {
     if (global.current_mode < 1) {
-        if (dbg_on(DBG_FLOW)) show_debug_message("SCROLL: Not implemented in text mode");
+        dbg_log(DBG_FLOW, "SCROLL: Not implemented in text mode");
         return;
     }
     
     var grid_obj = instance_find(obj_mode1_grid, 0);
     if (!instance_exists(grid_obj)) {
-        if (dbg_on(DBG_FLOW)) show_debug_message("SCROLL: No grid object found");
+        dbg_log(DBG_FLOW, "SCROLL: No grid object found");
         return;
     }
 
@@ -65,5 +65,5 @@ function basic_cmd_scroll(arg) {
 
     // Hand off to grid scroller (current signature)
     mode1_scroll_grid(grid_obj, _direction, amount);
-    if (dbg_on(DBG_FLOW)) show_debug_message("SCROLL: " + _direction + " by " + string(amount));
+    dbg_log(DBG_FLOW, "SCROLL: " + _direction + " by " + string(amount));
 }

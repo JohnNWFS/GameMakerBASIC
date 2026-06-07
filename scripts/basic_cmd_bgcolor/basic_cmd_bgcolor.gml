@@ -1,6 +1,6 @@
 function basic_cmd_bgcolor(arg) {
     var colstr = string_upper(string_trim(arg));
-    if (dbg_on(DBG_FLOW))  show_debug_message("BGCOLOR: Raw argument: '" + arg + "', Normalized: '" + colstr + "'");
+    dbg_log(DBG_FLOW, "BGCOLOR: Raw argument: '" + arg + "', Normalized: '" + colstr + "'");
     
     var bg_color = c_black;
     var matched = false;
@@ -9,7 +9,7 @@ function basic_cmd_bgcolor(arg) {
     if (ds_map_exists(global.colors, colstr)) {
         bg_color = global.colors[? colstr];
         matched = true;
-        if (dbg_on(DBG_FLOW))  show_debug_message("BGCOLOR: Matched named color → " + string(bg_color));
+        dbg_log(DBG_FLOW, "BGCOLOR: Matched named color → " + string(bg_color));
     }
     // RGB() syntax
    else if (string_pos("RGB(", colstr) == 1) {
@@ -32,7 +32,7 @@ function basic_cmd_bgcolor(arg) {
     } else if (dbg_on(DBG_FLOW))  {show_debug_message("BGCOLOR: Missing ) in '" + colstr + "'");}
 }
  else {
-        if (dbg_on(DBG_FLOW))  show_debug_message("BGCOLOR: No matching named color or RGB format found for '" + colstr + "'");
+        dbg_log(DBG_FLOW, "BGCOLOR: No matching named color or RGB format found for '" + colstr + "'");
     }
 
     global.background_draw_color = bg_color;
@@ -40,5 +40,5 @@ function basic_cmd_bgcolor(arg) {
 	// NEW: also set Mode 1 bg so CLS (in Mode 1) will use it
 	global.mode1_bg_color = bg_color;
 
-    if (dbg_on(DBG_FLOW))  show_debug_message("BGCOLOR: Final color set to " + string(bg_color) + ", background_draw_enabled: " + string(global.background_draw_enabled));
+    dbg_log(DBG_FLOW, "BGCOLOR: Final color set to " + string(bg_color) + ", background_draw_enabled: " + string(global.background_draw_enabled));
 }

@@ -44,7 +44,7 @@ function basic_cmd_read(arg) {
     for (var di = 0; di < array_length(dests); di++) {
         if (stream.ptr >= ds_list_size(lst)) {
             var msg = "?READ ERROR: Out of DATA on stream '" + stream_name + "'";
-            if (dbg_on(DBG_FLOW))  show_debug_message(msg);
+            dbg_log(DBG_FLOW, msg);
             // Graceful stop: reuse your END command
             handle_basic_command("END", "");
             return;
@@ -67,7 +67,7 @@ function basic_cmd_read(arg) {
         } else {
             rhs = string(v);
         }
-        if (dbg_on(DBG_FLOW)) show_debug_message("READ: stream='" + stream_name + "' → " + dest + "=" + rhs);
+        dbg_log(DBG_FLOW, "READ: stream='" + stream_name + "' → " + dest + "=" + rhs);
         // Route through the existing LET path so arrays etc. work
         basic_cmd_let(dest + "=" + rhs);
     }

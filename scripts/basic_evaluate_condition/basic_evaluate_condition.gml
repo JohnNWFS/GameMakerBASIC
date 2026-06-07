@@ -29,14 +29,14 @@ function basic_evaluate_condition(expr) {
                     if (dbg_on(DBG_FLOW)) show_debug_message ("COND: top-level OR split → LHS='" + left + "'  ||  RHS='" + right + "'");
 
                     var lres = basic_evaluate_condition(left);
-                    if (dbg_on(DBG_FLOW)) show_debug_message("COND: OR left result = " + string(lres));
+                    dbg_log(DBG_FLOW, "COND: OR left result = " + string(lres));
                     if (lres) { 
 						if (dbg_on(DBG_FLOW)) {show_debug_message("COND: OR short-circuit TRUE");}
 					return true; }
 
                     var rres = basic_evaluate_condition(right);
                     var ores = (lres || rres);
-                    if (dbg_on(DBG_FLOW)) show_debug_message("COND: OR final = " + string(ores));
+                    dbg_log(DBG_FLOW, "COND: OR final = " + string(ores));
                     return ores;
                 }
             }
@@ -59,15 +59,15 @@ function basic_evaluate_condition(expr) {
                 if (prev2 == " " && next2 == " ") {
                     var left2  = string_trim(string_copy(s, 1, j - 1));
                     var right2 = string_trim(string_copy(s, j + 3, L - (j + 3) + 1));
-                    if (dbg_on(DBG_FLOW)) show_debug_message("COND: top-level AND split → LHS='" + left2 + "'  &&  RHS='" + right2 + "'");
+                    dbg_log(DBG_FLOW, "COND: top-level AND split → LHS='" + left2 + "'  &&  RHS='" + right2 + "'");
 
                     var lres2 = basic_evaluate_condition(left2);
-                    if (dbg_on(DBG_FLOW)) show_debug_message("COND: AND left result = " + string(lres2));
-                    if (!lres2) { if (dbg_on(DBG_FLOW)) show_debug_message("COND: AND short-circuit FALSE"); return false; }
+                    dbg_log(DBG_FLOW, "COND: AND left result = " + string(lres2));
+                    if (!lres2) { dbg_log(DBG_FLOW, "COND: AND short-circuit FALSE"); return false; }
 
                     var rres2 = basic_evaluate_condition(right2);
                     var andres = (lres2 && rres2);
-                    if (dbg_on(DBG_FLOW)) show_debug_message("Combined condition (AND): " + string(lres2) + " AND " + string(rres2) + " = " + string(andres));
+                    dbg_log(DBG_FLOW, "Combined condition (AND): " + string(lres2) + " AND " + string(rres2) + " = " + string(andres));
                     return andres;
                 }
             }
@@ -91,13 +91,13 @@ function basic_evaluate_condition(expr) {
             var two = string_copy(s, i2, 2);
             if (two == "<>" || two == "<=" || two == ">=") {
                 found_op = two; op_pos = i2;
-                if (dbg_on(DBG_FLOW)) show_debug_message("COND: Found 2-char op '" + found_op + "' at pos " + string(op_pos));
+                dbg_log(DBG_FLOW, "COND: Found 2-char op '" + found_op + "' at pos " + string(op_pos));
                 break;
             }
         }
         if (ch3 == "=" || ch3 == "<" || ch3 == ">") {
             found_op = ch3; op_pos = i2;
-            if (dbg_on(DBG_FLOW)) show_debug_message("COND: Found 1-char op '" + found_op + "' at pos " + string(op_pos));
+            dbg_log(DBG_FLOW, "COND: Found 1-char op '" + found_op + "' at pos " + string(op_pos));
             break;
         }
     }
@@ -107,17 +107,17 @@ function basic_evaluate_condition(expr) {
         var rhs = string_trim(string_copy(s, op_pos + string_length(found_op), string_length(s) - (op_pos + string_length(found_op) - 1)));
         var op  = found_op;
 
-        if (dbg_on(DBG_FLOW)) show_debug_message("COND: Split → LHS='" + lhs + "'  OP='" + op + "'  RHS='" + rhs + "'");
+        dbg_log(DBG_FLOW, "COND: Split → LHS='" + lhs + "'  OP='" + op + "'  RHS='" + rhs + "'");
 
         var lhs_val = basic_evaluate_expression_v2(lhs);
         var rhs_val = basic_evaluate_expression_v2(rhs);
-        if (dbg_on(DBG_FLOW)) show_debug_message("COND: Eval → LHS=" + string(lhs_val) + "  RHS=" + string(rhs_val));
+        dbg_log(DBG_FLOW, "COND: Eval → LHS=" + string(lhs_val) + "  RHS=" + string(rhs_val));
 
         var lhs_str = string(lhs_val);
         var rhs_str = string(rhs_val);
         var lhs_is_num = is_real(lhs_val) || is_numeric_string(lhs_str);
         var rhs_is_num = is_real(rhs_val) || is_numeric_string(rhs_str);
-        if (dbg_on(DBG_FLOW)) show_debug_message("COND: Types → LHS_is_num=" + string(lhs_is_num) + "  RHS_is_num=" + string(rhs_is_num));
+        dbg_log(DBG_FLOW, "COND: Types → LHS_is_num=" + string(lhs_is_num) + "  RHS_is_num=" + string(rhs_is_num));
 
         if (!(lhs_is_num && rhs_is_num)) {
             var sres = false;
@@ -126,7 +126,7 @@ function basic_evaluate_condition(expr) {
                 case "<>": sres = (lhs_str != rhs_str); break;
                 default:   sres = false;
             }
-            if (dbg_on(DBG_FLOW)) show_debug_message("COND: String-compare '" + op + "' → " + string(sres));
+            dbg_log(DBG_FLOW, "COND: String-compare '" + op + "' → " + string(sres));
             return sres;
         }
 
@@ -141,7 +141,7 @@ function basic_evaluate_condition(expr) {
             case ">=": nres = (lhs_num >= rhs_num); break;
             case "<>": nres = (lhs_num != rhs_num); break;
         }
-        if (dbg_on(DBG_FLOW)) show_debug_message("COND: Numeric-compare '" + op + "' → " + string(nres));
+        dbg_log(DBG_FLOW, "COND: Numeric-compare '" + op + "' → " + string(nres));
         return nres;
     }
 
@@ -151,17 +151,17 @@ function basic_evaluate_condition(expr) {
         var lhs2 = string_trim(tokens[0]);
         var op2  = string_trim(tokens[1]);
         var rhs2 = string_trim(tokens[2]);
-        if (dbg_on(DBG_FLOW)) show_debug_message("COND: Fallback (space-split) → LHS='" + lhs2 + "' OP='" + op2 + "' RHS='" + rhs2 + "'");
+        dbg_log(DBG_FLOW, "COND: Fallback (space-split) → LHS='" + lhs2 + "' OP='" + op2 + "' RHS='" + rhs2 + "'");
 
         var lhs_val2 = basic_evaluate_expression_v2(lhs2);
         var rhs_val2 = basic_evaluate_expression_v2(rhs2);
-        if (dbg_on(DBG_FLOW)) show_debug_message("COND: Fallback eval → LHS=" + string(lhs_val2) + "  RHS=" + string(rhs_val2));
+        dbg_log(DBG_FLOW, "COND: Fallback eval → LHS=" + string(lhs_val2) + "  RHS=" + string(rhs_val2));
 
         var lhs_str2 = string(lhs_val2);
         var rhs_str2 = string(rhs_val2);
         var lhs_is_num2 = is_real(lhs_val2) || is_numeric_string(lhs_str2);
         var rhs_is_num2 = is_real(rhs_val2) || is_numeric_string(rhs_str2);
-        if (dbg_on(DBG_FLOW)) show_debug_message("COND: Fallback types → LHS_is_num=" + string(lhs_is_num2) + "  RHS_is_num=" + string(rhs_is_num2));
+        dbg_log(DBG_FLOW, "COND: Fallback types → LHS_is_num=" + string(lhs_is_num2) + "  RHS_is_num=" + string(rhs_is_num2));
 
         if (!(lhs_is_num2 && rhs_is_num2)) {
             var sres2 = false;
@@ -170,7 +170,7 @@ function basic_evaluate_condition(expr) {
                 case "<>": sres2 = (lhs_str2 != rhs_str2); break;
                 default:   sres2 = false;
             }
-            if (dbg_on(DBG_FLOW)) show_debug_message("COND: Fallback string-compare '" + op2 + "' → " + string(sres2));
+            dbg_log(DBG_FLOW, "COND: Fallback string-compare '" + op2 + "' → " + string(sres2));
             return sres2;
         }
 
@@ -185,7 +185,7 @@ function basic_evaluate_condition(expr) {
             case ">=": nres2 = (lhs_num2 >= rhs_num2); break;
             case "<>": nres2 = (lhs_num2 != rhs_num2); break;
         }
-        if (dbg_on(DBG_FLOW)) show_debug_message("COND: Fallback numeric-compare '" + op2 + "' → " + string(nres2));
+        dbg_log(DBG_FLOW, "COND: Fallback numeric-compare '" + op2 + "' → " + string(nres2));
         return nres2;
     }
 
@@ -199,6 +199,6 @@ function basic_evaluate_condition(expr) {
         var _s = string(_val);
         _truth = (string_length(_s) > 0);
     }
-    if (dbg_on(DBG_FLOW)) show_debug_message("COND: expression value=" + string(_val) + " → truth=" + string(_truth));
+    dbg_log(DBG_FLOW, "COND: expression value=" + string(_val) + " → truth=" + string(_truth));
     return _truth;
 }

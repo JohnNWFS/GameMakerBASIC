@@ -3,10 +3,23 @@
 /// Assumes helpers basic_normvar(name) and basic_looks_numeric(s) exist,
 /// and global.basic_variables (ds_map) is initialized.
 function handle_interpreter_character_input(key) {
-    // --- PRINTABLE ASCII (uses keyboard_lastchar) ---
+    // --- NUMPAD DIGITS ---
+    if (key >= vk_numpad0 && key <= vk_numpad9) {
+        var digit = string(key - vk_numpad0);
+        global.interpreter_input = string_insert(digit, global.interpreter_input, global.interpreter_cursor_pos + 1);
+        global.interpreter_cursor_pos += 1;
+        return;
+    }
+
+    // --- PRINTABLE ASCII ---
     if (key >= 32 && key <= 126) {
-        var ch = string(keyboard_lastchar); // ensure string
+        var ch = string(keyboard_lastchar);
+        if (string_length(ch) <= 0) ch = chr(key);
+        if (string_length(ch) > 1) ch = string_char_at(ch, string_length(ch));
+
         if (string_length(ch) > 0) {
+            var code = ord(string_char_at(ch, 1));
+            if (code < 32 || code > 126) ch = chr(key);
             global.interpreter_input = string_insert(ch, global.interpreter_input, global.interpreter_cursor_pos + 1);
             global.interpreter_cursor_pos += 1;
         }

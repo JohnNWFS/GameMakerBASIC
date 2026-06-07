@@ -74,5 +74,5 @@ function basic_cmd_cls_mode1() {
     // Reset cursor to top-left for MODE 1
     global.mode1_cursor_x = 0;
     global.mode1_cursor_y = 0;
-    if (dbg_on(DBG_FLOW)) show_debug_message("CLS MODE1: Cursor reset to (0,0)");
+    dbg_log(DBG_FLOW, "CLS MODE1: Cursor reset to (0,0)");
 }

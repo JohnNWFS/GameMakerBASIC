@@ -8,11 +8,11 @@
 
 function evaluate_postfix(postfix) {
     var stack = [];
-    if (dbg_on(DBG_PARSE)) show_debug_message("Evaluating postfix: " + string(postfix));
+    dbg_log(DBG_PARSE, "Evaluating postfix: " + string(postfix));
 
     for (var i = 0; i < array_length(postfix); i++) {
         var token = postfix[i];
-        if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: Processing token [" + string(i) + "] → " + string(token));
+        dbg_log(DBG_PARSE, "POSTFIX: Processing token [" + string(i) + "] → " + string(token));
 
         // Normalize once
         var trimmed     = string_trim(string(token));
@@ -22,7 +22,7 @@ function evaluate_postfix(postfix) {
         // Ignore commas completely (arg separators, never values)
         // -------------------------------------------------------
         if (trimmed == ",") {
-            if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: Ignoring stray comma token");
+            dbg_log(DBG_PARSE, "POSTFIX: Ignoring stray comma token");
             continue;
         }
 
@@ -40,17 +40,17 @@ function evaluate_postfix(postfix) {
                 var arrName = arrNameU; // arrays stored uppercase in helpers
                 var idxText = string_trim(idxTextRaw);
 
-                if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX[ARRAY]: Candidate '" + string(token) + "' → name='" + arrName + "', idxText='" + idxText + "'");
+                dbg_log(DBG_PARSE, "POSTFIX[ARRAY]: Candidate '" + string(token) + "' → name='" + arrName + "', idxText='" + idxText + "'");
 
                 var idxVal = basic_evaluate_expression_v2(idxText);
                 if (!is_real(idxVal)) {
-                    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX[ARRAY] ERROR: Index non-numeric from '" + idxText + "' → '" + string(idxVal) + "'. Pushing 0.");
+                    dbg_log(DBG_PARSE, "POSTFIX[ARRAY] ERROR: Index non-numeric from '" + idxText + "' → '" + string(idxVal) + "'. Pushing 0.");
                     array_push(stack, 0);
                     continue;
                 }
 
                 var arrVal = basic_array_get(arrName, idxVal); // your 1-based getter
-                if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX[ARRAY]: " + arrName + "(" + string(idxVal) + ") → " + string(arrVal));
+                dbg_log(DBG_PARSE, "POSTFIX[ARRAY]: " + arrName + "(" + string(idxVal) + ") → " + string(arrVal));
                 array_push(stack, arrVal);
                 continue;
             }
@@ -62,7 +62,7 @@ function evaluate_postfix(postfix) {
         if (is_numeric_string(trimmed)) {
             var num = real(trimmed);
             array_push(stack, num);
-            if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: Pushed number → " + string(num));
+            dbg_log(DBG_PARSE, "POSTFIX: Pushed number → " + string(num));
             continue;
         }
 
@@ -76,7 +76,7 @@ function evaluate_postfix(postfix) {
             var str = string_copy(trimmed, 2, string_length(trimmed) - 2);
             str = string_replace_all(str, "\"\"", "\"");  // unescape "" -> "
             array_push(stack, str);
-            if (dbg_on(DBG_FLOW)) if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: Pushed quoted string literal → " + str);
+            if (dbg_on(DBG_FLOW)) dbg_log(DBG_PARSE, "POSTFIX: Pushed quoted string literal → " + str);
             continue;
         }
 
@@ -85,7 +85,7 @@ function evaluate_postfix(postfix) {
 		// -------------------------------------------------------
 		if (is_operator(token_upper)) {
 		    if (array_length(stack) < 2) {
-		        if (dbg_on(DBG_PARSE)) show_debug_message("? POSTFIX ERROR: Not enough operands for operator " + token_upper);
+		        dbg_log(DBG_PARSE, "? POSTFIX ERROR: Not enough operands for operator " + token_upper);
 		        return 0;
 		    }
 		    var b = array_pop(stack);
@@ -212,13 +212,13 @@ case "OR": {
 }
 
 		        default:
-		            if (dbg_on(DBG_PARSE)) show_debug_message("? POSTFIX WARNING: Unknown operator = " + token_upper + " → 0");
+		            dbg_log(DBG_PARSE, "? POSTFIX WARNING: Unknown operator = " + token_upper + " → 0");
 		            result = 0;
 		            break;
 		    }
 
 		    array_push(stack, result);
-		    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: Operator result (" + token_upper + ") = " + string(result));
+		    dbg_log(DBG_PARSE, "POSTFIX: Operator result (" + token_upper + ") = " + string(result));
 		    continue;
 		}
 
@@ -228,7 +228,7 @@ case "OR": {
         // -------------------------------------------------------
         if (is_function(token_upper) || token_upper == "STRING$") {
             token_upper = string_upper(string_trim(token));
-            if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: Dispatching function → '" + token_upper + "'");
+            dbg_log(DBG_PARSE, "POSTFIX: Dispatching function → '" + token_upper + "'");
 
             switch (token_upper) {
 
@@ -245,7 +245,7 @@ case "OR": {
                         r1 = irandom(n - 1) + 1;
                     }
                     array_push(stack, r1);
-                    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: RND1(" + string(n) + ") → " + string(r1));
+                    dbg_log(DBG_PARSE, "POSTFIX: RND1(" + string(n) + ") → " + string(r1));
                     break;
                 }
 
@@ -277,7 +277,7 @@ case "OR": {
                     } else {
                         var result = irandom_range(min_val, max_val);
                         array_push(stack, result);
-                        if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: RND2(" + string(min_val) + "," + string(max_val) + ") → " + string(result));
+                        dbg_log(DBG_PARSE, "POSTFIX: RND2(" + string(min_val) + "," + string(max_val) + ") → " + string(result));
                     }
                     break;
                 }
@@ -286,14 +286,14 @@ case "OR": {
                 case "TIMER": {
                     var secs = floor(current_time / 1000); // ms → seconds since game start
                     array_push(stack, secs);
-                    if (dbg_on(DBG_PARSE)) show_debug_message("FUNC: TIMER → " + string(secs));
+                    dbg_log(DBG_PARSE, "FUNC: TIMER → " + string(secs));
                     break;
                 }
 				
 				case "LEN": {
 				    var s = string(array_pop(stack));
 				    array_push(stack, string_length(s));
-				    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: LEN('" + s + "') → " + string(string_length(s)));
+				    dbg_log(DBG_PARSE, "POSTFIX: LEN('" + s + "') → " + string(string_length(s)));
 				    break;
 				}
 				
@@ -307,7 +307,7 @@ case "OR": {
                     var sss = (ss < 10 ? "0" : "") + string(ss);
                     var out = hhs + ":" + mms + ":" + sss;
                     array_push(stack, out);
-                    if (dbg_on(DBG_PARSE)) show_debug_message("FUNC: TIME$ → " + out);
+                    dbg_log(DBG_PARSE, "FUNC: TIME$ → " + out);
                     break;
                 }
                 case "DATE$": {
@@ -319,28 +319,28 @@ case "OR": {
                     var dds = (dd < 10 ? "0" : "") + string(dd);
                     var out2 = string(yy) + "-" + mos + "-" + dds;
                     array_push(stack, out2);
-                    if (dbg_on(DBG_PARSE)) show_debug_message("FUNC: DATE$ → " + out2);
+                    dbg_log(DBG_PARSE, "FUNC: DATE$ → " + out2);
                     break;
                 }
 
                 case "INKEY$": {
-                    if (dbg_on(DBG_PARSE)) show_debug_message("INKEY$ function: Processing INKEY$ token");
+                    dbg_log(DBG_PARSE, "INKEY$ function: Processing INKEY$ token");
 
-                    if (!variable_global_exists("inkey_queue") || is_undefined(global.inkey_queue)) {
-                        if (dbg_on(DBG_PARSE)) show_debug_message("INKEY$ function: creating global.inkey_queue");
-                        global.inkey_queue = ds_queue_create();
+                    if (!variable_global_exists("__inkey_queue") || !ds_exists(global.__inkey_queue, ds_type_queue)) {
+                        dbg_log(DBG_PARSE, "INKEY$ function: creating global.__inkey_queue");
+                        global.__inkey_queue = ds_queue_create();
                     }
 
                     var _res = "";
-                    if (ds_queue_size(global.inkey_queue) > 0) {
-                        var _ch = ds_queue_dequeue(global.inkey_queue);
+                    if (ds_queue_size(global.__inkey_queue) > 0) {
+                        var _ch = ds_queue_dequeue(global.__inkey_queue);
                         if (is_real(_ch)) _ch = chr(_ch);
                         _res = string(_ch);
                         if (dbg_on(DBG_PARSE)) show_debug_message(
-                            "INKEY$ function: Dequeued '" + _res + "', queue size now = " + string(ds_queue_size(global.inkey_queue))
+                            "INKEY$ function: Dequeued '" + _res + "', queue size now = " + string(ds_queue_size(global.__inkey_queue))
                         );
                     } else {
-                        if (dbg_on(DBG_PARSE)) show_debug_message("INKEY$ function: Queue empty → returning empty string");
+                        dbg_log(DBG_PARSE, "INKEY$ function: Queue empty → returning empty string");
                     }
 
                     if (dbg_on(DBG_PARSE)) {
@@ -373,7 +373,7 @@ case "OR": {
                     var vsgn = safe_real_pop(stack);
                     var sgnv = (vsgn > 0) - (vsgn < 0);
                     array_push(stack, sgnv);
-                    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: SGN(" + string(vsgn) + ") → " + string(sgnv));
+                    dbg_log(DBG_PARSE, "POSTFIX: SGN(" + string(vsgn) + ") → " + string(sgnv));
                     break;
                 }
 
@@ -387,7 +387,7 @@ case "OR": {
                     var vstr = safe_real_pop(stack);
                     var s = string(vstr);
                     array_push(stack, s);
-                    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: STR$ → " + s);
+                    dbg_log(DBG_PARSE, "POSTFIX: STR$ → " + s);
                     break;
                 }
 				
@@ -395,7 +395,7 @@ case "OR": {
                     var cv = safe_real_pop(stack);
                     var c  = chr(cv);
                     array_push(stack, c);
-                    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: CHR$ → " + c);
+                    dbg_log(DBG_PARSE, "POSTFIX: CHR$ → " + c);
                     break;
                 }
 
@@ -412,7 +412,7 @@ case "OR": {
                     var outrep = "";
                     repeat (nrep) outrep += srep;
                     array_push(stack, outrep);
-                    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: REPEAT$('"+srep+"', "+string(nrep)+") → len="+string(string_length(outrep)));
+                    dbg_log(DBG_PARSE, "POSTFIX: REPEAT$('"+srep+"', "+string(nrep)+") → len="+string(string_length(outrep)));
                     break;
                 }
 
@@ -423,7 +423,7 @@ case "OR": {
 
                     var outleft = (nleft <= 0) ? "" : string_copy(sleft, 1, nleft);
                     array_push(stack, outleft);
-                    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: LEFT$('"+sleft+"', "+string(nleft)+") → '"+outleft+"'");
+                    dbg_log(DBG_PARSE, "POSTFIX: LEFT$('"+sleft+"', "+string(nleft)+") → '"+outleft+"'");
                     break;
                 }
 
@@ -436,7 +436,7 @@ case "OR": {
                     var start = max(1, lenr - nright + 1);
                     var outright = (nright <= 0) ? "" : string_copy(sright, start, nright);
                     array_push(stack, outright);
-                    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: RIGHT$('"+sright+"', "+string(nright)+") → '"+outright+"'");
+                    dbg_log(DBG_PARSE, "POSTFIX: RIGHT$('"+sright+"', "+string(nright)+") → '"+outright+"'");
                     break;
                 }
 
@@ -453,7 +453,7 @@ case "OR": {
                         outm = string_copy(strm, smid, lmid);
                     }
                     array_push(stack, outm);
-                    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: MID$('"+strm+"', "+string(smid)+", "+string(lmid)+") → '"+outm+"'");
+                    dbg_log(DBG_PARSE, "POSTFIX: MID$('"+strm+"', "+string(smid)+", "+string(lmid)+") → '"+outm+"'");
                     break;
                 }
 
@@ -461,7 +461,61 @@ case "OR": {
                     var s = string(array_pop(stack));            // ensure string
                     var r = (string_length(s) >= 1) ? ord(string_char_at(s, 1)) : 0;
                     array_push(stack, r);
-                    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: ASC('" + s + "') → " + string(r));
+                    dbg_log(DBG_PARSE, "POSTFIX: ASC('" + s + "') → " + string(r));
+                    break;
+                }
+
+                case "VAL": {
+                    var raw_val = string_trim(string(array_pop(stack)));
+                    var num_text = "";
+                    var saw_digit = false;
+                    var saw_dot = false;
+
+                    for (var vi = 1; vi <= string_length(raw_val); vi++) {
+                        var vc = string_char_at(raw_val, vi);
+                        var vo = ord(vc);
+                        if (vi == 1 && (vc == "+" || vc == "-")) {
+                            num_text += vc;
+                        } else if (vo >= 48 && vo <= 57) {
+                            num_text += vc;
+                            saw_digit = true;
+                        } else if (vc == "." && !saw_dot) {
+                            num_text += vc;
+                            saw_dot = true;
+                        } else {
+                            break;
+                        }
+                    }
+
+                    var val_result = saw_digit ? real(num_text) : 0;
+                    array_push(stack, val_result);
+                    dbg_log(DBG_PARSE, "POSTFIX: VAL('" + raw_val + "') → " + string(val_result));
+                    break;
+                }
+
+                case "MODE1_GET_CHAR": {
+                    var row = safe_real_pop(stack);
+                    var col = safe_real_pop(stack);
+                    var chv = mode1_get_char(col, row);
+                    array_push(stack, chv);
+                    dbg_log(DBG_PARSE, "POSTFIX: MODE1_GET_CHAR(" + string(col) + "," + string(row) + ") → " + string(chv));
+                    break;
+                }
+
+                case "MODE1_GET_COLOR": {
+                    var rowc = safe_real_pop(stack);
+                    var colc = safe_real_pop(stack);
+                    var cvm = mode1_get_color(colc, rowc);
+                    array_push(stack, cvm);
+                    dbg_log(DBG_PARSE, "POSTFIX: MODE1_GET_COLOR(" + string(colc) + "," + string(rowc) + ") → " + string(cvm));
+                    break;
+                }
+
+                case "MODE1_COLOR_NAME": {
+                    var color_value = safe_real_pop(stack);
+                    var cname = mode1_color_name(color_value);
+                    array_push(stack, cname);
+                    dbg_log(DBG_PARSE, "POSTFIX: MODE1_COLOR_NAME(" + string(color_value) + ") → " + cname);
                     break;
                 }
 
@@ -487,7 +541,7 @@ case "OR": {
                     repeat (count) out += ch;
 
                     array_push(stack, out);
-                    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: STRING$(" + string(x) + "," + string(count) + ") → len=" + string(string_length(out)));
+                    dbg_log(DBG_PARSE, "POSTFIX: STRING$(" + string(_x) + "," + string(count) + ") → len=" + string(string_length(out)));
                     break;
                 }
 
@@ -495,7 +549,7 @@ case "OR": {
 
 
                 default:
-                    if (dbg_on(DBG_PARSE)) show_debug_message("? POSTFIX WARNING: Unknown function = " + token_upper + " — pushing last real as fallback");
+                    dbg_log(DBG_PARSE, "? POSTFIX WARNING: Unknown function = " + token_upper + " — pushing last real as fallback");
                     array_push(stack, safe_real_pop(stack));
                     break;
             }
@@ -550,7 +604,7 @@ case "OR": {
 		    if (!ds_map_exists(global.basic_variables, key)) {
 		        // create as numeric 0 (QBASIC style)
 		        global.basic_variables[? key] = 0;
-		        if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: Implicit numeric var created '" + key + "' = 0");
+		        dbg_log(DBG_PARSE, "POSTFIX: Implicit numeric var created '" + key + "' = 0");
 		    }
 		    var vv = global.basic_variables[? key];
 
@@ -566,11 +620,11 @@ case "OR": {
 		        }
 		    }
 		    array_push(stack, vv);
-		    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: Loaded/created ident " + key + " = " + string(vv));
+		    dbg_log(DBG_PARSE, "POSTFIX: Loaded/created ident " + key + " = " + string(vv));
 		} else {
 		    // true literal fallback
 		    array_push(stack, trimmed);
-		    if (dbg_on(DBG_PARSE)) show_debug_message("POSTFIX: Pushed fallback string → " + trimmed);
+		    dbg_log(DBG_PARSE, "POSTFIX: Pushed fallback string → " + trimmed);
 		}
 
     }

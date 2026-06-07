@@ -1,7 +1,7 @@
 /// === BEGIN: basic_cmd_let ===
 /// LET handler with modal INKEY$ support and array handling
 function basic_cmd_let(arg) {
-    if (dbg_on(DBG_FLOW)) show_debug_message("LET: Raw input: '" + arg + "'");
+    dbg_log(DBG_FLOW, "LET: Raw input: '" + arg + "'");
 
     // Split "NAME = EXPR"
     var eq = string_pos("=", arg);
@@ -47,22 +47,26 @@ function basic_cmd_let(arg) {
                 global.inkey_waiting    = false;
                 global.pause_in_effect  = false;
                 global.inkey_target_var = "";
+                global.inkey_release_guard = true;
 
-                if (dbg_on(DBG_FLOW)) show_debug_message("LET/INKEY$: committed '" + ch_commit + "' to " + varName + " (resume)");
+                if (variable_global_exists("__inkey_queue") && ds_exists(global.__inkey_queue, ds_type_queue)) {
+                    ds_queue_clear(global.__inkey_queue);
+                }
+
+                dbg_log(DBG_FLOW, "LET/INKEY$: committed '" + ch_commit + "' to " + varName + " (resume)");
                 return;
             }
 
             // Still waiting, keep paused this frame
             global.pause_in_effect = true;
-            if (dbg_on(DBG_FLOW)) show_debug_message("LET/INKEY$: still waiting (no captured char yet)");
+            dbg_log(DBG_FLOW, "LET/INKEY$: still waiting (no captured char yet)");
             return;
         }
 
         // 2) Not waiting yet – FAST PATH: assign immediately if queue already has a key
-        // Support either queue name (__inkey_queue primary; inkey_queue legacy)
         var _q = undefined;
-        if (ds_exists(global.__inkey_queue, ds_type_queue)) _q = global.__inkey_queue;
-        else if (variable_global_exists("inkey_queue") && ds_exists(global.inkey_queue, ds_type_queue)) _q = global.inkey_queue;
+        if (!variable_global_exists("__inkey_queue") || !ds_exists(global.__inkey_queue, ds_type_queue)) global.__inkey_queue = ds_queue_create();
+        _q = global.__inkey_queue;
 
         if (!is_undefined(_q) && ds_queue_size(_q) > 0) {
             var ch2 = ds_queue_dequeue(_q);
@@ -75,8 +79,13 @@ function basic_cmd_let(arg) {
                 var k = basic_normvar(varName);
                 global.basic_variables[? k] = string(ch2);
             }
-            
-            if (dbg_on(DBG_FLOW)) show_debug_message("LET/INKEY$: fast-path assign '" + string(ch2) + "' to " + varName);
+
+            if (variable_global_exists("__inkey_queue") && ds_exists(global.__inkey_queue, ds_type_queue)) {
+                ds_queue_clear(global.__inkey_queue);
+            }
+            global.inkey_release_guard = true;
+             
+            dbg_log(DBG_FLOW, "LET/INKEY$: fast-path assign '" + string(ch2) + "' to " + varName);
             return;
         }
 
@@ -85,7 +94,7 @@ function basic_cmd_let(arg) {
         global.pause_in_effect  = true;
         global.inkey_target_var = varName; // Store the full variable name including array syntax
         global.inkey_captured   = "";
-        if (dbg_on(DBG_FLOW)) show_debug_message("LET/INKEY$: armed modal wait for " + varName);
+        dbg_log(DBG_FLOW, "LET/INKEY$: armed modal wait for " + varName);
         return;
     }
     // ---------- END MODAL INKEY$ special case ----------
@@ -108,7 +117,7 @@ function basic_cmd_let(arg) {
     var is_string_var = (string_length(k) > 0) && (string_char_at(k, string_length(k)) == "$");
     if (is_string_var) {
         global.basic_variables[? k] = string(val);
-        if (dbg_on(DBG_FLOW)) show_debug_message("LET: Assigned string value: '" + string(val) + "' to '" + k + "'");
+        dbg_log(DBG_FLOW, "LET: Assigned string value: '" + string(val) + "' to '" + k + "'");
     } else {
         // Numeric: if it looks numeric, coerce to real; else 0 (or keep as-is if you prefer)
         if (is_real(val)) {
@@ -118,7 +127,7 @@ function basic_cmd_let(arg) {
         } else {
             global.basic_variables[? k] = 0;
         }
-        if (dbg_on(DBG_FLOW)) show_debug_message("LET: Assigned value: '" + string(global.basic_variables[? k]) + "' to '" + k + "'");
+        dbg_log(DBG_FLOW, "LET: Assigned value: '" + string(global.basic_variables[? k]) + "' to '" + k + "'");
     }
 }
 

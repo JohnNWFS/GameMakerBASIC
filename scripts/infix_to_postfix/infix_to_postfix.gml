@@ -1,7 +1,7 @@
 /// @script infix_to_postfix
 // === BEGIN: infix_to_postfix ===
 function infix_to_postfix(tokens) {
-    if (dbg_on(DBG_PARSE)) show_debug_message("Converting to postfix: " + string(tokens));
+    dbg_log(DBG_PARSE, "Converting to postfix: " + string(tokens));
 
     var output = [];
     var stack  = [];
@@ -44,7 +44,7 @@ function infix_to_postfix(tokens) {
     for (var i = 0; i < array_length(tokens); i++) {
         var t  = tokens[i];
 
-        if (t == ",") { if (dbg_on(DBG_PARSE)) show_debug_message("INFIX: Skipping comma token"); continue; }
+        if (t == ",") { dbg_log(DBG_PARSE, "INFIX: Skipping comma token"); continue; }
 
         var tu = _TOKU(t);
 
@@ -55,7 +55,7 @@ function infix_to_postfix(tokens) {
 
             if (can_be_name && i + 1 < array_length(tokens) && tokens[i + 1] == "("
             && !(is_function(t) || _is_STRING_fn(t))) {
-                if (dbg_on(DBG_PARSE)) show_debug_message("INFIX: Candidate for array collapse → '" + string(t) + "' followed by '('");
+                dbg_log(DBG_PARSE, "INFIX: Candidate for array collapse → '" + string(t) + "' followed by '('");
                 var arr_info = _read_paren_payload(tokens, i + 1);
                 var matched  = arr_info[0];
                 var inner    = arr_info[1];
@@ -64,54 +64,54 @@ function infix_to_postfix(tokens) {
                 if (matched) {
                     var collapsed = string(t) + "(" + inner + ")";
                     array_push(output, collapsed);
-                    if (dbg_on(DBG_PARSE)) show_debug_message("INFIX: Collapsed array read token → '" + collapsed + "' (consumed through index " + string(j) + ")");
+                    dbg_log(DBG_PARSE, "INFIX: Collapsed array read token → '" + collapsed + "' (consumed through index " + string(j) + ")");
                     i = j;
                     continue;
                 } else {
-                    if (dbg_on(DBG_PARSE)) show_debug_message("INFIX: WARNING — unmatched '(' after '" + string(t) + "'. Not collapsing.");
+                    dbg_log(DBG_PARSE, "INFIX: WARNING — unmatched '(' after '" + string(t) + "'. Not collapsing.");
                 }
             }
         }
 
         // 2) NUMERIC LITERAL
-        if (is_numeric_string(t)) { array_push(output, t); if (dbg_on(DBG_PARSE)) show_debug_message("Added number to output: " + string(t)); continue; }
+        if (is_numeric_string(t)) { array_push(output, t); dbg_log(DBG_PARSE, "Added number to output: " + string(t)); continue; }
 
         // 3) KNOWN VARIABLE
-        if (ds_map_exists(global.basic_variables, tu)) { array_push(output, tu); if (dbg_on(DBG_PARSE)) show_debug_message("Added variable name to output: " + tu); continue; }
+        if (ds_map_exists(global.basic_variables, tu)) { array_push(output, tu); dbg_log(DBG_PARSE, "Added variable name to output: " + tu); continue; }
 
         // 4) OPEN PAREN
-        if (t == "(") { array_push(stack, t); if (dbg_on(DBG_PARSE)) show_debug_message("Pushed '(' onto operator stack"); continue; }
+        if (t == "(") { array_push(stack, t); dbg_log(DBG_PARSE, "Pushed '(' onto operator stack"); continue; }
 
         // 5) CLOSE PAREN
         if (t == ")") {
             while (array_length(stack) > 0 && stack[array_length(stack) - 1] != "(") {
                 var popped_close = array_pop(stack);
                 array_push(output, popped_close);
-                if (dbg_on(DBG_PARSE)) show_debug_message("Popped '" + string(popped_close) + "' from stack to output (closing ')')");
+                dbg_log(DBG_PARSE, "Popped '" + string(popped_close) + "' from stack to output (closing ')')");
             }
             if (array_length(stack) > 0 && stack[array_length(stack) - 1] == "(") {
                 array_pop(stack);
-                if (dbg_on(DBG_PARSE)) show_debug_message("Discarded matching '(' from stack");
+                dbg_log(DBG_PARSE, "Discarded matching '(' from stack");
             } else {
-                if (dbg_on(DBG_PARSE)) show_debug_message("INFIX: WARNING — stray ')' with no matching '('");
+                dbg_log(DBG_PARSE, "INFIX: WARNING — stray ')' with no matching '('");
             }
             continue;
         }
 
         // 6) OPERATORS
         if (is_operator(t)) {
-            if (dbg_on(DBG_PARSE)) show_debug_message("Found operator: " + string(t));
+            dbg_log(DBG_PARSE, "Found operator: " + string(t));
             while (array_length(stack) > 0) {
                 var top = stack[array_length(stack) - 1];
                 if (is_operator(top) && (get_precedence(top) > get_precedence(t)
                 || (get_precedence(top) == get_precedence(t) && !is_right_associative(t)))) {
                     var popped_op = array_pop(stack);
                     array_push(output, popped_op);
-                    if (dbg_on(DBG_PARSE)) show_debug_message("Popped higher/equal precedence operator '" + string(popped_op) + "' to output");
+                    dbg_log(DBG_PARSE, "Popped higher/equal precedence operator '" + string(popped_op) + "' to output");
                 } else break;
             }
             array_push(stack, t);
-            if (dbg_on(DBG_PARSE)) show_debug_message("Pushed operator '" + string(t) + "' onto stack");
+            dbg_log(DBG_PARSE, "Pushed operator '" + string(t) + "' onto stack");
             continue;
         }
 
@@ -122,14 +122,14 @@ function infix_to_postfix(tokens) {
             // Zero-arg functions emit directly
             if (_is_zero_arg_fn(fn_name)) {
                 array_push(output, fn_name);
-                if (dbg_on(DBG_PARSE)) show_debug_message("Processed zero-arg function: " + fn_name);
+                dbg_log(DBG_PARSE, "Processed zero-arg function: " + fn_name);
                 continue;
             }
 
             // Must be followed by '('
             if (!(i + 1 < array_length(tokens) && tokens[i + 1] == "(")) {
                 array_push(output, fn_name);
-                if (dbg_on(DBG_PARSE)) show_debug_message("Function without '(': passing through → " + fn_name);
+                dbg_log(DBG_PARSE, "Function without '(': passing through → " + fn_name);
                 continue;
             }
 
@@ -141,7 +141,7 @@ function infix_to_postfix(tokens) {
 
             if (!f_ok) {
                 array_push(output, fn_name);
-                if (dbg_on(DBG_PARSE)) show_debug_message("WARNING: unmatched '(' for function " + fn_name + " — passing through");
+                dbg_log(DBG_PARSE, "WARNING: unmatched '(' for function " + fn_name + " — passing through");
                 continue;
             }
 
@@ -165,11 +165,37 @@ function infix_to_postfix(tokens) {
                     _push_all(output, p1);
                     _push_all(output, p2);
                     array_push(output, fn_name);
-                    if (dbg_on(DBG_PARSE)) show_debug_message("Processed STRING$(x,n): args = [" + parts[0] + "], [" + parts[1] + "]");
+                    dbg_log(DBG_PARSE, "Processed STRING$(x,n): args = [" + parts[0] + "], [" + parts[1] + "]");
                     i = f_end;
                     continue;
                 }
                 // fall through to generic handling if malformed
+            }
+
+            // ---------- SPECIAL: MODE1_GET_CHAR(x,y) / MODE1_GET_COLOR(x,y) ----------
+            if (fn_name == "MODE1_GET_CHAR" || fn_name == "MODE1_GET_COLOR") {
+                var lvlM = 0, partM = "", partsM = [];
+                for (var cmi = 1; cmi <= string_length(f_inner); cmi++) {
+                    var chM = string_char_at(f_inner, cmi);
+                    if (chM == "(") { lvlM++; partM += chM; }
+                    else if (chM == ")") { lvlM--; partM += chM; }
+                    else if (chM == "," && lvlM == 0) { array_push(partsM, string_trim(partM)); partM = ""; }
+                    else { partM += chM; }
+                }
+                array_push(partsM, string_trim(partM));
+
+                if (array_length(partsM) == 2) {
+                    var tM1 = basic_tokenize_expression_v2(partsM[0]);
+                    var tM2 = basic_tokenize_expression_v2(partsM[1]);
+                    var pM1 = infix_to_postfix(tM1);
+                    var pM2 = infix_to_postfix(tM2);
+                    _push_all(output, pM1);
+                    _push_all(output, pM2);
+                    array_push(output, fn_name);
+                    dbg_log(DBG_PARSE, "Processed " + fn_name + "(" + partsM[0] + "," + partsM[1] + ")");
+                    i = f_end;
+                    continue;
+                }
             }
 
             // ---------- SPECIAL: LEFT$/RIGHT$/MID$ (multi-arg) ----------
@@ -193,7 +219,7 @@ function infix_to_postfix(tokens) {
                     _push_all(output, pA1);
                     _push_all(output, pA2);
                     array_push(output, fn_name);
-                    if (dbg_on(DBG_PARSE)) show_debug_message("Processed " + fn_name + "(" + parts_lr[0] + "," + parts_lr[1] + ")");
+                    dbg_log(DBG_PARSE, "Processed " + fn_name + "(" + parts_lr[0] + "," + parts_lr[1] + ")");
                     i = f_end;
                     continue;
                 }
@@ -206,7 +232,7 @@ function infix_to_postfix(tokens) {
                         _push_all(output, pMi);
                     }
                     array_push(output, fn_name);
-                    if (dbg_on(DBG_PARSE)) show_debug_message("Processed MID$(" + string(parts_lr) + ")");
+                    dbg_log(DBG_PARSE, "Processed MID$(" + string(parts_lr) + ")");
                     i = f_end;
                     continue;
                 }
@@ -220,7 +246,7 @@ function infix_to_postfix(tokens) {
                 // 0-arg: RND()
                 if (string_length(inner_trim) == 0) {
                     array_push(output, "RND");
-                    if (dbg_on(DBG_PARSE)) show_debug_message("Processed RND()");
+                    dbg_log(DBG_PARSE, "Processed RND()");
                     i = f_end;
                     continue;
                 }
@@ -241,7 +267,7 @@ function infix_to_postfix(tokens) {
                     var pN = infix_to_postfix(tN);
                     _push_all(output, pN);
                     array_push(output, "RND1");
-                    if (dbg_on(DBG_PARSE)) show_debug_message("Processed RND(" + partsR[0] + ") → RND1");
+                    dbg_log(DBG_PARSE, "Processed RND(" + partsR[0] + ") → RND1");
                     i = f_end;
                     continue;
                 }
@@ -254,7 +280,7 @@ function infix_to_postfix(tokens) {
                     _push_all(output, pA);
                     _push_all(output, pB);
                     array_push(output, "RND2");
-                    if (dbg_on(DBG_PARSE)) show_debug_message("Processed RND(" + partsR[0] + "," + partsR[1] + ") → RND2");
+                    dbg_log(DBG_PARSE, "Processed RND(" + partsR[0] + "," + partsR[1] + ") → RND2");
                     i = f_end;
                     continue;
                 }
@@ -266,13 +292,13 @@ function infix_to_postfix(tokens) {
             var inner_postfix = infix_to_postfix(inner_tokens);
             _push_all(output, inner_postfix);
             array_push(output, fn_name);
-            if (dbg_on(DBG_PARSE)) show_debug_message("Processed 1-arg function " + fn_name + "(" + f_inner + ") → postfix emit <inner> " + fn_name);
+            dbg_log(DBG_PARSE, "Processed 1-arg function " + fn_name + "(" + f_inner + ") → postfix emit <inner> " + fn_name);
             i = f_end;
             continue;
         }
 
         // 8) UNKNOWN TOKEN
-        if (dbg_on(DBG_PARSE)) show_debug_message("Unknown token, adding to output: " + string(t));
+        dbg_log(DBG_PARSE, "Unknown token, adding to output: " + string(t));
         array_push(output, t);
     }
 
@@ -280,10 +306,10 @@ function infix_to_postfix(tokens) {
     while (array_length(stack) > 0) {
         var tail = array_pop(stack);
         array_push(output, tail);
-        if (dbg_on(DBG_PARSE)) show_debug_message("Drained operator stack → appended '" + string(tail) + "'");
+        dbg_log(DBG_PARSE, "Drained operator stack → appended '" + string(tail) + "'");
     }
 
-    if (dbg_on(DBG_PARSE)) show_debug_message("Final postfix: " + string(output));
+    dbg_log(DBG_PARSE, "Final postfix: " + string(output));
     return output;
 }
 // === END: infix_to_postfix ===

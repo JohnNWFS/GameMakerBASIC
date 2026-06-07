@@ -10,13 +10,9 @@
 //                        ", pause_mode: " + string(global.pause_mode));
 // }
 
-// ---------- Feed INKEY$ queue once per frame ----------
-// (The function itself arbitrates INPUT vs. INKEY modal wait.)
-inkey_capture_keys();
-
 global.dbg_frame_count = 0;
 if (global.dbg_dropped_count > 0) {
-    if (dbg_on(DBG_PERF)) show_debug_message("DBG: dropped " + string(global.dbg_dropped_count) + " lines this frame");
+    dbg_log(DBG_PERF, "DBG: dropped " + string(global.dbg_dropped_count) + " lines this frame");
     global.dbg_dropped_count = 0;
 }
 
@@ -25,6 +21,35 @@ if (is_undefined(global.awaiting_input))     global.awaiting_input     = false;
 if (is_undefined(global.pause_mode))         global.pause_mode         = false;
 if (is_undefined(global.input_target_var))   global.input_target_var   = "";
 if (is_undefined(global.interpreter_input))  global.interpreter_input  = "";
+if (is_undefined(global.interpreter_cursor_pos)) global.interpreter_cursor_pos = 0;
+if (is_undefined(global.input_ignore_enter_until_release)) global.input_ignore_enter_until_release = false;
+if (is_undefined(global.input_guard_frames)) global.input_guard_frames = 0;
+if (is_undefined(global.inkey_flush_frames)) global.inkey_flush_frames = 0;
+if (is_undefined(global.inkey_release_guard)) global.inkey_release_guard = false;
+
+if (global.inkey_flush_frames > 0) {
+    keyboard_string = "";
+    if (variable_global_exists("__inkey_queue") && ds_exists(global.__inkey_queue, ds_type_queue)) {
+        ds_queue_clear(global.__inkey_queue);
+    }
+    global.inkey_captured = "";
+    global.inkey_flush_frames--;
+} else if (global.inkey_release_guard) {
+    keyboard_string = "";
+    if (variable_global_exists("__inkey_queue") && ds_exists(global.__inkey_queue, ds_type_queue)) {
+        ds_queue_clear(global.__inkey_queue);
+    }
+    global.inkey_captured = "";
+    if (keyboard_check(vk_anykey)) {
+        global.pause_in_effect = global.inkey_waiting;
+        return;
+    }
+    global.inkey_release_guard = false;
+} else {
+    // ---------- Feed INKEY$ queue once per frame ----------
+    // (The function itself arbitrates INPUT vs. INKEY modal wait.)
+    inkey_capture_keys();
+}
 
 // ==============================
 // Sort program lines in ascending order
@@ -82,7 +107,7 @@ if (global.beep_seq_active && keyboard_check_pressed(vk_escape)) {
 if (global.awaiting_input) {
     if (global.pause_mode) {
         if (keyboard_check_pressed(vk_enter) || keyboard_check_pressed(vk_escape)) {
-            if (dbg_on(DBG_FLOW)) show_debug_message("PAUSE: ENTER/ESC detected, resuming...");
+            dbg_log(DBG_FLOW, "PAUSE: ENTER/ESC detected, resuming...");
             global.awaiting_input   = false;
             global.pause_mode       = false;
             global.pause_in_effect  = false;
@@ -92,13 +117,24 @@ if (global.awaiting_input) {
             global.interpreter_resume_stmt_index = global.interpreter_current_stmt_index + 1;
         }
     } else {
+        if (global.input_guard_frames > 0) {
+            global.input_guard_frames -= 1;
+            return;
+        }
+
+        if (global.input_ignore_enter_until_release) {
+            if (keyboard_check(vk_enter)) return;
+            global.input_ignore_enter_until_release = false;
+        }
+
         // Enter commits; basic_cmd_input() already scheduled stmt-jump to p+1
         if (keyboard_check_pressed(vk_enter)) {
-            if (dbg_on(DBG_FLOW)) show_debug_message("INPUT: Enter pressed — committing value");
+            dbg_log(DBG_FLOW, "INPUT: Enter pressed — committing value");
 
             var _name = basic_normvar(global.input_target_var);
             var _val  = global.interpreter_input;
             var _val_trim = string_trim(string(_val));
+            dbg_log(DBG_FLOW, "INPUT: commit " + _name + " <= '" + string(_val) + "' len=" + string(string_length(string(_val))));
 
             // String typed variable → always store as string
             if (string_length(_name) > 0 && string_char_at(_name, string_length(_name)) == "$") {
@@ -116,13 +152,46 @@ if (global.awaiting_input) {
             global.input_expected    = false;
             global.input_target_var  = "";
             global.interpreter_input = "";
+            global.interpreter_cursor_pos = 0;
+            global.input_ignore_enter_until_release = false;
+            global.input_guard_frames = 0;
 
             return; // yield; next frame stmt-jump resumes tail of the line
         }
 
         // Normal typing & backspace
-        for (var _k = 32; _k <= 126; _k++) {
-            if (keyboard_check_pressed(_k)) handle_interpreter_character_input(_k);
+        var _handled_char = false;
+        if (keyboard_check_pressed(vk_anykey)) {
+            var _raw_ch = string(keyboard_lastchar);
+            if (string_length(_raw_ch) > 0) {
+                var _ch = string_char_at(_raw_ch, string_length(_raw_ch));
+                var _code = ord(_ch);
+                if (_code >= 32 && _code <= 126) {
+                    global.interpreter_input = string_insert(_ch, global.interpreter_input, global.interpreter_cursor_pos + 1);
+                    global.interpreter_cursor_pos += 1;
+                    _handled_char = true;
+                    dbg_log(DBG_FLOW, "INPUT: typed '" + _ch + "' buffer='" + global.interpreter_input + "'");
+                }
+            }
+        }
+
+        if (!_handled_char) {
+            for (var _n = vk_numpad0; _n <= vk_numpad9; _n++) {
+                if (keyboard_check_pressed(_n)) {
+                    handle_interpreter_character_input(_n);
+                    _handled_char = true;
+                    break;
+                }
+            }
+        }
+
+        if (!_handled_char) {
+            for (var _k = 32; _k <= 126; _k++) {
+                if (keyboard_check_pressed(_k)) {
+                    handle_interpreter_character_input(_k);
+                    break;
+                }
+            }
         }
         if (keyboard_check_pressed(vk_backspace)) handle_interpreter_character_input(vk_backspace);
     }
@@ -139,32 +208,36 @@ if (global.inkey_waiting) {
     // If we ALREADY have a captured char, DO NOT pause or return here.
     if (string_length(global.inkey_captured) > 0) {
         global.pause_in_effect = false;
-        if (dbg_on(DBG_FLOW)) show_debug_message("INKEY WAIT: resume for commit (cached='" + global.inkey_captured + "')");
+        dbg_log(DBG_FLOW, "INKEY WAIT: resume for commit (cached='" + global.inkey_captured + "')");
         // fall through
     } else {
         var _ch = "";
 
         // Prefer queued key captured by inkey_capture_keys()
-        if (ds_exists(global.__inkey_queue, ds_type_queue) && ds_queue_size(global.__inkey_queue) > 0) {
+        if (variable_global_exists("__inkey_queue") && ds_exists(global.__inkey_queue, ds_type_queue) && ds_queue_size(global.__inkey_queue) > 0) {
             _ch = ds_queue_dequeue(global.__inkey_queue);
             if (is_real(_ch)) _ch = chr(_ch);
         }
 
         // Fallback: direct pressed-edge scan this frame
         if (_ch == "") {
-            for (var _kc = 32; _kc <= 126; _kc++) {
-                if (keyboard_check_pressed(_kc)) { _ch = chr(_kc); break; }
+            if (keyboard_check_pressed(vk_enter)) {
+                _ch = chr(13);
+            } else {
+                for (var _kc = 32; _kc <= 126; _kc++) {
+                    if (keyboard_check_pressed(_kc)) { _ch = chr(_kc); break; }
+                }
             }
         }
 
         if (_ch != "") {
             global.inkey_captured  = string(_ch);
             global.pause_in_effect = false;
-            if (dbg_on(DBG_FLOW)) show_debug_message("INKEY WAIT: captured '" + global.inkey_captured + "', resuming for commit");
+            dbg_log(DBG_FLOW, "INKEY WAIT: captured '" + global.inkey_captured + "', resuming for commit");
             // fall through
         } else {
             global.pause_in_effect = true;
-            if (dbg_on(DBG_FLOW)) show_debug_message("INKEY WAIT: still waiting for key");
+            dbg_log(DBG_FLOW, "INKEY WAIT: still waiting for key");
             return;
         }
     }
@@ -227,7 +300,7 @@ global.interpreter_current_line_index = line_index;
 // Handle Jumps (prefer legacy line jump)
 // ==============================
 if (global.interpreter_next_line >= 0) {
-    if (dbg_on(DBG_FLOW)) show_debug_message("IFJUMP: legacy line jump wins → line=" + string(global.interpreter_next_line));
+    dbg_log(DBG_FLOW, "IFJUMP: legacy line jump wins → line=" + string(global.interpreter_next_line));
     line_index = global.interpreter_next_line;
     global.interpreter_current_line_index = global.interpreter_next_line;
     global.interpreter_resume_stmt_index = 0;
@@ -238,7 +311,7 @@ if (global.interpreter_next_line >= 0) {
 
     global.interpreter_next_line = -1;
 } else if (global.interpreter_use_stmt_jump && global.interpreter_target_line >= 0) {
-    if (dbg_on(DBG_FLOW)) show_debug_message("IFJUMP: using statement-level jump → line=" + string(global.interpreter_target_line) + ", stmt=" + string(global.interpreter_target_stmt));
+    dbg_log(DBG_FLOW, "IFJUMP: using statement-level jump → line=" + string(global.interpreter_target_line) + ", stmt=" + string(global.interpreter_target_stmt));
     line_index = global.interpreter_target_line;
     global.interpreter_current_line_index = global.interpreter_target_line;
     global.interpreter_resume_stmt_index = max(0, global.interpreter_target_stmt);
@@ -253,6 +326,8 @@ if (global.interpreter_next_line >= 0) {
 // ==============================
 if (line_index >= ds_list_size(global.line_list)) {
     global.interpreter_running = false;
+    global.program_has_ended = true;
+    basic_output_transcript_finalize();
 }
 
 // ==============================
@@ -266,7 +341,7 @@ if (line_index < ds_list_size(global.line_list)) {
     var parts   = split_on_unquoted_colons(trimmed);
 
     global.current_line_number = line_number;
-    if (dbg_on(DBG_FLOW)) show_debug_message("Running line " + string(line_number));
+    dbg_log(DBG_FLOW, "Running line " + string(line_number));
 
     var _start_stmt = 0;
     if (global.interpreter_resume_stmt_index > 0) {
@@ -302,7 +377,7 @@ if (line_index < ds_list_size(global.line_list)) {
 
         global.interpreter_current_stmt_index = p;
 
-        if (dbg_on(DBG_FLOW)) show_debug_message("Command: " + cmd2 + " | Arg: " + arg2);
+        dbg_log(DBG_FLOW, "Command: " + cmd2 + " | Arg: " + arg2);
         handle_basic_command(cmd2, arg2);
 
         // If a pause was armed (e.g., modal INKEY$), stop RIGHT HERE
@@ -314,14 +389,14 @@ if (line_index < ds_list_size(global.line_list)) {
 
         // Prefer legacy line jump; clear stale stmt-level flags
         if (global.interpreter_next_line >= 0) {
-            if (dbg_on(DBG_FLOW)) show_debug_message("IFJUMP: breaking line loop for LEGACY LINE jump");
+            dbg_log(DBG_FLOW, "IFJUMP: breaking line loop for LEGACY LINE jump");
             global.interpreter_use_stmt_jump = false;
             global.interpreter_target_line   = -1;
             global.interpreter_target_stmt   = 0;
             break;
         }
         if (global.interpreter_use_stmt_jump && global.interpreter_target_line >= 0) {
-            if (dbg_on(DBG_FLOW)) show_debug_message("IFJUMP: breaking line loop for STATEMENT-LEVEL jump request");
+            dbg_log(DBG_FLOW, "IFJUMP: breaking line loop for STATEMENT-LEVEL jump request");
             break;
         }
     }
@@ -337,7 +412,7 @@ if (line_index < ds_list_size(global.line_list)) {
         var next_ln = ds_list_find_value(global.line_list, nxt);
         if (ds_exists(global.gosub_targets, ds_type_map)
          && ds_map_exists(global.gosub_targets, string(next_ln))) {
-            if (dbg_on(DBG_FLOW)) show_debug_message("SKIP subroutine line " + string(next_ln) + " in straight-line flow");
+            dbg_log(DBG_FLOW, "SKIP subroutine line " + string(next_ln) + " in straight-line flow");
             nxt += 1;
         } else {
             break;
@@ -349,6 +424,8 @@ if (line_index < ds_list_size(global.line_list)) {
     }
 } else {
     global.interpreter_running = false;
+    global.program_has_ended = true;
+    basic_output_transcript_finalize();
 }
 
 // ==============================

@@ -53,7 +53,7 @@ function basic_assign_to_array(varName, val) {
     // Ensure the array map/list exists
     if (!ds_map_exists(global.basic_arrays, normalizedArrayName)) {
         global.basic_arrays[? normalizedArrayName] = ds_list_create();
-        if (dbg_on(DBG_FLOW)) show_debug_message("ARRAY ASSIGN: Created array '" + normalizedArrayName + "'");
+        dbg_log(DBG_FLOW, "ARRAY ASSIGN: Created array '" + normalizedArrayName + "'");
     }
 
     var arrayList = global.basic_arrays[? normalizedArrayName];
@@ -69,10 +69,10 @@ function basic_assign_to_array(varName, val) {
 
     if (is_string_array) {
         ds_list_replace(arrayList, ds_idx, string(val));
-        if (dbg_on(DBG_FLOW)) show_debug_message("ARRAY ASSIGN: " + normalizedArrayName + "[" + string(idx1) + "] (ds " + string(ds_idx) + ") = '" + string(val) + "' (string)");
+        dbg_log(DBG_FLOW, "ARRAY ASSIGN: " + normalizedArrayName + "[" + string(idx1) + "] (ds " + string(ds_idx) + ") = '" + string(val) + "' (string)");
     } else {
         var numVal = is_real(val) ? val : (basic_looks_numeric(string(val)) ? real(val) : 0);
         ds_list_replace(arrayList, ds_idx, numVal);
-        if (dbg_on(DBG_FLOW)) show_debug_message("ARRAY ASSIGN: " + normalizedArrayName + "[" + string(idx1) + "] (ds " + string(ds_idx) + ") = " + string(numVal) + " (numeric)");
+        dbg_log(DBG_FLOW, "ARRAY ASSIGN: " + normalizedArrayName + "[" + string(idx1) + "] (ds " + string(ds_idx) + ") = " + string(numVal) + " (numeric)");
     }
 }

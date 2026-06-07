@@ -44,7 +44,7 @@ function _beep_seq_next()
 
     // rest
     if (n0 == "R") {
-        if (dbg_on(DBG_FLOW)) show_debug_message("BEEP SEQ: rest " + string(ms) + "ms");
+        dbg_log(DBG_FLOW, "BEEP SEQ: rest " + string(ms) + "ms");
         _beep_arm_pause(ms);
         return;
     }

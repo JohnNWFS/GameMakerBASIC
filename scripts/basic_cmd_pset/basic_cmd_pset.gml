@@ -4,7 +4,7 @@
 function basic_cmd_pset(arg) {
     var args = string_split(arg, ",");
     if (array_length(args) < 5) {
-        if (dbg_on(DBG_FLOW)) show_debug_message("PSET requires 5 arguments: x, y, char, fg, bg");
+        dbg_log(DBG_FLOW, "PSET requires 5 arguments: x, y, char, fg, bg");
         return;
     }
 
@@ -21,7 +21,7 @@ function basic_cmd_pset(arg) {
 
     var grid_obj = instance_find(obj_mode1_grid, 0);
     if (!instance_exists(grid_obj)) {
-        if (dbg_on(DBG_FLOW)) show_debug_message("PSET: No grid object found");
+        dbg_log(DBG_FLOW, "PSET: No grid object found");
         return;
     }
 
@@ -29,11 +29,11 @@ function basic_cmd_pset(arg) {
     var cols = grid_obj.grid_cols;
     var rows = grid_obj.grid_rows;
     if (x_val < 0 || x_val >= cols || y_val < 0 || y_val >= rows) {
-        if (dbg_on(DBG_FLOW)) show_debug_message("PSET: coordinates out of bounds: (" + string(x_val) + "," + string(y_val) + ")");
+        dbg_log(DBG_FLOW, "PSET: coordinates out of bounds: (" + string(x_val) + "," + string(y_val) + ")");
         return;
     }
 
     // Update cell
     mode1_grid_set(x_val, y_val, char_index, fg_color, bg_color);
-    if (dbg_on(DBG_FLOW)) show_debug_message("PSET: Set (" + string(x_val) + "," + string(y_val) + ") → char=" + string(char_index) + " fg=" + string(fg_color) + " bg=" + string(bg_color));
+    dbg_log(DBG_FLOW, "PSET: Set (" + string(x_val) + "," + string(y_val) + ") → char=" + string(char_index) + " fg=" + string(fg_color) + " bg=" + string(bg_color));
 }

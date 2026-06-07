@@ -1,10 +1,10 @@
 /// @function inkey_enq(val, cap)
 function inkey_enq(val, cap) {
-    if (!variable_global_exists("inkey_queue") || !ds_exists(global.inkey_queue, ds_type_queue)) {
-        global.inkey_queue = ds_queue_create();
+    if (!variable_global_exists("__inkey_queue") || !ds_exists(global.__inkey_queue, ds_type_queue)) {
+        global.__inkey_queue = ds_queue_create();
     }
-    while (ds_queue_size(global.inkey_queue) >= cap) ds_queue_dequeue(global.inkey_queue);
-    ds_queue_enqueue(global.inkey_queue, val);
+    while (ds_queue_size(global.__inkey_queue) >= cap) ds_queue_dequeue(global.__inkey_queue);
+    ds_queue_enqueue(global.__inkey_queue, val);
 
     if (variable_global_exists("DBG_PARSE") && dbg_on(DBG_PARSE)) {
         var s  = string(val);

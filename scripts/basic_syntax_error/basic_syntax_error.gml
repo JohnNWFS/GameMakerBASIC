@@ -33,7 +33,8 @@ function basic_syntax_error(msg, line_no, stmt_idx, hint_key) {
     global.inkey_waiting       = false;
     global.interpreter_running = false;
     global.program_has_ended   = true;
+    basic_output_transcript_finalize();
     // Let run_program() know not to clear the screen immediately
     global._syntax_error_just_emitted = true;
-    if (dbg_on(DBG_FLOW)) show_debug_message("SYNTAX: " + msg + " (line " + string(line_no) + ")");
+    dbg_log(DBG_FLOW, "SYNTAX: " + msg + " (line " + string(line_no) + ")");
 }

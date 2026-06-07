@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"basic_output_commit",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"basic_output_commit",
+  "parent":{
+    "name":"DEBUG",
+    "path":"folders/Scripts/DEBUG.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

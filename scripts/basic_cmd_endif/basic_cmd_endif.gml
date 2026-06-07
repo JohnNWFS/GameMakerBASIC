@@ -1,10 +1,10 @@
 /// @script basic_cmd_endif
 /// @description Handle ENDIF—pop IF-stack and continue
 function basic_cmd_endif() {
-  if (dbg_on(DBG_FLOW))  show_debug_message("ENDIF START");
+  dbg_log(DBG_FLOW, "ENDIF START");
     // ← GUARD: must have an open IF
     if (ds_stack_empty(global.if_stack)) {
-        if (dbg_on(DBG_FLOW))  show_debug_message("?ENDIF ERROR: ENDIF without matching IF");
+        dbg_log(DBG_FLOW, "?ENDIF ERROR: ENDIF without matching IF");
         return;
     }
     var frame = ds_stack_pop(global.if_stack);
@@ -15,6 +15,9 @@ function basic_cmd_endif() {
     ds_map_destroy(frame);
 
     // Continue immediately after ENDIF
-    global.interpreter_next_line = current_index + 1;
-    if (dbg_on(DBG_FLOW))  show_debug_message("ENDIF done, next index " + string(global.interpreter_next_line));
+    global.interpreter_use_stmt_jump = true;
+    global.interpreter_target_line = current_index + 1;
+    global.interpreter_target_stmt = 0;
+    global.interpreter_next_line = -1;
+    dbg_log(DBG_FLOW, "ENDIF done, next index " + string(global.interpreter_target_line));
 }

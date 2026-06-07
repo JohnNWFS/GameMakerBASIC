@@ -35,7 +35,7 @@ function editor_html_dir_open(which) {
 
     // Parse exactly like your paste/Windows path
     var lines = string_split(text, "\n");
-   if (dbg_on(DBG_FLOW)) show_debug_message("LOAD(HTML): captured " + string(array_length(lines)) + " raw lines");
+   dbg_log(DBG_FLOW, "LOAD(HTML): captured " + string(array_length(lines)) + " raw lines");
 
     for (var j = 0; j < array_length(lines); j++) {
         var line = string_trim(lines[j]);

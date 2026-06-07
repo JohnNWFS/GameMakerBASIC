@@ -1,5 +1,5 @@
 function run_program() {
-    if (dbg_on(DBG_FLOW)) show_debug_message("RUN_PROGRAM START - color is: " + string(global.current_draw_color));
+    dbg_log(DBG_FLOW, "RUN_PROGRAM START - color is: " + string(global.current_draw_color));
 	// Always remember where we launched from (editor room)
 	global.editor_return_room = rm_editor;
 
@@ -44,64 +44,6 @@ function run_program() {
     }
     ds_list_copy(global.basic_line_numbers, global.line_numbers);
 	
-// === Build call-only subroutine index (gosub_targets) ===
-// Place this RIGHT AFTER you finalize global.program_map & global.line_list
-// (i.e., after ds_list_sort(global.line_list, true) / your copy steps)
-
-// --- Build call-only subroutine set (targets of GOSUB) ---
-// Make sure the variable exists before we touch it
-if (!variable_global_exists("gosub_targets")) {
-    global.gosub_targets = ds_map_create();
-} else if (!ds_exists(global.gosub_targets, ds_type_map)) {
-    // If something else used the name, reset it to a map
-    global.gosub_targets = ds_map_create();
-} else {
-    ds_map_clear(global.gosub_targets);
-}
-
-// Scan the current program using the same ordering the interpreter uses
-// (global.line_list must already be built & sorted)
-for (var i = 0; i < ds_list_size(global.line_list); i++) {
-    var _ln  = global.line_list[| i];
-    var raw  = ds_map_find_value(global.program_map, _ln);
-    if (is_undefined(raw)) continue;
-
-    // Split the physical line into colon segments
-    var parts = split_on_unquoted_colons(string_trim(raw));
-    for (var p = 0; p < array_length(parts); p++) {
-        var stmt = string_trim(parts[p]);
-        if (stmt == "") continue;
-
-        // Strip remarks BEFORE tokenizing (handles: GOSUB 1000 ' comment)
-        stmt = strip_basic_remark(stmt);
-        if (stmt == "") continue;
-
-        // verb/rest
-        var sp  = string_pos(" ", stmt);
-        var v0  = (sp > 0) ? string_upper(string_copy(stmt, 1, sp - 1)) : string_upper(stmt);
-        var r0  = (sp > 0) ? string_trim(string_copy(stmt, sp + 1, string_length(stmt))) : "";
-
-        if (v0 == "GOSUB") {
-            // Keep only first token after GOSUB; ignore expressions during pre-scan
-            var tok = r0;
-            var sp2 = string_pos(" ", tok);
-            if (sp2 > 0) tok = string_copy(tok, 1, sp2 - 1);
-            tok = string_trim(tok);
-
-            if (is_numeric_string(tok)) {
-                var tgt = real(tok);
-                ds_map_set(global.gosub_targets, string(tgt), true);
-            }
-        }
-    }
-}
-// --- end GOSUB pre-scan ---
-
-
-	
-	
-	
-
     // ── Make sure output buffers exist BEFORE validation (errors print into them) ──
     if (!is_real(global.output_lines) || !ds_exists(global.output_lines, ds_type_list)) {
         global.output_lines = ds_list_create();
@@ -117,7 +59,7 @@ for (var i = 0; i < ds_list_size(global.line_list); i++) {
     // ── Build helpers that validators/dispatchers rely on ─────────────────
     build_data_streams();     // harvest DATA / prep READ/RESTORE
     build_if_block_map();     // multi-line IF/ELSE structure
-    if (dbg_on(DBG_FLOW)) show_debug_message("IF-block map built (" + string(ds_map_size(global.if_block_map)) + " blocks)");
+    dbg_log(DBG_FLOW, "IF-block map built (" + string(ds_map_size(global.if_block_map)) + " blocks)");
 
 // === GOSUB PRE-SCAN: build call-only subroutine set ===
 // ANCHOR: place this immediately after your "IF-block map built (...)" log in run_program
@@ -174,11 +116,17 @@ for (var i = 0; i < ds_list_size(global.line_list); i++) {
         if (room != rm_basic_interpreter) room_goto(rm_basic_interpreter);
         return;
     }
+    dbg_log(DBG_FLOW, "RUN_PROGRAM: validation passed");
 
     // ── Clean start: clear output buffers for a fresh run ─────────────────
     ds_list_clear(global.output_lines);
     ds_list_clear(global.output_colors);
     global.print_line_buffer = "";
+    basic_output_transcript_reset();
+    keyboard_string = "";
+    if (variable_global_exists("__inkey_queue") && ds_exists(global.__inkey_queue, ds_type_queue)) {
+        ds_queue_clear(global.__inkey_queue);
+    }
 
     // ── Interpreter state ─────────────────────────────────────────────────
     global.interpreter_input    = "";
@@ -195,6 +143,8 @@ for (var i = 0; i < ds_list_size(global.line_list); i++) {
     global.inkey_waiting        = false;
     global.inkey_captured       = "";
     global.inkey_target_var     = "";
+    global.inkey_release_guard  = false;
+    global.inkey_flush_frames   = 6;
 
     // Set draw color for this run (your existing choice)
     global.current_draw_color = make_color_rgb(255, 191, 64); // Amber
@@ -213,5 +163,10 @@ for (var i = 0; i < ds_list_size(global.line_list); i++) {
     global.editor_return_room = room;
 
     // Go to interpreter room (only if not already there)
-    if (room != rm_basic_interpreter) room_goto(rm_basic_interpreter);
+    if (room != rm_basic_interpreter) {
+        dbg_log(DBG_FLOW, "RUN_PROGRAM: room_goto rm_basic_interpreter from " + room_get_name(room));
+        room_goto(rm_basic_interpreter);
+    } else {
+        dbg_log(DBG_FLOW, "RUN_PROGRAM: already in rm_basic_interpreter");
+    }
 }

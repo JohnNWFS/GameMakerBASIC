@@ -39,12 +39,11 @@ function basic_cmd_input(arg) {
         //prompt = "? "; // Default prompt
     }
     
-    if (dbg_on(DBG_FLOW)) show_debug_message("INPUT: Variable='" + varName + "', Prompt='" + prompt + "'");
+    dbg_log(DBG_FLOW, "INPUT: Variable='" + varName + "', Prompt='" + prompt + "'");
     
     // Display the prompt
     if (prompt != "") {
-        ds_list_add(global.output_lines, prompt);
-        ds_list_add(global.output_colors, global.basic_text_color);
+        basic_output_commit(prompt, global.basic_text_color);
     }
     
     // Set up input state for your existing keyboard handler
@@ -53,6 +52,9 @@ function basic_cmd_input(arg) {
     global.input_expected = true;
     global.input_target_var = varName;
     global.interpreter_input = ""; // Clear any existing input buffer
+    global.interpreter_cursor_pos = 0;
+    global.input_guard_frames = 3;
+    global.input_ignore_enter_until_release = true;
     
 // Initialize the variable only if absent; avoid numeric 0 pre-seed
  varName = basic_normvar(varName); // ensure canonical now
@@ -62,7 +64,7 @@ if (!ds_map_exists(global.basic_variables, varName)) {
 }
 
     
-    if (dbg_on(DBG_FLOW)) show_debug_message("INPUT: Awaiting input for variable " + varName);
+    dbg_log(DBG_FLOW, "INPUT: Awaiting input for variable " + varName);
 	
 	// NEW: schedule "resume at next colon segment" and yield now
 	global.interpreter_use_stmt_jump = true;
@@ -139,9 +141,9 @@ if (!ds_map_exists(global.basic_variables, varName)) {
         if (string_char_at(rawPrompt, string_length(rawPrompt)) != " ") rawPrompt += " ";
         ds_list_add(global.output_lines, rawPrompt);
         ds_list_add(global.output_colors, global.basic_text_color);
-        if (dbg_on(DBG_FLOW)) show_debug_message("INPUT: Prompt='" + rawPrompt + "'");
+        dbg_log(DBG_FLOW, "INPUT: Prompt='" + rawPrompt + "'");
     } else {
-        if (dbg_on(DBG_FLOW)) show_debug_message("INPUT: No prompt (default '? ')");
+        dbg_log(DBG_FLOW, "INPUT: No prompt (default '? ')");
     }
 
     // 5) Seed the variable (string vars end with $, others numeric)
@@ -157,5 +159,5 @@ if (!ds_map_exists(global.basic_variables, varName)) {
     global.input_expected   = true;
     global.input_target_var = varName;
 
-    if (dbg_on(DBG_FLOW)) show_debug_message("INPUT: Awaiting input for variable " + varName);
+    dbg_log(DBG_FLOW, "INPUT: Awaiting input for variable " + varName);
 }

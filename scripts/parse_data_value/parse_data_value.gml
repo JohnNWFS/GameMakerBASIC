@@ -10,7 +10,7 @@ function parse_data_value(raw) {
     if (L >= 2 && string_char_at(s, 1) == "\"" && string_char_at(s, L) == "\"") {
         var inner = string_copy(s, 2, L - 2);
         inner = string_replace_all(inner, "\"\"", "\""); // unescape doubled quotes
-        if (dbg_on(DBG_FLOW)) show_debug_message("parse_data_value: STRING → \"" + inner + "\" from " + s);
+        dbg_log(DBG_FLOW, "parse_data_value: STRING → \"" + inner + "\" from " + s);
         return inner;
     }
 
@@ -27,12 +27,12 @@ function parse_data_value(raw) {
             }
         }
         if (!_has_alpha) {
-            if (dbg_on(DBG_FLOW)) show_debug_message("parse_data_value: NUMBER → " + string(n) + " from " + s);
+            dbg_log(DBG_FLOW, "parse_data_value: NUMBER → " + string(n) + " from " + s);
             return n;
         }
     }
 
     // Fallback: keep as literal string (lets users store symbolic tokens)
-    if (dbg_on(DBG_FLOW)) show_debug_message("parse_data_value: FALLBACK STRING → \"" + s + "\"");
+    dbg_log(DBG_FLOW, "parse_data_value: FALLBACK STRING → \"" + s + "\"");
     return s;
 }

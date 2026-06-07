@@ -1,11 +1,11 @@
 function editor_html_dir__open_handler(data, name, type) {
-    if (dbg_on(DBG_FLOW)) show_debug_message("[ENTER] editor_html_dir__open_handler");
+    dbg_log(DBG_FLOW, "[ENTER] editor_html_dir__open_handler");
     
     // clear the guard immediately on first callback
     if (variable_global_exists("__html_dir_opening")) global.__html_dir_opening = false;
 
     if (is_undefined(name)) { // defensive
-        if (dbg_on(DBG_FLOW)) show_debug_message("[EXIT] editor_html_dir__open_handler (undefined name)");
+        dbg_log(DBG_FLOW, "[EXIT] editor_html_dir__open_handler (undefined name)");
         return;
     }
 
@@ -27,7 +27,7 @@ function editor_html_dir__open_handler(data, name, type) {
     ds_map_set(rec, "size", size_est);
 
     ds_list_add(global.html_dir_files, rec);
-    if (dbg_on(DBG_FLOW)) show_debug_message("[DIR/HTML] added '" + name + "' (" + string(size_est) + " bytes)");
+    dbg_log(DBG_FLOW, "[DIR/HTML] added '" + name + "' (" + string(size_est) + " bytes)");
 
     // After all files are loaded, automatically show the directory overlay
     // Use call_later to ensure all files are processed first
@@ -60,5 +60,5 @@ function editor_html_dir__open_handler(data, name, type) {
         });
     }
     
-    if (dbg_on(DBG_FLOW)) show_debug_message("[EXIT] editor_html_dir__open_handler");
+    dbg_log(DBG_FLOW, "[EXIT] editor_html_dir__open_handler");
 }

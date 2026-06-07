@@ -92,6 +92,6 @@ if (variable_global_exists("interpreter_current_program")) {
 global.print_line_buffer = "";
 global.editor_spawned = false;
 
-if (ds_exists(global.__inkey_queue, ds_type_queue)) {
+if (variable_global_exists("__inkey_queue") && ds_exists(global.__inkey_queue, ds_type_queue)) {
     ds_queue_destroy(global.__inkey_queue);
 }

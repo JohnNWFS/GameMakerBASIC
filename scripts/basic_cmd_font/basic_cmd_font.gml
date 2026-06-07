@@ -44,6 +44,6 @@ function basic_cmd_font(arg) {
 
     } else {
         basic_cmd_print("FONT " + key + " not found", false);
-        if (dbg_on(DBG_FLOW)) show_debug_message("FONTSET: missing registry key '" + key + "'");
+        dbg_log(DBG_FLOW, "FONTSET: missing registry key '" + key + "'");
     }
 }

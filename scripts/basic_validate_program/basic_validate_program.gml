@@ -89,20 +89,8 @@ if (badpos > 0) {
             var stmt = strip_basic_remark(stmt_raw);
             var up   = string_upper(stmt);
 
-            // Use quote-aware INKEY$ detection instead of simple string_pos
-            if (_has_unquoted_inkey(stmt, up)) {
-                var eqp = _top_level_eq_pos(stmt);
-                if (eqp > 0) {
-                    var lhs = string_copy(stmt, 1, eqp - 1);
-                    if (!_is_valid_lhs(lhs)) {
-                        basic_syntax_error("Left side of assignment must be a variable or array name before INKEY$", line_no, p, "INKEY_LHS");
-                        return false;
-                    }
-                } else if (verb != "LET") {
-                    basic_syntax_error("INKEY$ may only appear on the right side of an assignment like  X$ = INKEY$", line_no, p, "INKEY_MISUSE");
-                    return false;
-                }
-            }
+            // INKEY$ is a normal expression function. Assignment-only/modal
+            // behavior is handled later by LET when the RHS is exactly INKEY$.
         }
     }
     return true;

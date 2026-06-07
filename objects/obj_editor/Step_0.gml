@@ -1,8 +1,12 @@
 /// @event obj_editor/Step
 // Pause regular editor when screen editor is active
 if (global.screen_edit_mode) {
-    //if (dbg_on(DBG_FLOW)) show_debug_message("EDITOR: Screen edit mode active, pausing regular editor");
+    //dbg_log(DBG_FLOW, "EDITOR: Screen edit mode active, pausing regular editor");
     exit;
+}
+
+if (variable_global_exists("config") && ds_exists(global.config, ds_type_map)) {
+    if (autotest_bootstrap()) exit;
 }
 
 if (global.justreturned == 1) {
@@ -20,7 +24,7 @@ if (showing_dir_overlay) {
     if (!dir_confirm_active && keyboard_check_pressed(vk_escape)) {
         showing_dir_overlay = false;
         dir_listing = [];
-        if (dbg_on(DBG_FLOW)) show_debug_message("[DIR] close overlay (ESC)");
+        dbg_log(DBG_FLOW, "[DIR] close overlay (ESC)");
         exit;
     }
 
@@ -41,18 +45,18 @@ if (showing_dir_overlay) {
                 var _name = dir_listing[dir_confirm_index];
                 var _path = dir_save_dir + _name;
                 if (file_exists(_path)) {
-                    if (dbg_on(DBG_IO)) show_debug_message("[DIR] delete " + _path);
+                    dbg_log(DBG_IO, "[DIR] delete " + _path);
                     file_delete(_path);
                 }
                 // refresh list
                 list_saved_programs(); // re-enter overlay with fresh state
             } else {
-                if (dbg_on(DBG_IO)) show_debug_message("[DIR] delete disabled on HTML5");
+                dbg_log(DBG_IO, "[DIR] delete disabled on HTML5");
                 dir_confirm_active = false;
             }
         }
         if (keyboard_check_pressed(ord("N")) || keyboard_check_pressed(vk_escape)) {
-            if (dbg_on(DBG_FLOW)) show_debug_message("[DIR] delete cancelled");
+            dbg_log(DBG_FLOW, "[DIR] delete cancelled");
             dir_confirm_active = false;
         }
         exit; // modal consumes input
@@ -75,7 +79,7 @@ if (keyboard_check_pressed(vk_enter) || keyboard_check_pressed(ord(">"))) {
         // Check if this is an HTML file list (has global.html_dir_files data)
         if (os_browser != browser_not_a_browser && variable_global_exists("html_dir_files") && ds_list_size(global.html_dir_files) > 0) {
             // HTML version - load from memory
-            if (dbg_on(DBG_IO)) show_debug_message("[DIR] HTML load: " + _name + " at index " + string(dir_sel + 1));
+            dbg_log(DBG_IO, "[DIR] HTML load: " + _name + " at index " + string(dir_sel + 1));
             var success = editor_html_dir_open(string(dir_sel + 1));
             if (success) {
                 showing_dir_overlay = false;
@@ -89,7 +93,7 @@ if (keyboard_check_pressed(vk_enter) || keyboard_check_pressed(ord(">"))) {
             // Windows version - load from disk
             var _path = dir_save_dir + _name;
             if (file_exists(_path)) {
-                if (dbg_on(DBG_IO)) show_debug_message("[DIR] load " + _path);
+                dbg_log(DBG_IO, "[DIR] load " + _path);
                 load_program_from_path(_path, _name);
                 showing_dir_overlay = false;
                 dir_listing = [];
@@ -108,7 +112,7 @@ if (keyboard_check_pressed(vk_enter) || keyboard_check_pressed(ord(">"))) {
             if (_count > 0 && dir_listing[dir_sel] != "No .bas files found.") {
                 dir_confirm_active = true;
                 dir_confirm_index  = dir_sel;
-                if (dbg_on(DBG_FLOW)) show_debug_message("[DIR] confirm delete idx=" + string(dir_sel));
+                dbg_log(DBG_FLOW, "[DIR] confirm delete idx=" + string(dir_sel));
             }
         }
     }

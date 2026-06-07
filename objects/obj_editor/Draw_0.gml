@@ -1,7 +1,7 @@
 /// @event obj_editor/Draw
 // Pause regular editor drawing when screen editor is active
 if (global.screen_edit_mode) {
-    //if (dbg_on(DBG_FLOW)) show_debug_message("EDITOR: Screen edit mode active, pausing regular editor draw");
+    //dbg_log(DBG_FLOW, "EDITOR: Screen edit mode active, pausing regular editor draw");
     exit;
 }
 

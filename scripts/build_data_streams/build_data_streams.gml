@@ -9,7 +9,7 @@ function build_data_streams() {
     if (!ds_exists(global.data_streams, ds_type_map)) {
         // Safety net (shouldn't happen if obj_globals set it up)
         global.data_streams = ds_map_create();
-        if (dbg_on(DBG_FLOW)) show_debug_message("DATA: safety-created global.data_streams (missing map)");
+        dbg_log(DBG_FLOW, "DATA: safety-created global.data_streams (missing map)");
     }
 
     // Destroy any old lists then clear the map for a fresh build
@@ -44,7 +44,7 @@ function build_data_streams() {
 
             // *** CHANGE: if this part is REM or starts with apostrophe, stop scanning the rest of THIS line
             if (verb0 == "REM" || string_char_at(stmt_full, 1) == "'") {
-                if (dbg_on(DBG_FLOW)) show_debug_message("DATA scan: REM/' stops line " + string(line_no) + " at part " + string(p));
+                dbg_log(DBG_FLOW, "DATA scan: REM/' stops line " + string(line_no) + " at part " + string(p));
                 break; // stop processing parts[] for this physical line
             }
 
@@ -70,7 +70,7 @@ function build_data_streams() {
 
                 // *** CHANGE: if a later colon slot is a whole-line comment, stop collapse here
                 if (verbT == "REM" || string_char_at(tail_full, 1) == "'") {
-                    if (dbg_on(DBG_FLOW)) show_debug_message("DATA collapse: hit REM/' at part " + string(t) + " on line " + string(line_no));
+                    dbg_log(DBG_FLOW, "DATA collapse: hit REM/' at part " + string(t) + " on line " + string(line_no));
                     break;
                 }
 
@@ -103,7 +103,7 @@ function build_data_streams() {
                     if (ch == ":" && _depth == 0) { cut = j; break; }
                 }
                 if (cut == 0) {
-                   if (dbg_on(DBG_FLOW)) show_debug_message("?DATA ERROR: expected ':' after @name — line " + string(line_no) + " text: '" + part_raw + "'");
+                   dbg_log(DBG_FLOW, "?DATA ERROR: expected ':' after @name — line " + string(line_no) + " text: '" + part_raw + "'");
                     continue;
                 }
                 stream_name = string_trim(string_copy(rest, 2, cut - 2)); // exclude '@'
@@ -143,12 +143,12 @@ function build_data_streams() {
             summary += "'" + string(k2) + "'=" + string(cnt) + "  ";
             k2 = ds_map_find_next(global.data_streams, k2);
         }
-       if (dbg_on(DBG_FLOW)) show_debug_message(summary + "| values=" + string(total_vals) + " | data_lines=" + string(added_lines));
+       dbg_log(DBG_FLOW, summary + "| values=" + string(total_vals) + " | data_lines=" + string(added_lines));
     }
 
     // TEMP: verify default stream size
     if (ds_map_exists(global.data_streams, "")) {
         var _def = ds_map_find_value(global.data_streams, "");
-       if (dbg_on(DBG_FLOW)) show_debug_message("DATA DEFAULT SIZE = " + string(ds_list_size(_def.list)));
+       dbg_log(DBG_FLOW, "DATA DEFAULT SIZE = " + string(ds_list_size(_def.list)));
     }
 }

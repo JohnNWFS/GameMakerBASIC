@@ -40,7 +40,7 @@ function split_on_unquoted_commas(s) {
     if (tail != "") parts[array_length(parts)] = tail;
 
     if (dbg_on && is_undefined(dbg_on) == false) {} // no-op to avoid warnings if dbg_on is macro
-    if (dbg_on(DBG_FLOW)) show_debug_message("split_on_unquoted_commas('" + s + "') -> " + string(parts));
+    dbg_log(DBG_FLOW, "split_on_unquoted_commas('" + s + "') -> " + string(parts));
 
     return parts;
 }

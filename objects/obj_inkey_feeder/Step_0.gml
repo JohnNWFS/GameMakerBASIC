@@ -11,15 +11,31 @@ var _is_editor_room =
 if (_is_editor_room) { keyboard_string = ""; exit; }
 if (variable_global_exists("interpreter_running") && !global.interpreter_running) { keyboard_string = ""; exit; }
 
+if (variable_global_exists("inkey_flush_frames") && global.inkey_flush_frames > 0) {
+    keyboard_string = "";
+    if (variable_global_exists("__inkey_queue") && ds_exists(global.__inkey_queue, ds_type_queue)) {
+        ds_queue_clear(global.__inkey_queue);
+    }
+    exit;
+}
+
+if (variable_global_exists("inkey_release_guard") && global.inkey_release_guard) {
+    keyboard_string = "";
+    if (variable_global_exists("__inkey_queue") && ds_exists(global.__inkey_queue, ds_type_queue)) {
+        ds_queue_clear(global.__inkey_queue);
+    }
+    exit;
+}
+
 // === Ensure queue exists ===
-if (!variable_global_exists("inkey_queue") || is_undefined(global.inkey_queue)) {
-    global.inkey_queue = ds_queue_create();
+if (!variable_global_exists("__inkey_queue") || !ds_exists(global.__inkey_queue, ds_type_queue)) {
+    global.__inkey_queue = ds_queue_create();
 }
 
 // Capacity-aware enqueue (pass cap explicitly to avoid scope issues)
 var _enq = function(val, cap) {
-    while (ds_queue_size(global.inkey_queue) >= cap) ds_queue_dequeue(global.inkey_queue);
-    ds_queue_enqueue(global.inkey_queue, val);
+    while (ds_queue_size(global.__inkey_queue) >= cap) ds_queue_dequeue(global.__inkey_queue);
+    ds_queue_enqueue(global.__inkey_queue, val);
     if (variable_global_exists("DBG_PARSE") && dbg_on(DBG_PARSE)) {
        if (dbg_on(DBG_FLOW)) show_debug_message("##KEYFEED## ENQ='" + string(val) + "'"
             + " A1=" + string((is_string(val) && string_length(val)>=1) ? ord(string_char_at(val,1)) : -1)

@@ -12,7 +12,7 @@ function basic_cmd_print_mode1(arg) {
     if (string_length(arg) > 0 && string_char_at(arg, string_length(arg)) == ";") {
         suppress_newline = true;
         arg = string_copy(arg, 1, string_length(arg) - 1);
-        if (dbg_on(DBG_FLOW)) show_debug_message("PRINT MODE1: Semicolon detected, suppressing newline");
+        dbg_log(DBG_FLOW, "PRINT MODE1: Semicolon detected, suppressing newline");
     }
     
     arg = string_trim(arg);
@@ -23,7 +23,7 @@ function basic_cmd_print_mode1(arg) {
             var _rows = (instance_exists(_grid)) ? _grid.grid_rows : 25;
             global.mode1_cursor_x = 0;
             global.mode1_cursor_y = min(_rows - 1, global.mode1_cursor_y + 1);
-            if (dbg_on(DBG_FLOW)) show_debug_message("PRINT MODE1: Empty line, cursor now at (" + string(global.mode1_cursor_x) + "," + string(global.mode1_cursor_y) + ")");
+            dbg_log(DBG_FLOW, "PRINT MODE1: Empty line, cursor now at (" + string(global.mode1_cursor_x) + "," + string(global.mode1_cursor_y) + ")");
         }
         return;
     }
@@ -33,7 +33,7 @@ function basic_cmd_print_mode1(arg) {
     // Handle simple quoted strings directly
     if (string_length(arg) >= 2 && string_char_at(arg, 1) == "\"" && string_char_at(arg, string_length(arg)) == "\"") {
         output_text = string_copy(arg, 2, string_length(arg) - 2);
-        if (dbg_on(DBG_FLOW)) show_debug_message("PRINT MODE1: Simple quoted string: '" + output_text + "'");
+        dbg_log(DBG_FLOW, "PRINT MODE1: Simple quoted string: '" + output_text + "'");
     } else {
         // Evaluate as expression for variables, numbers, etc.
         try {
@@ -41,15 +41,16 @@ function basic_cmd_print_mode1(arg) {
             var postfix = infix_to_postfix(tokens);
             var result = evaluate_postfix(postfix);
             output_text = string(result);
-            if (dbg_on(DBG_FLOW)) show_debug_message("PRINT MODE1: Evaluated expression '" + arg + "' to: '" + output_text + "'");
+            dbg_log(DBG_FLOW, "PRINT MODE1: Evaluated expression '" + arg + "' to: '" + output_text + "'");
         } catch (e) {
             // If evaluation fails, treat as literal string
             output_text = arg;
-            if (dbg_on(DBG_FLOW)) show_debug_message("PRINT MODE1: Expression failed, using literal: '" + output_text + "'");
+            dbg_log(DBG_FLOW, "PRINT MODE1: Expression failed, using literal: '" + output_text + "'");
         }
     }
     
-    if (dbg_on(DBG_FLOW)) show_debug_message("PRINT MODE1: Starting at cursor (" + string(global.mode1_cursor_x) + "," + string(global.mode1_cursor_y) + ")");
+    dbg_log(DBG_FLOW, "PRINT MODE1: Starting at cursor (" + string(global.mode1_cursor_x) + "," + string(global.mode1_cursor_y) + ")");
+    basic_output_transcript_append(output_text);
     
     // Ensure grid exists and get cols/rows
     var grid_inst = instance_find(obj_mode1_grid, 0);
@@ -68,7 +69,7 @@ function basic_cmd_print_mode1(arg) {
     for (var i = 0; i < string_length(output_text); i++) {
         var ch = ord(string_char_at(output_text, i + 1));
         
-        if (dbg_on(DBG_FLOW)) show_debug_message("PRINT MODE1: Setting char '" + string_char_at(output_text, i + 1) + "' (code " + string(ch) + ") at (" + string(global.mode1_cursor_x) + "," + string(global.mode1_cursor_y) + ")");
+        dbg_log(DBG_FLOW, "PRINT MODE1: Setting char '" + string_char_at(output_text, i + 1) + "' (code " + string(ch) + ") at (" + string(global.mode1_cursor_x) + "," + string(global.mode1_cursor_y) + ")");
         
         // Preserve existing cell colors unless explicitly changed elsewhere: pass undefined for fg/bg
         mode1_grid_set(global.mode1_cursor_x, global.mode1_cursor_y, ch, undefined, undefined);
@@ -78,7 +79,7 @@ function basic_cmd_print_mode1(arg) {
         if (global.mode1_cursor_x >= cols) {
             global.mode1_cursor_x = 0;
             global.mode1_cursor_y = min(rows - 1, global.mode1_cursor_y + 1);
-            if (dbg_on(DBG_FLOW)) show_debug_message("PRINT MODE1: Wrapped to next line, cursor now at (" + string(global.mode1_cursor_x) + "," + string(global.mode1_cursor_y) + ")");
+            dbg_log(DBG_FLOW, "PRINT MODE1: Wrapped to next line, cursor now at (" + string(global.mode1_cursor_x) + "," + string(global.mode1_cursor_y) + ")");
         }
     }
     
@@ -93,8 +94,8 @@ function basic_cmd_print_mode1(arg) {
         // Move cursor to next line
         global.mode1_cursor_x = 0;
         global.mode1_cursor_y = min(rows - 1, cur_y + 1);
-        if (dbg_on(DBG_FLOW)) show_debug_message("PRINT MODE1: Newline, cursor now at (" + string(global.mode1_cursor_x) + "," + string(global.mode1_cursor_y) + ")");
+        dbg_log(DBG_FLOW, "PRINT MODE1: Newline, cursor now at (" + string(global.mode1_cursor_x) + "," + string(global.mode1_cursor_y) + ")");
     }
     
-    if (dbg_on(DBG_FLOW)) show_debug_message("PRINT MODE1: Finished printing '" + output_text + "', cursor at (" + string(global.mode1_cursor_x) + "," + string(global.mode1_cursor_y) + ")");
+    dbg_log(DBG_FLOW, "PRINT MODE1: Finished printing '" + output_text + "', cursor at (" + string(global.mode1_cursor_x) + "," + string(global.mode1_cursor_y) + ")");
 }

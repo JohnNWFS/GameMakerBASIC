@@ -8,14 +8,14 @@
 function basic_cmd_dim(rest) {
     var s  = string_trim(rest);
     if (s == "") {
-        if (dbg_on(DBG_FLOW))  show_debug_message("DIM ERROR: Missing arguments");
+        dbg_log(DBG_FLOW, "DIM ERROR: Missing arguments");
         return;
     }
 
     // Ensure array registry exists
     if (is_undefined(global.basic_arrays)) {
         global.basic_arrays = ds_map_create();
-        if (dbg_on(DBG_FLOW))  show_debug_message("DIM: Created global.basic_arrays map");
+        dbg_log(DBG_FLOW, "DIM: Created global.basic_arrays map");
     }
 
     // Split on top-level commas (ignore commas inside parentheses or quotes)
@@ -51,7 +51,7 @@ function basic_cmd_dim(rest) {
         var closePos = string_last_pos(")", item);
 
         if (openPos <= 0 || closePos <= openPos) {
-            if (dbg_on(DBG_FLOW))  show_debug_message("DIM ERROR: Expected NAME(expr), got: " + item);
+            dbg_log(DBG_FLOW, "DIM ERROR: Expected NAME(expr), got: " + item);
             continue;
         }
 
@@ -61,7 +61,7 @@ function basic_cmd_dim(rest) {
         var lenVal  = basic_evaluate_expression_v2(lenExpr);
 
         if (!is_real(lenVal)) {
-            if (dbg_on(DBG_FLOW))  show_debug_message("DIM ERROR: Length expression not numeric for " + nm + " -> [" + lenExpr + "]");
+            dbg_log(DBG_FLOW, "DIM ERROR: Length expression not numeric for " + nm + " -> [" + lenExpr + "]");
             continue;
         }
 

@@ -17,7 +17,7 @@ function editor_handle_paste_command() {
     }
 
     var lines = string_split(raw_clip, "\n");
-    if (dbg_on(DBG_FLOW)) show_debug_message("PASTE: captured " + string(array_length(lines)) + " raw lines");
+    dbg_log(DBG_FLOW, "PASTE: captured " + string(array_length(lines)) + " raw lines");
 
     for (var i = 0; i < array_length(lines); i++) {
         var line = string_trim(lines[i]);
@@ -40,16 +40,16 @@ function editor_handle_paste_command() {
                 if (line_num > 0 && string_length(code_str) > 0) {
                     // INSERT or REPLACE program text
                     ds_map_set(global.program_lines, line_num, code_str);
-                    if (dbg_on(DBG_FLOW)) show_debug_message("PASTE: set " + string(line_num) + " → '" + code_str + "'");
+                    dbg_log(DBG_FLOW, "PASTE: set " + string(line_num) + " → '" + code_str + "'");
 
                     // Maintain ordered line number list — add only if not present
                     var idx = ds_list_find_index(global.line_numbers, line_num);
                     if (idx == -1) {
                         ds_list_add(global.line_numbers, line_num);
                         ds_list_sort(global.line_numbers, true);
-                        if (dbg_on(DBG_FLOW)) show_debug_message("PASTE: added line number " + string(line_num));
+                        dbg_log(DBG_FLOW, "PASTE: added line number " + string(line_num));
                     } else if (dbg_on(DBG_FLOW)) {
-                        if (dbg_on(DBG_FLOW)) show_debug_message("PASTE: updated existing line number " + string(line_num) + " (idx=" + string(idx) + ")");
+                        dbg_log(DBG_FLOW, "PASTE: updated existing line number " + string(line_num) + " (idx=" + string(idx) + ")");
                     }
                 }
             }

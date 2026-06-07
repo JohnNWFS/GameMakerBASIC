@@ -30,7 +30,7 @@ function build_if_block_map() {
                               : "";
                 if (thenPos > 0 && string_length(after) > 0) {
                     // Inline IF → skip block indexing entirely
-                    if (dbg_on(DBG_FLOW)) show_debug_message("INLINE IF skip at line " + string(lineNum));
+                    dbg_log(DBG_FLOW, "INLINE IF skip at line " + string(lineNum));
                     break;
                 }
                 // Block IF → record it
@@ -48,7 +48,7 @@ function build_if_block_map() {
                     var top = ds_stack_top(openStack);
                     ds_list_add(top[? "elseifIndices"], idx);
                 } else {
-                    if (dbg_on(DBG_FLOW)) show_debug_message("?MISMATCH ERROR: ELSEIF at line " + string(lineNum) + " without IF");
+                    dbg_log(DBG_FLOW, "?MISMATCH ERROR: ELSEIF at line " + string(lineNum) + " without IF");
                 }
                 break;
 
@@ -57,7 +57,7 @@ function build_if_block_map() {
                     var top = ds_stack_top(openStack);
                     ds_map_replace(top, "elseIndex", idx);
                 } else {
-                    if (dbg_on(DBG_FLOW)) show_debug_message("?MISMATCH ERROR: ELSE at line " + string(lineNum) + " without IF");
+                    dbg_log(DBG_FLOW, "?MISMATCH ERROR: ELSE at line " + string(lineNum) + " without IF");
                 }
                 break;
 
@@ -75,7 +75,7 @@ function build_if_block_map() {
 
                     ds_map_add(global.if_block_map, top[? "startIndex"], top);
                 } else {
-                    if (dbg_on(DBG_FLOW)) show_debug_message("?MISMATCH ERROR: ENDIF at line " + string(lineNum) + " without IF");
+                    dbg_log(DBG_FLOW, "?MISMATCH ERROR: ENDIF at line " + string(lineNum) + " without IF");
                 }
                 break;
         }
@@ -86,10 +86,10 @@ function build_if_block_map() {
         var orphan = ds_stack_pop(openStack);
         var startIdx  = orphan[? "startIndex"];
         var startLine = global.basic_line_numbers[| startIdx];
-        if (dbg_on(DBG_FLOW)) show_debug_message("?MISMATCH ERROR: IF at line " + string(startLine) + " missing ENDIF");
+        dbg_log(DBG_FLOW, "?MISMATCH ERROR: IF at line " + string(startLine) + " missing ENDIF");
         ds_map_destroy(orphan);
     }
     ds_stack_destroy(openStack);
 
-    if (dbg_on(DBG_FLOW)) show_debug_message("Built IF block map with " + string(ds_map_size(global.if_block_map)) + " entries.");
+    dbg_log(DBG_FLOW, "Built IF block map with " + string(ds_map_size(global.if_block_map)) + " entries.");
 }

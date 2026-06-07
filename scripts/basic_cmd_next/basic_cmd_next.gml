@@ -1,7 +1,7 @@
 /// @function basic_cmd_next(arg)
 /// @description Handles BASIC NEXT loop continuation (legacy-compatible; optional inline-colon support)
 function basic_cmd_next(arg) {
-    if (dbg_on(DBG_FLOW)) show_debug_message("NEXT: Entering handler with arg: '" + string(arg) + "'");
+    dbg_log(DBG_FLOW, "NEXT: Entering handler with arg: '" + string(arg) + "'");
 
     if (!ds_exists(global.for_stack, ds_type_stack) || ds_stack_empty(global.for_stack)) {
         basic_syntax_error("NEXT without matching FOR",
@@ -90,13 +90,13 @@ function basic_cmd_next(arg) {
             if (variable_global_exists("interpreter_use_stmt_jump")) {
                 global.interpreter_use_stmt_jump = true;
             }
-            if (dbg_on(DBG_FLOW)) show_debug_message("NEXT: Inline jump → (" + string(loop_line) + "," + string(loop_stmt) + ")");
+            dbg_log(DBG_FLOW, "NEXT: Inline jump → (" + string(loop_line) + "," + string(loop_stmt) + ")");
         } else {
             global.interpreter_next_line = return_line + 1; // legacy line jump
-            if (dbg_on(DBG_FLOW)) show_debug_message("NEXT: Legacy jump → line index " + string(global.interpreter_next_line));
+            dbg_log(DBG_FLOW, "NEXT: Legacy jump → line index " + string(global.interpreter_next_line));
         }
     } else {
         ds_stack_pop(global.for_stack);
-        if (dbg_on(DBG_FLOW)) show_debug_message("NEXT: Loop complete — popped FOR frame");
+        dbg_log(DBG_FLOW, "NEXT: Loop complete — popped FOR frame");
     }
 }

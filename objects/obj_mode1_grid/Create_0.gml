@@ -18,8 +18,8 @@ for (var i = 0; i < array_length(grid); i++) {
 }
 
 self.mode1_grid_fill = function(char, fg, bg) {
-    if (dbg_on(DBG_FLOW))  show_debug_message(">> GRID FILL START: char=" + string(char) + ", fg=" + string(fg) + ", bg=" + string(bg));
-    if (dbg_on(DBG_FLOW))  show_debug_message(">> Grid array length: " + string(array_length(grid)));
+    dbg_log(DBG_FLOW, ">> GRID FILL START: char=" + string(char) + ", fg=" + string(fg) + ", bg=" + string(bg));
+    dbg_log(DBG_FLOW, ">> Grid array length: " + string(array_length(grid)));
     
     for (var i = 0; i < array_length(grid); i++) {
         grid[i].char = char;
@@ -29,9 +29,9 @@ self.mode1_grid_fill = function(char, fg, bg) {
     
     // Check first few tiles to verify they were set
     for (var i = 0; i < 3; i++) {
-        if (dbg_on(DBG_FLOW))  show_debug_message(">> Tile[" + string(i) + "]: char=" + string(grid[i].char) + ", fg=" + string(grid[i].fg) + ", bg=" + string(grid[i].bg));
+        dbg_log(DBG_FLOW, ">> Tile[" + string(i) + "]: char=" + string(grid[i].char) + ", fg=" + string(grid[i].fg) + ", bg=" + string(grid[i].bg));
     }
-    if (dbg_on(DBG_FLOW))  show_debug_message(">> GRID FILL END");
+    dbg_log(DBG_FLOW, ">> GRID FILL END");
 }
 
 	drewfont = 0;//temp var

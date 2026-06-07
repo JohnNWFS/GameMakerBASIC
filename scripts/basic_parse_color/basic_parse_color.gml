@@ -68,7 +68,7 @@ function basic_parse_color(colstr) {
     }
 
     // 4) Fallback
-    if (dbg_on(DBG_FLOW)) show_debug_message("basic_parse_color: unknown color '" + s + "', defaulting to WHITE");
+    dbg_log(DBG_FLOW, "basic_parse_color: unknown color '" + s + "', defaulting to WHITE");
     return c_white;
 }
 

@@ -1,7 +1,7 @@
 /// @function basic_cmd_for(arg) 
 /// @description Parses and handles BASIC FOR loop initialization (spacing-tolerant; optional STEP)
 function basic_cmd_for(arg) {
-    if (dbg_on(DBG_FLOW)) show_debug_message("FOR: Entering handler with argument: '" + string(arg) + "'");
+    dbg_log(DBG_FLOW, "FOR: Entering handler with argument: '" + string(arg) + "'");
 
     // 1) Parse "VAR = start TO end [STEP step]"
     var raw   = string_trim(string(arg));
@@ -99,7 +99,7 @@ function basic_cmd_for(arg) {
         return;
     }
     global.basic_variables[? varname] = start_val;
-    if (dbg_on(DBG_FLOW)) show_debug_message("FOR: Initialized variable " + varname + " = " + string(start_val));
+    dbg_log(DBG_FLOW, "FOR: Initialized variable " + varname + " = " + string(start_val));
 
     // 4) Push frame (legacy + inline stmt coordinates)
     var legacy_return_line = line_index;
@@ -111,7 +111,7 @@ function basic_cmd_for(arg) {
 
     if (!ds_exists(global.for_stack, ds_type_stack)) {
         global.for_stack = ds_stack_create();
-        if (dbg_on(DBG_FLOW)) show_debug_message("FOR: Safety — created global.for_stack");
+        dbg_log(DBG_FLOW, "FOR: Safety — created global.for_stack");
     }
 
     var frame = {

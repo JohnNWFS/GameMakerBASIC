@@ -11,13 +11,13 @@ function safe_real_pop(stack) {
     var tryval = real(str);
 
     if (is_nan(tryval)) {
-        if (dbg_on(DBG_FLOW)) show_debug_message("? safe_real_pop: Cannot convert '" + string(raw) + "' to number. Returning 0.");
+        dbg_log(DBG_FLOW, "? safe_real_pop: Cannot convert '" + string(raw) + "' to number. Returning 0.");
         return 0;
     }
 
     // Handle invalid conversions like real("RND:")
     if (!is_numeric_string(str)) {
-        if (dbg_on(DBG_FLOW)) show_debug_message("? POSTFIX ERROR: Cannot convert to number: '" + str + "'");
+        dbg_log(DBG_FLOW, "? POSTFIX ERROR: Cannot convert to number: '" + str + "'");
         return 1; // or return 0 if you prefer a neutral fallback
     }
 

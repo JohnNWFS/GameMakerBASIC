@@ -23,29 +23,39 @@ function inkey_capture_keys() {
 
     if (_block_capture) {
 		//TEMPORARY: REMOVE WHEN TESTING INKEY$
-        //if (dbg_on(DBG_FLOW)) show_debug_message("INKEY$ CAPTURE: blocked (awaiting_input && !inkey_waiting)");
+        //dbg_log(DBG_FLOW, "INKEY$ CAPTURE: blocked (awaiting_input && !inkey_waiting)");
         exit;
     }
     // -----------------------------------------------------------------------
 
     // Initialize queue if not exists (use your current global.__inkey_queue)
-    if (!ds_exists(global.__inkey_queue, ds_type_queue)) {
+    if (!variable_global_exists("__inkey_queue") || !ds_exists(global.__inkey_queue, ds_type_queue)) {
         global.__inkey_queue = ds_queue_create();
-        if (dbg_on(DBG_FLOW)) show_debug_message("INKEY$ CAPTURE: Initialized global.__inkey_queue");
+        dbg_log(DBG_FLOW, "INKEY$ CAPTURE: Initialized global.__inkey_queue");
     }
 
-    // --- Scan for one printable key (ASCII 32..126) per frame ---------------
+    // --- Scan for Enter, then one printable key (ASCII 32..126) per frame ---
+    if (keyboard_check_pressed(vk_enter)) {
+        var enter_ch = chr(13);
+        dbg_log(DBG_FLOW, "INKEY$ CAPTURE: ENTER pressed");
+        if (ds_queue_size(global.__inkey_queue) < 10) {
+            ds_queue_enqueue(global.__inkey_queue, enter_ch);
+            dbg_log(DBG_FLOW, "INKEY$ CAPTURE: ENTER queued. Size=" + string(ds_queue_size(global.__inkey_queue)));
+        }
+        exit;
+    }
+
     for (var key = 32; key <= 126; key++) {
         if (keyboard_check_pressed(key)) {
             var ch = chr(key);
-            if (dbg_on(DBG_FLOW)) show_debug_message("INKEY$ CAPTURE: Key " + string(key) + " pressed, char='" + ch + "'");
+            dbg_log(DBG_FLOW, "INKEY$ CAPTURE: Key " + string(key) + " pressed, char='" + ch + "'");
 
             // Limit queue length to 10 (same policy as before)
             if (ds_queue_size(global.__inkey_queue) < 10) {
                 ds_queue_enqueue(global.__inkey_queue, ch);
-                if (dbg_on(DBG_FLOW)) show_debug_message("INKEY$ CAPTURE: '" + ch + "' queued. Size=" + string(ds_queue_size(global.__inkey_queue)));
+                dbg_log(DBG_FLOW, "INKEY$ CAPTURE: '" + ch + "' queued. Size=" + string(ds_queue_size(global.__inkey_queue)));
             } else {
-                if (dbg_on(DBG_FLOW)) show_debug_message("INKEY$ CAPTURE: Queue full (10), skipped '" + ch + "'");
+                dbg_log(DBG_FLOW, "INKEY$ CAPTURE: Queue full (10), skipped '" + ch + "'");
             }
             break; // capture at most one key per frame
         }
@@ -68,7 +78,7 @@ function inkey_capture_keys() {
 
             if (ch2 != "" && ds_queue_size(global.__inkey_queue) < 10) {
                 ds_queue_enqueue(global.__inkey_queue, ch2);
-                if (dbg_on(DBG_FLOW)) show_debug_message("INKEY$ CAPTURE: Touch→'" + ch2 + "', queued. Size=" + string(ds_queue_size(global.__inkey_queue)));
+                dbg_log(DBG_FLOW, "INKEY$ CAPTURE: Touch→'" + ch2 + "', queued. Size=" + string(ds_queue_size(global.__inkey_queue)));
             }
         }
     }

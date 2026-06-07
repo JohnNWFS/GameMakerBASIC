@@ -12,7 +12,7 @@ function mode1_scroll_grid(grid_obj, direction, amount) {
     var amt_row = clamp(amount, 1, rows);
     var amt_col = clamp(amount, 1, cols);
 
-    if (dbg_on(DBG_FLOW)) show_debug_message("GRID SCROLL: " + string_upper(direction) + " by " + string(amount));
+    dbg_log(DBG_FLOW, "GRID SCROLL: " + string_upper(direction) + " by " + string(amount));
 
     with (grid_obj) {
         switch (string_upper(direction)) {
@@ -82,7 +82,7 @@ function mode1_scroll_grid(grid_obj, direction, amount) {
                 break;
 
             default:
-                if (dbg_on(DBG_FLOW)) show_debug_message("SCROLL: Unknown direction: " + string(direction));
+                dbg_log(DBG_FLOW, "SCROLL: Unknown direction: " + string(direction));
                 break;
         }
 

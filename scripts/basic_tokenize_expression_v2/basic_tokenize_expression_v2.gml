@@ -1,5 +1,5 @@
 function basic_tokenize_expression_v2(expr) { 
-    if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Starting expression: '" + expr + "'");
+    dbg_log(DBG_PARSE, "TOKENIZER: Starting expression: '" + expr + "'");
 
     var tokens  = [];
     var i       = 1;
@@ -7,11 +7,11 @@ function basic_tokenize_expression_v2(expr) {
     var current = "";
 
     // Names that, when immediately followed by '(', should be treated as function calls
-    var function_names = ["RND","ABS","EXP","LOG","LOG10","SGN","INT","SIN","COS","TAN","STR$","CHR$","REPEAT$","ASC","LEN"];
+    var function_names = ["RND","ABS","EXP","LOG","LOG10","SGN","INT","SIN","COS","TAN","STR$","CHR$","REPEAT$","ASC","VAL","LEN"];
 
     while (i <= len) {
         var c = string_char_at(expr, i);
-        if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Char[" + string(i) + "] = '" + c + "'");
+        dbg_log(DBG_PARSE, "TOKENIZER: Char[" + string(i) + "] = '" + c + "'");
 
         // --------------------------------------------------------------------
         // STRING LITERALS: copy verbatim `"..."` including the closing quote.
@@ -26,7 +26,7 @@ function basic_tokenize_expression_v2(expr) {
                 i++;
             }
             array_push(tokens, str);
-            if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Token added (quoted string): " + str);
+            dbg_log(DBG_PARSE, "TOKENIZER: Token added (quoted string): " + str);
             i++;
             continue;
         }
@@ -36,9 +36,9 @@ function basic_tokenize_expression_v2(expr) {
         // --------------------------------------------------------------------
         if (c == " ") {
             if (current != "") {
-                if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Finalizing token from space: '" + current + "'");
+                dbg_log(DBG_PARSE, "TOKENIZER: Finalizing token from space: '" + current + "'");
                 array_push(tokens, string_upper(current) == "MOD" ? "MOD" : current);
-                if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Token added: " + current);
+                dbg_log(DBG_PARSE, "TOKENIZER: Token added: " + current);
                 current = "";
             }
             i++;
@@ -52,21 +52,21 @@ function basic_tokenize_expression_v2(expr) {
         if (c == "<" || c == ">") {
             // finalize any pending identifier/number before the operator
             if (current != "") {
-                if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Finalizing token before relation: '" + current + "'");
+                dbg_log(DBG_PARSE, "TOKENIZER: Finalizing token before relation: '" + current + "'");
                 array_push(tokens, string_upper(current) == "MOD" ? "MOD" : current);
-                if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Token added: " + current);
+                dbg_log(DBG_PARSE, "TOKENIZER: Token added: " + current);
                 current = "";
             }
 
             var two = (i < len) ? c + string_char_at(expr, i + 1) : "";
             if (two == "<=" || two == ">=" || two == "<>") {
                 array_push(tokens, two);
-                if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Relation token added: " + two);
+                dbg_log(DBG_PARSE, "TOKENIZER: Relation token added: " + two);
                 i += 2;
                 continue;
             } else {
                 array_push(tokens, c);  // bare < or >
-                if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Relation token added: " + c);
+                dbg_log(DBG_PARSE, "TOKENIZER: Relation token added: " + c);
                 i += 1;
                 continue;
             }
@@ -77,13 +77,13 @@ function basic_tokenize_expression_v2(expr) {
         // --------------------------------------------------------------------
         if (c == "=") {
             if (current != "") {
-                if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Finalizing token before '=': '" + current + "'");
+                dbg_log(DBG_PARSE, "TOKENIZER: Finalizing token before '=': '" + current + "'");
                 array_push(tokens, string_upper(current) == "MOD" ? "MOD" : current);
-                if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Token added: " + current);
+                dbg_log(DBG_PARSE, "TOKENIZER: Token added: " + current);
                 current = "";
             }
             array_push(tokens, "=");
-            if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: '=' token added");
+            dbg_log(DBG_PARSE, "TOKENIZER: '=' token added");
             i += 1;
             continue;
         }
@@ -95,16 +95,16 @@ function basic_tokenize_expression_v2(expr) {
         // --------------------------------------------------------------------
         if (c == "+" || c == "*" || c == "/" || c == "\\" || c == "(" || c == ")" || c == "%" || c == "^") {
             if (current != "") {
-                if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Finalizing token before operator: '" + current + "'");
+                dbg_log(DBG_PARSE, "TOKENIZER: Finalizing token before operator: '" + current + "'");
                 array_push(tokens, string_upper(current) == "MOD" ? "MOD" : current);
-                if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Token added: " + current);
+                dbg_log(DBG_PARSE, "TOKENIZER: Token added: " + current);
                 current = "";
             }
 
             // We still push "(" literally. Detection of "NAME(" being a function call
             // is handled later by your infix/postfix logic (it looks at the NAME token).
             array_push(tokens, c);
-            if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Operator token added: " + c);
+            dbg_log(DBG_PARSE, "TOKENIZER: Operator token added: " + c);
 
             i++;
             continue;
@@ -115,13 +115,13 @@ function basic_tokenize_expression_v2(expr) {
         // --------------------------------------------------------------------
         if (c == ",") {
             if (current != "") {
-                if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Finalizing token before comma: '" + current + "'");
+                dbg_log(DBG_PARSE, "TOKENIZER: Finalizing token before comma: '" + current + "'");
                 array_push(tokens, string_upper(current) == "MOD" ? "MOD" : current);
-                if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Token added: " + current);
+                dbg_log(DBG_PARSE, "TOKENIZER: Token added: " + current);
                 current = "";
             }
             array_push(tokens, ",");
-            if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Comma token added");
+            dbg_log(DBG_PARSE, "TOKENIZER: Comma token added");
             i++;
             continue;
         }
@@ -134,9 +134,9 @@ function basic_tokenize_expression_v2(expr) {
         if (c == "-") {
             // finalize any pending token first
             if (current != "") {
-                if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Finalizing token before minus: '" + current + "'");
+                dbg_log(DBG_PARSE, "TOKENIZER: Finalizing token before minus: '" + current + "'");
                 array_push(tokens, string_upper(current) == "MOD" ? "MOD" : current);
-                if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Token added: " + current);
+                dbg_log(DBG_PARSE, "TOKENIZER: Token added: " + current);
                 current = "";
             }
 
@@ -164,10 +164,10 @@ function basic_tokenize_expression_v2(expr) {
 
             if (is_negative) {
                 current = "-"; // begin building a numeric literal like "-12"
-                if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Starting negative number");
+                dbg_log(DBG_PARSE, "TOKENIZER: Starting negative number");
             } else {
                 array_push(tokens, "-"); // subtraction operator
-                if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Added subtraction operator");
+                dbg_log(DBG_PARSE, "TOKENIZER: Added subtraction operator");
             }
 
             i++;
@@ -186,11 +186,11 @@ function basic_tokenize_expression_v2(expr) {
     // END: flush any leftover token.
     // ------------------------------------------------------------------------
     if (current != "") {
-        if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Finalizing last token: '" + current + "'");
+        dbg_log(DBG_PARSE, "TOKENIZER: Finalizing last token: '" + current + "'");
         array_push(tokens, string_upper(current) == "MOD" ? "MOD" : current);
-        if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Token added: " + current);
+        dbg_log(DBG_PARSE, "TOKENIZER: Token added: " + current);
     }
 
-    if (dbg_on(DBG_PARSE)) show_debug_message("TOKENIZER: Final token list = " + string(tokens));
+    dbg_log(DBG_PARSE, "TOKENIZER: Final token list = " + string(tokens));
     return tokens;
 }

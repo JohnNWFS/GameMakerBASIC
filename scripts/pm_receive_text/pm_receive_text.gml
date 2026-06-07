@@ -6,7 +6,7 @@ function pm_receive_text(_text) {
         if (argument_count > 0) text_in = argument0; else text_in = "";
     }
 
-   if (dbg_on(DBG_FLOW)) show_debug_message("[pm_receive_text] got len=" + string(is_string(text_in) ? string_length(text_in) : -1));
+   dbg_log(DBG_FLOW, "[pm_receive_text] got len=" + string(is_string(text_in) ? string_length(text_in) : -1));
     if (!is_string(text_in) || string_length(text_in) <= 0) return 0;
 
     var t = string(text_in);
@@ -47,6 +47,6 @@ function pm_receive_text(_text) {
         _pm_visible = false;
     }
 
-   if (dbg_on(DBG_FLOW)) show_debug_message("[pm_receive_text] imported lines=" + string(count));
+   dbg_log(DBG_FLOW, "[pm_receive_text] imported lines=" + string(count));
     return count;
 }

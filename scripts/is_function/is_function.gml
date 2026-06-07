@@ -25,6 +25,10 @@ function is_function(t) {
          || fn == "DATE$"
          || fn == "INKEY$"
          || fn == "ASC"
+         || fn == "VAL"
+         || fn == "MODE1_GET_CHAR"
+         || fn == "MODE1_GET_COLOR"
+         || fn == "MODE1_COLOR_NAME"
 		 || fn == "LEN";   // <-- added
 }
 // === END: is_function ===

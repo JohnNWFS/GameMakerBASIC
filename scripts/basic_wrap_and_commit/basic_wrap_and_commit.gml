@@ -1,5 +1,5 @@
 function basic_wrap_and_commit(_text, _color) {
-    if (dbg_on(DBG_FLOW)) show_debug_message("=== basic_wrap_and_commit START ===");
+    dbg_log(DBG_FLOW, "=== basic_wrap_and_commit START ===");
 
 // Normalize and split on explicit newlines first
 var src = string(_text);
@@ -69,9 +69,8 @@ if (string_pos("\n", src) > 0) {
 var line = string_copy(remaining, 1, cut);
 var padN = max(0, wrap_width - string_length(line));
 if (padN > 0) line += string_repeat(" ", padN);
-if (dbg_on(DBG_FLOW)) show_debug_message("wrap: COMMIT(line) ← \"" + line + "\"");
-ds_list_add(global.output_lines, line);
-ds_list_add(global.output_colors, _color);
+dbg_log(DBG_FLOW, "wrap: COMMIT(line) ← \"" + line + "\"");
+basic_output_commit(line, _color);
 
 
         // Advance; skip the space when we broke on a space
@@ -93,9 +92,8 @@ ds_list_add(global.output_colors, _color);
 var tail = remaining;
 var padT = max(0, wrap_width - string_length(tail));
 if (padT > 0) tail += string_repeat(" ", padT);
-if (dbg_on(DBG_FLOW)) show_debug_message("wrap: COMMIT(tail) ← \"" + tail + "\"");
-ds_list_add(global.output_lines, tail);
-ds_list_add(global.output_colors, _color);
+dbg_log(DBG_FLOW, "wrap: COMMIT(tail) ← \"" + tail + "\"");
+basic_output_commit(tail, _color);
 
     }
 

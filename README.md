@@ -1,6 +1,6 @@
 # NW-BASIC
 
-A lightweight, custom-built BASIC interpreter and code editor created using **GameMaker Studio**. This project aims to recreate the feel of early home computer BASIC environments—reimagined for modern use and ultimately targeting **Android deployment**.
+A custom-built BASIC interpreter and code editor created using **GameMaker Studio**. This project aims to recreate the feel of early home computer BASIC environments, while growing into a serious retro-modern BASIC with strong text programming, tile graphics, and future pixel-perfect drawing support.
 
 > **Built for fun**, educational exploration, and retro coding joy — this project is co-developed using LLMs (Large Language Models) to assist with iterative code design, debugging, and feature expansion.
 
@@ -9,6 +9,8 @@ A lightweight, custom-built BASIC interpreter and code editor created using **Ga
 ## 🎯 Project Goals
 
 - Build a **fully functional** interpreted BASIC environment from scratch
+- Grow toward a broad, high-quality BASIC command set for text programs, games, education, and creative coding
+- Treat text mode, tile graphics, and future pixel/surface graphics as first-class programming environments
 - Run on **GameMaker Studio** and be easily portable to **Android devices**
 - Maintain a lightweight and nostalgic programming feel
 - Encourage experimentation, creativity, and fun with retro-style code

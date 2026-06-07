@@ -57,8 +57,8 @@ case "CHECK_SAVE_FUNCS":
 {
     var s = "browser_show_save_dialog";
     var r = "browser_show_save_dialog_raw";
-   if (dbg_on(DBG_FLOW)) show_debug_message("[CHECK] wrapper exists=" + string(function_exists(s)));
-   if (dbg_on(DBG_FLOW)) show_debug_message("[CHECK] raw exists=" + string(function_exists(r)));
+   dbg_log(DBG_FLOW, "[CHECK] wrapper exists=" + string(function_exists(s)));
+   dbg_log(DBG_FLOW, "[CHECK] raw exists=" + string(function_exists(r)));
     break;
 }
 
@@ -117,7 +117,7 @@ case ":PASTE":
 
 		editor_html_handle_paste_command();
 
-   if (dbg_on(DBG_FLOW)) show_debug_message("[PASTE] Bound. Click the game, then press Ctrl/Cmd+V.");
+   dbg_log(DBG_FLOW, "[PASTE] Bound. Click the game, then press Ctrl/Cmd+V.");
 }
 break;
 
@@ -127,8 +127,7 @@ break;
 
 	    case ":LOADURL":
 	        // Expect the rest of the input line to be the URL
-	        // If your parser provides 'args', use that. Otherwise, adapt to your arg var.
-	        import_from_url(string_trim(args));
+	        import_from_url(string_trim(cmd_params));
 	        break;
 		
 		

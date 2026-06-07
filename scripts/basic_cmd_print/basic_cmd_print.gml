@@ -93,15 +93,15 @@ function basic_cmd_print(arg, line_number) {
         if (treat_as_literal) {
             text_piece = string_copy(part, 2, string_length(part) - 2);
             text_piece = string_replace_all(text_piece, "\"\"", "\""); // "" → "
-            if (dbg_on(DBG_FLOW)) show_debug_message("PRINT: Part " + string(i) + " literal → " + text_piece);
+            dbg_log(DBG_FLOW, "PRINT: Part " + string(i) + " literal → " + text_piece);
         } else {
-            if (dbg_on(DBG_FLOW)) show_debug_message("PRINT: Part " + string(i) + " expr → " + part);
+            dbg_log(DBG_FLOW, "PRINT: Part " + string(i) + " expr → " + part);
             var tokens  = basic_tokenize_expression_v2(part);
-            if (dbg_on(DBG_FLOW)) show_debug_message("PRINT: Tokens = " + string(tokens));
+            dbg_log(DBG_FLOW, "PRINT: Tokens = " + string(tokens));
             var postfix = infix_to_postfix(tokens);
-            if (dbg_on(DBG_FLOW)) show_debug_message("PRINT: Postfix = " + string(postfix));
+            dbg_log(DBG_FLOW, "PRINT: Postfix = " + string(postfix));
             var result  = evaluate_postfix(postfix);
-            if (dbg_on(DBG_FLOW)) show_debug_message("PRINT: Evaluated result = " + string(result));
+            dbg_log(DBG_FLOW, "PRINT: Evaluated result = " + string(result));
 
             // INKEY$ modal sentinel — defer PRINT until resume
             if (is_string(result) && result == "<<INKEY_WAIT>>") {
@@ -111,18 +111,18 @@ function basic_cmd_print(arg, line_number) {
                 global.inkey_captured  = "";
                 global.pause_in_effect = true;
                 global.awaiting_input  = false;
-                if (dbg_on(DBG_FLOW)) show_debug_message("INKEY_WAIT: Deferring PRINT until a key is captured.");
+                dbg_log(DBG_FLOW, "INKEY_WAIT: Deferring PRINT until a key is captured.");
                 return;
             }
 
             if (is_real(result)) {
                 if (array_length(parts) > 1) {
                     text_piece = string(result); // compact for multi-arg print
-                    if (dbg_on(DBG_FLOW)) show_debug_message("PRINT: numeric (compact) → '" + text_piece + "'");
+                    dbg_log(DBG_FLOW, "PRINT: numeric (compact) → '" + text_piece + "'");
                 } else {
                     if (frac(result) == 0) text_piece = string(round(result));
                     else                   text_piece = string_format(result, 12, 8);
-                    if (dbg_on(DBG_FLOW)) show_debug_message("PRINT: numeric (padded) → '" + text_piece + "'");
+                    dbg_log(DBG_FLOW, "PRINT: numeric (padded) → '" + text_piece + "'");
                 }
             } else {
                 text_piece = string(result);
@@ -155,8 +155,7 @@ function basic_cmd_print(arg, line_number) {
 
     while (string_length(full_line) > wrap_width) {
         var line = string_copy(full_line, 1, wrap_width);
-        ds_list_add(global.output_lines, line);
-        ds_list_add(global.output_colors, global.current_draw_color);
+        basic_output_commit(line, global.current_draw_color);
         full_line = string_copy(full_line, wrap_width + 1, string_length(full_line) - wrap_width);
     }
 
@@ -164,10 +163,10 @@ function basic_cmd_print(arg, line_number) {
 
     if (!suppress_newline) {
         basic_wrap_and_commit(global.print_line_buffer, global.current_draw_color);
-        if (dbg_on(DBG_FLOW)) show_debug_message("PRINT: Line committed → " + global.print_line_buffer);
+        dbg_log(DBG_FLOW, "PRINT: Line committed → " + global.print_line_buffer);
         global.print_line_buffer = "";
     } else {
-        if (dbg_on(DBG_FLOW)) show_debug_message("PRINT: Output buffered without newline → " + global.print_line_buffer);
+        dbg_log(DBG_FLOW, "PRINT: Output buffered without newline → " + global.print_line_buffer);
     }
 }
 // === END: basic_cmd_print ===

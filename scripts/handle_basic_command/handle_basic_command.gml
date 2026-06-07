@@ -12,7 +12,7 @@ function handle_basic_command(cmd, arg) {
         var stmt = string_trim(parts[i]);
         if (stmt == "") continue;
 
-        if (dbg_on(DBG_FLOW)) show_debug_message("DISPATCH PART: " + stmt);
+        dbg_log(DBG_FLOW, "DISPATCH PART: " + stmt);
 
         // Strip any trailing REM (apostrophe handled inside)
         stmt = strip_basic_remark(stmt);
@@ -30,56 +30,12 @@ function handle_basic_command(cmd, arg) {
 
         // Skip INKEY$ as command (handled as function in evaluate_postfix)
         if (_verb == "INKEY$") {
-            if (dbg_on(DBG_FLOW)) show_debug_message("INKEY$: Ignored as command, treated as function");
+            dbg_log(DBG_FLOW, "INKEY$: Ignored as command, treated as function");
             continue;
         }
 
-        // ---------- SYNTAX GUARD: INKEY$ misuse (quote-aware) ----------
-        {
-            var _src  = stmt;   // stmt already had remarks stripped
-            var _len  = string_length(_src);
-            var _up   = string_upper(_src);
-
-            var inq = false;
-            var i2  = 1;
-            var found_inkey = false;
-            var eq_pos = 0;
-
-            while (i2 <= _len) {
-                var ch = string_char_at(_src, i2);
-                if (ch == "\"") {
-                    if (i2 < _len && string_char_at(_src, i2 + 1) == "\"") { i2 += 2; continue; }
-                    inq = !inq; i2++; continue;
-                }
-                if (!inq) {
-                    if (eq_pos == 0 && ch == "=") eq_pos = i2;
-                    if (i2 + 5 <= _len && string_copy(_up, i2, 6) == "INKEY$") { found_inkey = true; break; }
-                }
-                i2++;
-            }
-
-            if (found_inkey) {
-                var implicit_assign = false;
-                if (eq_pos > 0) {
-                    var lhs = string_trim(string_copy(_src, 1, eq_pos - 1));
-                    if (string_length(lhs) > 0) {
-                        var h  = string_upper(string_char_at(lhs, 1));
-                        var oc = ord(h);
-                        if (oc >= 65 && oc <= 90) implicit_assign = true;
-                    }
-                }
-                if (!(_verb == "LET" || implicit_assign)) {
-                    basic_syntax_error(
-                        "INKEY$ may only appear on the right side of an assignment like  K$ = INKEY$",
-                        global.current_line_number,
-                        global.interpreter_current_stmt_index,
-                        "INKEY_MISUSE"
-                    );
-                    return;
-                }
-            }
-        }
-        // ---------- END SYNTAX GUARD ----------
+        // INKEY$ is valid inside expressions. LET still has a special path for
+        // pure "K$ = INKEY$" modal waits.
 
 			// === INLINE IF COLLAPSE (robust; only within THIS colon segment) ===
 			// (Do this before the generic "IF requires THEN" guard so inline IF is handled cleanly.)
@@ -157,6 +113,14 @@ function handle_basic_command(cmd, arg) {
 			                var cond_src = string_trim(string_copy(after_if, 1, then_pos - 1));
 			                var tail     = string_trim(string_copy(after_if, then_pos + 4, L - (then_pos + 4) + 1));
 
+			                // Empty tail means this is a structured block IF:
+			                //   IF condition THEN
+			                //     ...
+			                //   ENDIF
+			                // Let the normal IF command handler process it.
+			                if (tail == "") {
+			                    // Fall through to the structured IF dispatch below.
+			                } else {
 			                // Look for a top-level ELSE inside tail
 			                var L2 = string_length(tail), lvl2 = 0, inq2 = false, else_pos = 0;
 			                for (var iEL = 1; iEL <= L2 - 4 + 1; iEL++) {
@@ -172,7 +136,7 @@ function handle_basic_command(cmd, arg) {
 			                var then_src = (else_pos > 0) ? string_trim(string_copy(tail, 1, else_pos - 1)) : tail;
 			                var else_src = (else_pos > 0) ? string_trim(string_copy(tail, else_pos + 4, L2 - (else_pos + 4) + 1)) : "";
 
-			                if (dbg_on(DBG_FLOW)) show_debug_message("COMMAND DISPATCH (collapsed IF): IF | ARG: " + (cond_src + " THEN " + then_src + (else_src!="" ? " ELSE " + else_src : "")));
+			                dbg_log(DBG_FLOW, "COMMAND DISPATCH (collapsed IF): IF | ARG: " + (cond_src + " THEN " + then_src + (else_src!="" ? " ELSE " + else_src : "")));
 
 			                // Evaluate condition
 			                var tok  = basic_tokenize_expression_v2(cond_src);
@@ -189,12 +153,12 @@ function handle_basic_command(cmd, arg) {
 			                    if (else_src != "") handle_basic_command(else_src, "");
 			                }
 
-			                if (dbg_on(DBG_FLOW)) show_debug_message("INLINE IF (" + string(truth) + "): THEN='" + then_src + "' ELSE='" + else_src + "'");
+			                dbg_log(DBG_FLOW, "INLINE IF (" + string(truth) + "): THEN='" + then_src + "' ELSE='" + else_src + "'");
 
 			                // If INPUT/PAUSE occurred inside the THEN/ELSE arm,
 			                // schedule resume at NEXT colon segment and yield now.
 			                if (global.pause_in_effect || global.awaiting_input) {
-			                    if (dbg_on(DBG_FLOW)) show_debug_message("INLINE IF: pausing after arm — scheduling resume at next segment");
+			                    dbg_log(DBG_FLOW, "INLINE IF: pausing after arm — scheduling resume at next segment");
 			                    global.interpreter_use_stmt_jump = true;
 			                    global.interpreter_target_line   = line_idx;
 			                    global.interpreter_target_stmt   = p + 1;  // resume at next colon slot (or EOL)
@@ -206,6 +170,7 @@ function handle_basic_command(cmd, arg) {
 			                global.interpreter_target_line   = line_idx;
 			                global.interpreter_target_stmt   = p + 1;
 			                break; // done with this segment
+			                }
 			            }
 			            // If we didn’t find THEN, fall through to structured IF guard/handler below.
 			        }
@@ -224,7 +189,7 @@ function handle_basic_command(cmd, arg) {
             return;
         }
 
-        if (dbg_on(DBG_FLOW)) show_debug_message("COMMAND DISPATCH: " + _verb + " | ARG: " + _rest);
+        dbg_log(DBG_FLOW, "COMMAND DISPATCH: " + _verb + " | ARG: " + _rest);
 
         switch (_verb) {
 
@@ -278,7 +243,7 @@ function handle_basic_command(cmd, arg) {
 
             case "DATA":
                 // Runtime no-op (DATA was harvested at load time)
-                if (dbg_on(DBG_FLOW)) show_debug_message("DATA (runtime): no-op");
+                dbg_log(DBG_FLOW, "DATA (runtime): no-op");
                 break;
 
             case "READ":      basic_cmd_read(_rest); break;
@@ -323,7 +288,7 @@ function handle_basic_command(cmd, arg) {
 
         // === YIELD GATE: if any command armed INPUT/PAUSE, stop consuming this line’s remaining segments
         if (global.pause_in_effect || global.awaiting_input) {
-            if (dbg_on(DBG_FLOW)) show_debug_message("DISPATCH: pause/input armed → yielding after segment");
+            dbg_log(DBG_FLOW, "DISPATCH: pause/input armed → yielding after segment");
             return;
         }
     }

@@ -2,7 +2,7 @@
 function list_saved_programs()
 {
     var ed = instance_find(obj_editor, 0);
-    if (ed == noone) { if (dbg_on(DBG_IO)) show_debug_message("[DIR] no obj_editor instance"); return; }
+    if (ed == noone) { dbg_log(DBG_IO, "[DIR] no obj_editor instance"); return; }
 
     if (!variable_instance_exists(ed, "dir_listing"))          ed.dir_listing = [];
     if (!variable_instance_exists(ed, "showing_dir_overlay"))  ed.showing_dir_overlay = false;
@@ -41,5 +41,5 @@ function list_saved_programs()
 
     ed.showing_dir_overlay = true;
 
-    if (dbg_on(DBG_IO)) show_debug_message("[DIR] open path=" + save_dir + " files=" + string(count));
+    dbg_log(DBG_IO, "[DIR] open path=" + save_dir + " files=" + string(count));
 }

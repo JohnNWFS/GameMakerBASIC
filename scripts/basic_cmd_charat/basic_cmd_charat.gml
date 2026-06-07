@@ -4,7 +4,7 @@
 function basic_cmd_charat(arg) {
     var args = basic_parse_csv_args(arg);
     if (array_length(args) < 3) {
-        if (dbg_on(DBG_FLOW)) show_debug_message("CHARAT requires 3 arguments: x, y, char");
+        dbg_log(DBG_FLOW, "CHARAT requires 3 arguments: x, y, char");
         return;
     }
 
@@ -19,14 +19,14 @@ function basic_cmd_charat(arg) {
 
     var grid_obj = instance_find(obj_mode1_grid, 0);
     if (!instance_exists(grid_obj)) {
-        if (dbg_on(DBG_FLOW)) show_debug_message("CHARAT: grid not found");
+        dbg_log(DBG_FLOW, "CHARAT: grid not found");
         return;
     }
 
     var cols = grid_obj.grid_cols;
     var rows = grid_obj.grid_rows;
     if (_x < 0 || _x >= cols || _y < 0 || _y >= rows) {
-        if (dbg_on(DBG_FLOW)) show_debug_message("CHARAT: coordinates out of bounds (" + string(_x) + "," + string(_y) + ")");
+        dbg_log(DBG_FLOW, "CHARAT: coordinates out of bounds (" + string(_x) + "," + string(_y) + ")");
         return;
     }
 
