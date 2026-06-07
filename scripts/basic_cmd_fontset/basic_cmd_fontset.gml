@@ -3,7 +3,7 @@
 /// @description FONTSET "<registry-key>"
 function basic_cmd_fontset(arg) {
     if (global.current_mode < 1) {
-        basic_print_system_message("FONTSET not implemented in MODE " + string(global.current_mode));
+        basic_show_message("FONTSET not implemented in MODE " + string(global.current_mode));
         return;
     }
 
@@ -21,7 +21,7 @@ function basic_cmd_fontset(arg) {
 
     // Ensure registry exists and the key is present
     if (!variable_global_exists("font_sheets")) {
-        basic_print_system_message("FONTSET registry not initialized");
+        basic_show_message("FONTSET registry not initialized");
         return;
     }
     if (!ds_map_exists(global.font_sheets, key)) {

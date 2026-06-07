@@ -3,7 +3,7 @@
 /// @desc FONTSET "KEY" -> switch active font sprite by registry key
 function basic_cmd_font(arg) {
     if (global.current_mode < 1) {
-        basic_print_system_message("FONT not implemented in MODE " + string(global.current_mode));
+        basic_show_message("FONT not implemented in MODE " + string(global.current_mode));
         return;
     }
 
@@ -21,7 +21,7 @@ function basic_cmd_font(arg) {
     key = string_upper(key);
 
     if (!variable_global_exists("font_sheets")) {
-        basic_print_system_message("FONT registry not initialized");
+        basic_show_message("FONT registry not initialized");
         return;
     }
 
