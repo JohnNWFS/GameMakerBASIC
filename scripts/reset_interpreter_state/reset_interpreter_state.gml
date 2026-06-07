@@ -24,6 +24,8 @@ function reset_interpreter_state() {
         room_goto(rm_basic_interpreter);
     }
     
+    global.option_base = 1; // reset to default between runs
+
     // Clear any program execution state
     ds_stack_clear(global.gosub_stack);
     ds_stack_clear(global.for_stack);

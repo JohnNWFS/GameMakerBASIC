@@ -18,9 +18,10 @@ function basic_array_get(_name, _idx) {
         dbg_log(DBG_FLOW, "ARRAY_GET ERROR: '" + nm + "' is not a ds_list");
         return 0;
     }
-    // Convert BASIC 1-based index to ds_list 0-based index
-    var idx_basic = max(1, floor(real(_idx))); // 1-based, clamped at 1
-    var idx = idx_basic - 1;                   // convert to 0-based for ds_list
+    // Convert BASIC index to ds_list 0-based index (respects OPTION BASE)
+    var _base = variable_global_exists("option_base") ? global.option_base : 1;
+    var idx_basic = max(_base, floor(real(_idx)));
+    var idx = idx_basic - _base; // convert to 0-based for ds_list
     
     // Bounds check
     var n = ds_list_size(lst);

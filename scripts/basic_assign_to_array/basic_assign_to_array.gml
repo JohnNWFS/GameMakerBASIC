@@ -31,10 +31,11 @@ function basic_assign_to_array(varName, val) {
         return;
     }
 
-    // Coerce to integer and enforce 1-based external indexing
+    // Coerce to integer and enforce base-indexed access (respects OPTION BASE)
+    var _base = variable_global_exists("option_base") ? global.option_base : 1;
     var idx1 = floor(real(indexVal));
-    if (!is_real(idx1) || idx1 < 1) {
-        basic_syntax_error("Array index must be >= 1 for " + arrayName + " (got " + string(indexVal) + ")",
+    if (!is_real(idx1) || idx1 < _base) {
+        basic_syntax_error("Array index must be >= " + string(_base) + " for " + arrayName + " (got " + string(indexVal) + ")",
                            /*line_no*/ undefined,
                            /*stmt_idx*/ global.interpreter_current_stmt_index,
                            "ARRAY_INDEX_RANGE");
@@ -42,7 +43,7 @@ function basic_assign_to_array(varName, val) {
     }
 
     // Convert to 0-based for ds_list
-    var ds_idx = idx1 - 1;
+    var ds_idx = idx1 - _base;
 
     if (dbg_on(DBG_FLOW)) {
         show_debug_message("ARRAY ASSIGN: Array='" + normalizedArrayName

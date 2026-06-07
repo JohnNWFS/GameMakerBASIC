@@ -203,6 +203,49 @@ function handle_basic_command(cmd, arg) {
 
             case "LET":       basic_cmd_let(_rest); break;
             case "GOTO":      basic_cmd_goto(_rest); break;
+
+            case "OPTION": {
+                // OPTION BASE 0 or OPTION BASE 1
+                var _opt = string_upper(string_trim(_rest));
+                if (string_copy(_opt, 1, 5) == "BASE ") {
+                    var _b = floor(real(string_trim(string_copy(_opt, 6, string_length(_opt) - 5))));
+                    if (_b == 0 || _b == 1) {
+                        global.option_base = _b;
+                    } else {
+                        basic_syntax_error("OPTION BASE must be 0 or 1", global.current_line_number, 0, "OPTION_BASE");
+                    }
+                }
+                break;
+            }
+
+            case "ON": {
+                // ON expr GOTO line1,line2,... or ON expr GOSUB line1,line2,...
+                var _on_upper = string_upper(_rest);
+                var _goto_pos  = string_pos(" GOTO ",  _on_upper);
+                var _gosub_pos = string_pos(" GOSUB ", _on_upper);
+                var _is_gosub  = (_gosub_pos > 0 && (_goto_pos == 0 || _gosub_pos < _goto_pos));
+                var _kw_pos    = _is_gosub ? _gosub_pos : _goto_pos;
+                var _kw_len    = _is_gosub ? 7 : 6;  // " GOSUB " = 7, " GOTO " = 6
+                if (_kw_pos > 0) {
+                    var _expr_src = string_trim(string_copy(_rest, 1, _kw_pos - 1));
+                    var _lines_src = string_trim(string_copy(_rest, _kw_pos + _kw_len, string_length(_rest)));
+                    var _n = floor(real(basic_evaluate_expression_v2(_expr_src)));
+                    // split comma-separated line numbers
+                    var _targets = string_split(_lines_src, ",");
+                    if (_n >= 1 && _n <= array_length(_targets)) {
+                        var _target_line = real(string_trim(_targets[_n - 1]));
+                        if (_is_gosub) {
+                            basic_cmd_gosub(string(_target_line));
+                        } else {
+                            basic_cmd_goto(string(_target_line));
+                        }
+                    }
+                    // if n out of range, fall through (no jump) — standard BASIC behaviour
+                } else {
+                    basic_syntax_error("ON requires GOTO or GOSUB", global.current_line_number, 0, "ON_SYNTAX");
+                }
+                break;
+            }
             case "INPUT":     basic_cmd_input(_rest); break;
             case "COLOR":     basic_cmd_color(_rest); break;
 
@@ -237,6 +280,15 @@ function handle_basic_command(cmd, arg) {
 
             case "END":       basic_cmd_end(); break;
             case "STOP":      basic_cmd_end(); break;  // STOP = END for now
+
+            case "ERASE": {
+                var _nm = string_upper(string_trim(_rest));
+                if (ds_exists(global.basic_arrays, ds_type_map) && ds_map_exists(global.basic_arrays, _nm)) {
+                    ds_list_destroy(global.basic_arrays[? _nm]);
+                    ds_map_delete(global.basic_arrays, _nm);
+                }
+                break;
+            }
 
             case "RANDOMIZE": {
                 var _seed = string_trim(_rest);
