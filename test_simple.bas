@@ -1,0 +1,12 @@
+10 REM Simple Quick Test
+20 PRINT "TEST: 2+2 = "; 2+2
+30 PRINT "TEST: ABS(-5) = "; ABS(-5)
+40 PRINT "TEST: LEN(HELLO) = "; LEN("HELLO")
+50 A$ = "HELLO"
+60 B$ = "WORLD"
+70 PRINT "TEST: CONCAT = "; A$ + " " + B$
+80 FOR I = 1 TO 3
+90   PRINT "TEST: LOOP_"; I; " = "; I * 10
+100 NEXT I
+110 PRINT "TEST: COMPLETE"
+120 END
