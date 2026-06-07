@@ -48,6 +48,7 @@ See `objects/obj_basic_interpreter/Create_0.gml` lines 23–30.
 - Add `REM AUTOTEST_SCREENSHOT` anywhere in `autotest.bas` when a visual/window screenshot is needed, especially for MODE 1 or future graphics-mode tests.
 - Delete or rename `autotest.bas` to disable autorun and start in the editor normally.
 - Broad MODE 1 command inventory smoke test lives at `diagnostics/mode1_command_inventory.bas`; copy it to `autotest.bas` and run to audit core text/flow/data/array commands plus MODE 1 display commands.
+- MODE 2 visual inventory smoke test lives at `diagnostics/mode2_visual_inventory.bas`; it uses `AUTOTEST_SCREENSHOT`, draws visible `PSET` color markers, prints `POINT()` readbacks, and waits in MODE 2 for screenshot inspection.
 
 ## Known Cleanup and Bug Backlog
 
@@ -74,6 +75,7 @@ See `objects/obj_basic_interpreter/Create_0.gml` lines 23–30.
 - **New math/string functions:** `SQR`, `ATN`, `SPACE$`, `UCASE$`, `LCASE$`, `LTRIM$`, `RTRIM$`, `INSTR`, `STRING$`.
 - **MODE 2 pixel surface implemented:** `obj_mode2_surface` now owns a room-sized GML surface in `rm_mode2_pixel`, recreates it if surfaces are lost, and draws it behind interpreter text. `PSET x,y[,color]` draws a MODE 2 pixel and `POINT(x,y)` returns the pixel color. `BIGTEST4.bas` passes with `POINT(10,10)=16777215`.
 - **MODE 1/2 PRINT improved:** MODE 1/2 `PRINT` now assembles semicolon/comma-separated mixed expressions, so output like `PRINT "POINT(10,10)="; POINT(10,10)` is preserved.
+- **MODE 2 visual verification added:** `diagnostics/mode2_visual_inventory.bas` confirms `MODE 2`, text overlay `PRINT`, `CLS`, `PSET`, and `POINT()` together by pausing in MODE 2 for screenshot inspection. Verified readbacks: white `16777215`, red `255`, green `32768`, blue `16711680`.
 
 ## Recently Consolidated
 

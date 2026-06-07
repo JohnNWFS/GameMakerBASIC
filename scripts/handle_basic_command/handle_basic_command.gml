@@ -196,7 +196,7 @@ function handle_basic_command(cmd, arg) {
             case "PRINT":
                 if (string_length(_rest) > 0 && string_char_at(_rest, 1) == "#") {
                     basic_cmd_print_file(_rest);
-                } else if (global.current_mode >= 1) {
+                } else if (global.current_mode == 1) {
                     basic_cmd_print_mode1(_rest);
                 } else {
                     basic_cmd_print(_rest, global.current_line_number);
@@ -270,8 +270,8 @@ function handle_basic_command(cmd, arg) {
             case "COLOR":     basic_cmd_color(_rest); break;
 
             case "CLS":
-                if (global.current_mode >= 1) { basic_cmd_cls_mode1(); }
-                else                           { basic_cmd_cls(); }
+                if (global.current_mode == 1) { basic_cmd_cls_mode1(); }
+                else                          { basic_cmd_cls(); }
                 break;
 
             // Structured control flow (multi-line)
