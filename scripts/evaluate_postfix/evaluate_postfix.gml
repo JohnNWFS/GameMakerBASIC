@@ -381,6 +381,40 @@ case "OR": {
                 case "SIN": array_push(stack, sin(safe_real_pop(stack)));   break;
                 case "COS": array_push(stack, cos(safe_real_pop(stack)));   break;
                 case "TAN": array_push(stack, tan(safe_real_pop(stack)));   break;
+                case "SQR": array_push(stack, sqrt(safe_real_pop(stack)));  break;
+                case "ATN": array_push(stack, arctan(safe_real_pop(stack))); break;
+
+                case "SPACE$": {
+                    var nsp = max(0, floor(safe_real_pop(stack)));
+                    array_push(stack, string_repeat(" ", nsp));
+                    break;
+                }
+                case "UCASE$": array_push(stack, string_upper(string(array_pop(stack)))); break;
+                case "LCASE$": array_push(stack, string_lower(string(array_pop(stack)))); break;
+                case "LTRIM$": {
+                    var _s = string(array_pop(stack));
+                    var _i = 1;
+                    while (_i <= string_length(_s) && string_char_at(_s, _i) == " ") _i++;
+                    array_push(stack, string_copy(_s, _i, string_length(_s) - _i + 1));
+                    break;
+                }
+                case "RTRIM$": {
+                    var _s = string(array_pop(stack));
+                    var _i = string_length(_s);
+                    while (_i >= 1 && string_char_at(_s, _i) == " ") _i--;
+                    array_push(stack, string_copy(_s, 1, _i));
+                    break;
+                }
+
+                case "INSTR": {
+                    var needle   = string(array_pop(stack));
+                    var haystack = string(array_pop(stack));
+                    var pos = string_pos(needle, haystack);
+                    array_push(stack, pos);
+                    break;
+                }
+
+                case "GETMODE": array_push(stack, global.current_mode); break;
 
                 // ---- String conversions
                 case "STR$": {
