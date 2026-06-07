@@ -20,8 +20,16 @@ current_input = "";
 cursor_pos = 0;
 last_keyboard_string = "";
 
-global.interpreter_current_line_index = 0;
-global.interpreter_next_line = -1;
+// Only reset the program counter when no program is already running.
+// Room transitions (MODE switches) must preserve the current line index.
+if (!variable_global_exists("interpreter_running") || !global.interpreter_running) {
+    global.interpreter_current_line_index = 0;
+    global.interpreter_next_line = -1;
+    line_index = 0;
+} else {
+    // Restore the local line_index from the global so Step doesn't clobber it on first frame.
+    line_index = global.interpreter_current_line_index;
+}
 
 // Local list to hold current run if needed
 interpreter_current_program = ds_list_create(); // OK to keep local
