@@ -18,7 +18,7 @@ For LLM/Codex collaborators, read `docs/LLM_PROJECT_BRIEF.md` first. It defines 
 - Core editor/immediate commands: `RUN`, `NEW`, `SAVE`, `LOAD`, `DIR`, `HELP`, `:PASTE`, `:LOADURL`, `QUIT`, `SCREENEDIT`/`SE`, `LIST`, `LIST range`.
 - Core BASIC commands: `PRINT`, `LET`, implicit assignment, `GOTO`, `INPUT`, `COLOR`, `CLS`, `END`, `REM`, `PAUSE`, `BEEP`.
 - Structured flow: inline `IF`, block `IF`, `ELSEIF`, `ELSE`, `ENDIF`, `FOR`, `NEXT`, `WHILE`, `WEND`, `GOSUB`, `RETURN`.
-- Data and arrays: `DATA`, `READ`, `RESTORE`, `DIM`, 1-D array assignment/access.
+- Data and arrays: `DATA`, `READ`, `RESTORE`, `DIM`, 1-D and multi-dimensional array assignment/access (`DIM A(M,N)`, `A(I,J) = V`, `V = A(I,J)`).
 - Mode and display commands: `MODE`, `BGCOLOR`, `CLSCHAR`, `PSET`, `CHARAT`, `PRINTAT`, `FONT`, `FONTSET`, `LOCATE`, `SCROLL`.
 - PRINT layout tokens handled by the command layer: `TAB`, `SPC`, comma zones, and trailing semicolon newline suppression.
 
@@ -50,9 +50,9 @@ For LLM/Codex collaborators, read `docs/LLM_PROJECT_BRIEF.md` first. It defines 
 ## Not Yet Implemented / Future Work
 
 - Random/control flow: `RANDOMIZE`, `STOP`, `ON GOTO`, `ON GOSUB`.
-- Additional functions: `INSTR`, `SPACE$`, `UCASE$`, `LCASE$`, `LTRIM$`, `RTRIM$`, `SQR`, `ATN`, `GETMODE`.
+- Additional functions: `FIX`, `CINT`, `PEEK`, `POKE`, and further math/string extensions as needed.
 - File I/O: `OPEN`, `CLOSE`, `EOF`, `LINE INPUT #`, `INPUT #`, `PRINT #`, and channel management.
-- Array/memory quality-of-life: `ERASE`, optional `OPTION BASE`, and compatibility behavior review.
+- Array/memory quality-of-life: `ERASE`, optional `OPTION BASE`, 3D+ arrays (2D done), and compatibility behavior review.
 - MODE 2 drawing commands: `PSET`/pixel variant, `LINE`, `CIRCLE`, and surface-backed drawing.
 - Future graphics: sprite overlay commands and richer MODE 1/2 utilities.
 
