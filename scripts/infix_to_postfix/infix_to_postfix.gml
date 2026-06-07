@@ -172,8 +172,8 @@ function infix_to_postfix(tokens) {
                 // fall through to generic handling if malformed
             }
 
-            // ---------- SPECIAL: MODE1_GET_CHAR(x,y) / MODE1_GET_COLOR(x,y) ----------
-            if (fn_name == "MODE1_GET_CHAR" || fn_name == "MODE1_GET_COLOR") {
+            // ---------- SPECIAL: 2-arg graphics helpers ----------
+            if (fn_name == "MODE1_GET_CHAR" || fn_name == "MODE1_GET_COLOR" || fn_name == "POINT") {
                 var lvlM = 0, partM = "", partsM = [];
                 for (var cmi = 1; cmi <= string_length(f_inner); cmi++) {
                     var chM = string_char_at(f_inner, cmi);

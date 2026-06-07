@@ -453,6 +453,18 @@ case "OR": {
                 case "GETMODE":
                 case "SCREEN": array_push(stack, global.current_mode); break;
 
+                case "POINT": {
+                    var _py = floor(safe_real_pop(stack));
+                    var _px = floor(safe_real_pop(stack));
+                    var _col = -1;
+                    if (variable_global_exists("mode2_surface") && surface_exists(global.mode2_surface)) {
+                        _col = surface_getpixel(global.mode2_surface, _px, _py);
+                    }
+                    array_push(stack, _col);
+                    dbg_log(DBG_PARSE, "POSTFIX: POINT(" + string(_px) + "," + string(_py) + ") → " + string(_col));
+                    break;
+                }
+
                 case "EOF": {
                     var _eof_chan = floor(safe_real_pop(stack));
                     var _is_eof  = true;

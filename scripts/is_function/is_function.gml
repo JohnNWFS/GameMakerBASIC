@@ -29,6 +29,7 @@ function is_function(t) {
          || fn == "INSTR"
          || fn == "GETMODE"
          || fn == "SCREEN"
+         || fn == "POINT"
          || fn == "REPEAT$"
          || fn == "TIMER"
          || fn == "TIME$"

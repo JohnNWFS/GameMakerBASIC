@@ -29,25 +29,78 @@ function basic_cmd_print_mode1(arg) {
     }
     
     var output_text = "";
-    
-    // Handle simple quoted strings directly
-    if (string_length(arg) >= 2 && string_char_at(arg, 1) == "\"" && string_char_at(arg, string_length(arg)) == "\"") {
-        output_text = string_copy(arg, 2, string_length(arg) - 2);
-        dbg_log(DBG_FLOW, "PRINT MODE1: Simple quoted string: '" + output_text + "'");
-    } else {
-        // Evaluate as expression for variables, numbers, etc.
-        try {
-            var tokens = basic_tokenize_expression_v2(arg);
-            var postfix = infix_to_postfix(tokens);
-            var result = evaluate_postfix(postfix);
-            output_text = string(result);
-            dbg_log(DBG_FLOW, "PRINT MODE1: Evaluated expression '" + arg + "' to: '" + output_text + "'");
-        } catch (e) {
-            // If evaluation fails, treat as literal string
-            output_text = arg;
-            dbg_log(DBG_FLOW, "PRINT MODE1: Expression failed, using literal: '" + output_text + "'");
+    var tabw = max(1, is_undefined(global.print_zone) ? 14 : global.print_zone);
+    var col = 0;
+
+    var semi_parts = split_on_unquoted_semicolons(arg);
+    var parts = [];
+    var seps = [];
+    var have_any = false;
+
+    for (var si = 0; si < array_length(semi_parts); si++) {
+        var seg = string_trim(semi_parts[si]);
+        if (seg == "") continue;
+
+        var comma_parts = split_on_unquoted_commas(seg);
+        if (array_length(comma_parts) <= 1) {
+            parts[array_length(parts)] = seg;
+            seps[array_length(seps)] = have_any ? "SEMI" : "START";
+            have_any = true;
+        } else {
+            for (var cj = 0; cj < array_length(comma_parts); cj++) {
+                var p = string_trim(comma_parts[cj]);
+                if (p == "") continue;
+                parts[array_length(parts)] = p;
+                var sep_kind = "START";
+                if (have_any) sep_kind = (cj == 0) ? "SEMI" : "COMMA";
+                seps[array_length(seps)] = sep_kind;
+                have_any = true;
+            }
         }
     }
+
+    for (var part_index = 0; part_index < array_length(parts); part_index++) {
+        if (seps[part_index] == "COMMA") {
+            var next_zone = ((col div tabw) + 1) * tabw;
+            var pad_comm = max(1, next_zone - col);
+            output_text += string_repeat(" ", pad_comm);
+            col += pad_comm;
+        }
+
+        var part = parts[part_index];
+        var text_piece = "";
+
+        if (is_quoted_string(part)) {
+            text_piece = string_copy(part, 2, string_length(part) - 2);
+            text_piece = string_replace_all(text_piece, "\"\"", "\"");
+        } else {
+            var tokens = basic_tokenize_expression_v2(part);
+            var postfix = infix_to_postfix(tokens);
+            var result = evaluate_postfix(postfix);
+
+            if (is_real(result)) {
+                text_piece = string(result);
+            } else {
+                text_piece = string(result);
+            }
+        }
+
+        if (text_piece == chr(9)) text_piece = "\t";
+
+        for (var tk = 1; tk <= string_length(text_piece); tk++) {
+            var tch = string_char_at(text_piece, tk);
+            if (tch == "\t") {
+                var pad = max(1, (((col div tabw) + 1) * tabw) - col);
+                output_text += string_repeat(" ", pad);
+                col += pad;
+            } else {
+                output_text += tch;
+                col += 1;
+            }
+        }
+    }
+
+    dbg_log(DBG_FLOW, "PRINT MODE1: assembled output '" + output_text + "'");
     
     dbg_log(DBG_FLOW, "PRINT MODE1: Starting at cursor (" + string(global.mode1_cursor_x) + "," + string(global.mode1_cursor_y) + ")");
     basic_output_transcript_append(output_text);

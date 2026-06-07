@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"mode2_surface_recreate",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"mode2_surface_recreate",
+  "parent":{
+    "name":"MODE_1_COMMANDS",
+    "path":"folders/Scripts/MODE_1_COMMANDS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

@@ -2,7 +2,36 @@
 /// @function basic_cmd_pset(arg)
 /// @desc PSET x, y, char, fg, bg
 function basic_cmd_pset(arg) {
-    var args = string_split(arg, ",");
+    var args = basic_parse_csv_args(arg);
+
+    if (global.current_mode == 2) {
+        if (array_length(args) < 2) {
+            dbg_log(DBG_FLOW, "PSET MODE2 requires at least x,y");
+            return;
+        }
+
+        var px = floor(real(basic_evaluate_expression_v2(string_trim(args[0]))));
+        var py = floor(real(basic_evaluate_expression_v2(string_trim(args[1]))));
+        var col = c_white;
+
+        if (array_length(args) >= 3) {
+            col = basic_parse_color(string_trim(args[2]));
+        }
+
+        if (!variable_global_exists("mode2_surface") || !surface_exists(global.mode2_surface)) {
+            mode2_surface_recreate();
+        }
+
+        if (surface_exists(global.mode2_surface)) {
+            surface_set_target(global.mode2_surface);
+            draw_set_color(col);
+            draw_point(px, py);
+            surface_reset_target();
+            dbg_log(DBG_FLOW, "PSET MODE2: (" + string(px) + "," + string(py) + ") color=" + string(col));
+        }
+        return;
+    }
+
     if (array_length(args) < 5) {
         dbg_log(DBG_FLOW, "PSET requires 5 arguments: x, y, char, fg, bg");
         return;
