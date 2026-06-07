@@ -1,10 +1,7 @@
 /// pm_receive_text(text)
 function pm_receive_text(_text) {
-    // Compatibility shim for legacy script calling
     var text_in = _text;
-    if (is_undefined(text_in)) {
-        if (argument_count > 0) text_in = argument0; else text_in = "";
-    }
+    if (is_undefined(text_in)) text_in = "";
 
    dbg_log(DBG_FLOW, "[pm_receive_text] got len=" + string(is_string(text_in) ? string_length(text_in) : -1));
     if (!is_string(text_in) || string_length(text_in) <= 0) return 0;

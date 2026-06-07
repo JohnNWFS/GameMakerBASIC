@@ -1,79 +1,125 @@
-/// Helper function to assign values to arrays (BASIC-visible index is 1-based)
+/// Helper function to assign values to arrays (BASIC-visible index is 1-based by default).
+/// Supports 1D (varName="ARR(I)") and multi-D (varName="ARR(I,J)").
 function basic_assign_to_array(varName, val) {
-    // Parse array name and index from varName like "TOPIC$(I)"
     var open_paren  = string_pos("(", varName);
-    var close_paren = string_pos(")", varName);
+    var close_paren = string_last_pos(")", varName);
     if (open_paren <= 0 || close_paren <= open_paren) {
         basic_syntax_error("Invalid array syntax: " + varName,
-                           /*line_no*/ undefined,
-                           /*stmt_idx*/ global.interpreter_current_stmt_index,
+                           undefined,
+                           global.interpreter_current_stmt_index,
                            "ARRAY_SYNTAX");
         return;
     }
 
     var arrayName = string_trim(string_copy(varName, 1, open_paren - 1));
     var indexExpr = string_trim(string_copy(varName, open_paren + 1, close_paren - open_paren - 1));
+    var nm        = basic_normvar(arrayName);
 
-    // Normalize array name used in your maps
-    var normalizedArrayName = basic_normvar(arrayName);
-
-    // Evaluate index expression (BASIC-side index, expected 1..N)
-    var indexTokens  = basic_tokenize_expression_v2(indexExpr);
-    var indexPostfix = infix_to_postfix(indexTokens);
-    var indexVal     = evaluate_postfix(indexPostfix);
-
-    // Safeguard against invalid index evaluation
-    if (is_string(indexVal) || is_undefined(indexVal)) {
-        basic_syntax_error("Invalid array index expression: " + indexExpr + " (evaluated to " + string(indexVal) + ")",
-                           /*line_no*/ undefined,
-                           /*stmt_idx*/ global.interpreter_current_stmt_index,
-                           "ARRAY_INDEX_EVAL");
-        return;
-    }
-
-    // Coerce to integer and enforce base-indexed access (respects OPTION BASE)
     var _base = variable_global_exists("option_base") ? global.option_base : 1;
-    var idx1 = floor(real(indexVal));
-    if (!is_real(idx1) || idx1 < _base) {
-        basic_syntax_error("Array index must be >= " + string(_base) + " for " + arrayName + " (got " + string(indexVal) + ")",
-                           /*line_no*/ undefined,
-                           /*stmt_idx*/ global.interpreter_current_stmt_index,
-                           "ARRAY_INDEX_RANGE");
-        return;
+
+    // Ensure maps exist
+    if (!variable_global_exists("basic_arrays") || is_undefined(global.basic_arrays)) {
+        global.basic_arrays = ds_map_create();
+    }
+    if (!variable_global_exists("basic_array_dims") || !ds_exists(global.basic_array_dims, ds_type_map)) {
+        global.basic_array_dims = ds_map_create();
     }
 
-    // Convert to 0-based for ds_list
-    var ds_idx = idx1 - _base;
+    var flat_idx;
+
+    // Check for comma → multi-dimensional index
+    if (string_pos(",", indexExpr) > 0) {
+        // Split index expressions on commas
+        var idx_parts = string_split(indexExpr, ",");
+        var ndims = array_length(idx_parts);
+
+        // Evaluate each index expression
+        var idx_vals = array_create(ndims, 0);
+        for (var di = 0; di < ndims; di++) {
+            var iv_tok  = basic_tokenize_expression_v2(string_trim(idx_parts[di]));
+            var iv_post = infix_to_postfix(iv_tok);
+            var iv_val  = evaluate_postfix(iv_post);
+            if (!is_real(iv_val)) {
+                basic_syntax_error("Invalid array index expression: " + idx_parts[di],
+                                   undefined, global.interpreter_current_stmt_index, "ARRAY_INDEX_EVAL");
+                return;
+            }
+            idx_vals[di] = floor(real(iv_val));
+        }
+
+        // Auto-create array if missing (assigns default dim size = max index)
+        if (!ds_map_exists(global.basic_arrays, nm)) {
+            global.basic_arrays[? nm] = ds_list_create();
+            var auto_dims = array_create(ndims, 0);
+            for (var di = 0; di < ndims; di++) auto_dims[di] = idx_vals[di] - _base + 1;
+            global.basic_array_dims[? nm] = auto_dims;
+        }
+
+        var dims = global.basic_array_dims[? nm];
+        if (array_length(dims) != ndims) {
+            basic_syntax_error("Dimension mismatch for " + arrayName,
+                               undefined, global.interpreter_current_stmt_index, "ARRAY_DIM_MISMATCH");
+            return;
+        }
+
+        // Row-major flat index
+        flat_idx = 0;
+        var stride = 1;
+        for (var di = ndims - 1; di >= 0; di--) {
+            var iv = idx_vals[di] - _base;
+            if (iv < 0) {
+                basic_syntax_error("Array index below base for " + arrayName + " dim " + string(di),
+                                   undefined, global.interpreter_current_stmt_index, "ARRAY_INDEX_RANGE");
+                return;
+            }
+            flat_idx += iv * stride;
+            stride *= dims[di];
+        }
+
+        // Grow list to accommodate
+        var lst = global.basic_arrays[? nm];
+        var needed = flat_idx + 1;
+        while (ds_list_size(lst) < needed) ds_list_add(lst, 0);
+
+    } else {
+        // 1D path
+        var indexTokens  = basic_tokenize_expression_v2(indexExpr);
+        var indexPostfix = infix_to_postfix(indexTokens);
+        var indexVal     = evaluate_postfix(indexPostfix);
+
+        if (is_string(indexVal) || is_undefined(indexVal)) {
+            basic_syntax_error("Invalid array index expression: " + indexExpr + " (evaluated to " + string(indexVal) + ")",
+                               undefined, global.interpreter_current_stmt_index, "ARRAY_INDEX_EVAL");
+            return;
+        }
+
+        var idx1 = floor(real(indexVal));
+        if (!is_real(idx1) || idx1 < _base) {
+            basic_syntax_error("Array index must be >= " + string(_base) + " for " + arrayName + " (got " + string(indexVal) + ")",
+                               undefined, global.interpreter_current_stmt_index, "ARRAY_INDEX_RANGE");
+            return;
+        }
+        flat_idx = idx1 - _base;
+
+        if (!ds_map_exists(global.basic_arrays, nm)) {
+            global.basic_arrays[? nm] = ds_list_create();
+        }
+        var lst = global.basic_arrays[? nm];
+        while (ds_list_size(lst) <= flat_idx) ds_list_add(lst, 0);
+    }
 
     if (dbg_on(DBG_FLOW)) {
-        show_debug_message("ARRAY ASSIGN: Array='" + normalizedArrayName
-            + "' BASIC-idx=" + string(idx1) + " (ds_idx=" + string(ds_idx)
-            + ") Value='" + string(val) + "'");
+        show_debug_message("ARRAY ASSIGN: " + nm + " flat_idx=" + string(flat_idx) + " val='" + string(val) + "'");
     }
 
-    // Ensure the array map/list exists
-    if (!ds_map_exists(global.basic_arrays, normalizedArrayName)) {
-        global.basic_arrays[? normalizedArrayName] = ds_list_create();
-        dbg_log(DBG_FLOW, "ARRAY ASSIGN: Created array '" + normalizedArrayName + "'");
-    }
-
-    var arrayList = global.basic_arrays[? normalizedArrayName];
-
-    // Ensure capacity up to ds_idx (0-based)
-    while (ds_list_size(arrayList) <= ds_idx) {
-        ds_list_add(arrayList, 0); // default fill
-    }
-
-    // String arrays end with $, numeric otherwise
-    var is_string_array = (string_length(normalizedArrayName) > 0)
-                       && (string_char_at(normalizedArrayName, string_length(normalizedArrayName)) == "$");
+    var arrayList = global.basic_arrays[? nm];
+    var is_string_array = (string_length(nm) > 0)
+                       && (string_char_at(nm, string_length(nm)) == "$");
 
     if (is_string_array) {
-        ds_list_replace(arrayList, ds_idx, string(val));
-        dbg_log(DBG_FLOW, "ARRAY ASSIGN: " + normalizedArrayName + "[" + string(idx1) + "] (ds " + string(ds_idx) + ") = '" + string(val) + "' (string)");
+        ds_list_replace(arrayList, flat_idx, string(val));
     } else {
         var numVal = is_real(val) ? val : (basic_looks_numeric(string(val)) ? real(val) : 0);
-        ds_list_replace(arrayList, ds_idx, numVal);
-        dbg_log(DBG_FLOW, "ARRAY ASSIGN: " + normalizedArrayName + "[" + string(idx1) + "] (ds " + string(ds_idx) + ") = " + string(numVal) + " (numeric)");
+        ds_list_replace(arrayList, flat_idx, numVal);
     }
 }

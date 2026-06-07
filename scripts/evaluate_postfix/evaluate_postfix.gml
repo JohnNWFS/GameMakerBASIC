@@ -42,6 +42,42 @@ function evaluate_postfix(postfix) {
 
                 dbg_log(DBG_PARSE, "POSTFIX[ARRAY]: Candidate '" + string(token) + "' → name='" + arrName + "', idxText='" + idxText + "'");
 
+                // Check for multi-dimensional index (top-level commas in idxText)
+                var _has_top_comma = false;
+                {
+                    var _dl = 0; var _dq = false;
+                    for (var _ci = 1; _ci <= string_length(idxText); _ci++) {
+                        var _cc = string_char_at(idxText, _ci);
+                        if (_cc == "\"") _dq = !_dq;
+                        if (!_dq) {
+                            if (_cc == "(") _dl++;
+                            else if (_cc == ")") _dl = max(0, _dl - 1);
+                            else if (_cc == "," && _dl == 0) { _has_top_comma = true; break; }
+                        }
+                    }
+                }
+
+                if (_has_top_comma) {
+                    // Multi-dim: evaluate each index expression, join with ","
+                    var _idx_parts = string_split(idxText, ","); // simple split is fine here (no nested commas expected in index exprs)
+                    var _idx_joined = "";
+                    var _ok = true;
+                    for (var _di = 0; _di < array_length(_idx_parts); _di++) {
+                        var _iv = basic_evaluate_expression_v2(string_trim(_idx_parts[_di]));
+                        if (!is_real(_iv)) { _ok = false; break; }
+                        if (_di > 0) _idx_joined += ",";
+                        _idx_joined += string(floor(real(_iv)));
+                    }
+                    if (!_ok) {
+                        array_push(stack, 0);
+                        continue;
+                    }
+                    var arrVal = basic_array_get(arrName, _idx_joined);
+                    dbg_log(DBG_PARSE, "POSTFIX[ARRAY multi-dim]: " + arrName + "(" + _idx_joined + ") → " + string(arrVal));
+                    array_push(stack, arrVal);
+                    continue;
+                }
+
                 var idxVal = basic_evaluate_expression_v2(idxText);
                 if (!is_real(idxVal)) {
                     dbg_log(DBG_PARSE, "POSTFIX[ARRAY] ERROR: Index non-numeric from '" + idxText + "' → '" + string(idxVal) + "'. Pushing 0.");
@@ -49,7 +85,7 @@ function evaluate_postfix(postfix) {
                     continue;
                 }
 
-                var arrVal = basic_array_get(arrName, idxVal); // your 1-based getter
+                var arrVal = basic_array_get(arrName, idxVal); // 1-based getter
                 dbg_log(DBG_PARSE, "POSTFIX[ARRAY]: " + arrName + "(" + string(idxVal) + ") → " + string(arrVal));
                 array_push(stack, arrVal);
                 continue;

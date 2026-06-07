@@ -144,7 +144,8 @@ global.active_font_sprite = global.font_sheets[? global.active_font_name];
 global.grid_refresh_needed = false;
 global.grid_refresh_char = 32;
 
-global.basic_arrays = ds_map_create(); // name (string) → ds_list
+global.basic_arrays = ds_map_create();      // name → ds_list (flat storage)
+global.basic_array_dims = ds_map_create(); // name → GML array of dimension sizes
 
 global.interpreter_target_line = -1;
 global.interpreter_target_stmt = 0;

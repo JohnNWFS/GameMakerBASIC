@@ -1,24 +1,22 @@
 /// @function basic_cmd_dim(rest)
-/// @description DIM NAME(expr) or DIM NAME1(expr1), NAME2(expr2), ...
-/// Allocates 1-D arrays in global.basic_arrays as zero-filled ds_lists.
-/// Semantics: inclusive upper bound like C64 — DIM A(10) => valid indices 0..10.
-/// Notes:
-/// - Safe alongside LET auto-grow: DIM preallocates; LET keeps working the same.
-/// - Multiple arrays supported, comma-separated at top level (commas inside () are ignored).
+/// @description DIM NAME(d1[,d2,...]) or multiple declarations comma-separated at top level.
+/// Stores flat ds_list with row-major layout; dimension sizes in global.basic_array_dims.
+/// Inclusive upper bound per dimension: DIM A(3,4) => valid indices (1..3, 1..4) with OPTION BASE 1.
 function basic_cmd_dim(rest) {
-    var s  = string_trim(rest);
+    var s = string_trim(rest);
     if (s == "") {
         dbg_log(DBG_FLOW, "DIM ERROR: Missing arguments");
         return;
     }
 
-    // Ensure array registry exists
     if (is_undefined(global.basic_arrays)) {
         global.basic_arrays = ds_map_create();
-        dbg_log(DBG_FLOW, "DIM: Created global.basic_arrays map");
+    }
+    if (!variable_global_exists("basic_array_dims") || !ds_exists(global.basic_array_dims, ds_type_map)) {
+        global.basic_array_dims = ds_map_create();
     }
 
-    // Split on top-level commas (ignore commas inside parentheses or quotes)
+    // Split on top-level commas (ignore commas inside parentheses)
     var defs = [];
     {
         var _depth = 0;
@@ -36,13 +34,11 @@ function basic_cmd_dim(rest) {
                 }
             }
         }
-        // tail
         if (start <= string_length(s)) {
             array_push(defs, string_trim(string_copy(s, start, string_length(s) - start + 1)));
         }
     }
 
-    // Process each NAME(expr)
     for (var d = 0; d < array_length(defs); d++) {
         var item = defs[d];
         if (item == "") continue;
@@ -51,38 +47,51 @@ function basic_cmd_dim(rest) {
         var closePos = string_last_pos(")", item);
 
         if (openPos <= 0 || closePos <= openPos) {
-            dbg_log(DBG_FLOW, "DIM ERROR: Expected NAME(expr), got: " + item);
+            dbg_log(DBG_FLOW, "DIM ERROR: Expected NAME(expr[,...]), got: " + item);
             continue;
         }
 
-        var nm_raw  = string_trim(string_copy(item, 1, openPos - 1));
-        var nm      = string_upper(nm_raw);
-        var lenExpr = string_copy(item, openPos + 1, (closePos - openPos - 1));
-        var lenVal  = basic_evaluate_expression_v2(lenExpr);
+        var nm     = string_upper(string_trim(string_copy(item, 1, openPos - 1)));
+        var inside = string_copy(item, openPos + 1, closePos - openPos - 1);
 
-        if (!is_real(lenVal)) {
-            dbg_log(DBG_FLOW, "DIM ERROR: Length expression not numeric for " + nm + " -> [" + lenExpr + "]");
-            continue;
+        // Parse comma-separated dimension expressions
+        var dim_exprs = string_split(inside, ",");
+        var dims = [];  // sizes per dimension (inclusive: upper+1 slots each)
+        var total = 1;
+        var ok = true;
+        for (var di = 0; di < array_length(dim_exprs); di++) {
+            var dexpr = string_trim(dim_exprs[di]);
+            var dval  = basic_evaluate_expression_v2(dexpr);
+            if (!is_real(dval)) {
+                dbg_log(DBG_FLOW, "DIM ERROR: Non-numeric dimension for " + nm + ": " + dexpr);
+                ok = false; break;
+            }
+            var n = floor(max(0, dval));
+            array_push(dims, n + 1); // inclusive upper bound
+            total *= (n + 1);
         }
+        if (!ok || total <= 0) continue;
 
-        var n    = floor(max(0, lenVal));
-        var size = n + 1; // inclusive upper bound (0..n)
-
-        // Replace any existing ds_list to avoid leaks
+        // Destroy old ds_list if present
         if (ds_map_exists(global.basic_arrays, nm)) {
             var _old = global.basic_arrays[? nm];
-            if (ds_exists(_old, ds_type_list)) {
-                ds_list_destroy(_old);
-            }
+            if (ds_exists(_old, ds_type_list)) ds_list_destroy(_old);
         }
 
-        // Create and zero-fill list
+        // Allocate flat ds_list, zero-filled
         var lst = ds_list_create();
-        for (var i = 0; i < size; i++) ds_list_add(lst, 0);
+        for (var i = 0; i < total; i++) ds_list_add(lst, 0);
 
-        global.basic_arrays[? nm] = lst;
+        global.basic_arrays[? nm]     = lst;
+        global.basic_array_dims[? nm] = dims; // GML array of per-dimension sizes
 
-        if (dbg_on(DBG_FLOW))  {show_debug_message("DIM: " + nm + " sized to " + string(size) + " (indices 0.." + string(n) + ")"
-            + " | lenExpr=[" + lenExpr + "] -> " + string(lenVal));}
+        if (dbg_on(DBG_FLOW)) {
+            var _dstr = "";
+            for (var di = 0; di < array_length(dims); di++) {
+                if (di > 0) _dstr += ",";
+                _dstr += string(dims[di]);
+            }
+            show_debug_message("DIM: " + nm + " dims=[" + _dstr + "] total=" + string(total));
+        }
     }
 }

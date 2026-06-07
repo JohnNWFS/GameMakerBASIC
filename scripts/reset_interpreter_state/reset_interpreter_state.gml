@@ -26,6 +26,11 @@ function reset_interpreter_state() {
     
     global.option_base = 1; // reset to default between runs
 
+    // Clear array dims metadata
+    if (variable_global_exists("basic_array_dims") && ds_exists(global.basic_array_dims, ds_type_map)) {
+        ds_map_clear(global.basic_array_dims);
+    }
+
     // Clear any program execution state
     ds_stack_clear(global.gosub_stack);
     ds_stack_clear(global.for_stack);
