@@ -452,6 +452,19 @@ case "OR": {
 
                 case "GETMODE": array_push(stack, global.current_mode); break;
 
+                case "EOF": {
+                    var _eof_chan = floor(safe_real_pop(stack));
+                    var _is_eof  = true;
+                    if (variable_global_exists("basic_file_handles")
+                        && ds_exists(global.basic_file_handles, ds_type_map)
+                        && ds_map_exists(global.basic_file_handles, _eof_chan)) {
+                        _is_eof = file_text_eof(global.basic_file_handles[? _eof_chan]);
+                    }
+                    array_push(stack, _is_eof ? -1 : 0);  // BASIC: -1 = TRUE, 0 = FALSE
+                    dbg_log(DBG_PARSE, "POSTFIX: EOF(" + string(_eof_chan) + ") → " + string(_is_eof));
+                    break;
+                }
+
                 // ---- String conversions
                 case "STR$": {
                     var vstr = safe_real_pop(stack);

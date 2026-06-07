@@ -31,6 +31,16 @@ function reset_interpreter_state() {
         ds_map_clear(global.basic_array_dims);
     }
 
+    // Close any open file channels
+    if (variable_global_exists("basic_file_handles") && ds_exists(global.basic_file_handles, ds_type_map)) {
+        var _fkeys = ds_map_keys_to_array(global.basic_file_handles);
+        for (var _fi = 0; _fi < array_length(_fkeys); _fi++) {
+            file_text_close(global.basic_file_handles[? _fkeys[_fi]]);
+        }
+        ds_map_clear(global.basic_file_handles);
+        ds_map_clear(global.basic_file_modes);
+    }
+
     // Clear any program execution state
     ds_stack_clear(global.gosub_stack);
     ds_stack_clear(global.for_stack);

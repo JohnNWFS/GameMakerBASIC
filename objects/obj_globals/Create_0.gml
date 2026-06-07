@@ -146,6 +146,8 @@ global.grid_refresh_char = 32;
 
 global.basic_arrays = ds_map_create();      // name → ds_list (flat storage)
 global.basic_array_dims = ds_map_create(); // name → GML array of dimension sizes
+global.basic_file_handles = ds_map_create(); // channel# → GML file handle
+global.basic_file_modes   = ds_map_create(); // channel# → "INPUT"/"OUTPUT"/"APPEND"
 
 global.interpreter_target_line = -1;
 global.interpreter_target_stmt = 0;
