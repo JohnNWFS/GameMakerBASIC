@@ -22,8 +22,8 @@ and seeing them run.
   across commands, functions, editor actions, and HELP examples.
 - Treat text mode as a first-class environment, not merely a debug console.
 - Treat graphics modes as first-class creative environments, not bolt-ons.
-- Preserve existing modes unless the user explicitly approves a redesign:
-  MODE 0 text, MODE 1 tile graphics, and MODE 2 pixel/surface graphics plumbing.
+- Preserve the current public mode model unless the user explicitly approves a redesign:
+  MODE 0 / MODE 1 text, MODE 2 tile graphics, and MODE 3 pixel/surface graphics plumbing.
 - Prefer deterministic smoke tests and small repro BASIC programs before changing
   interpreter GML.
 - Maintain or improve the in-app HELP system and README whenever syntax or
@@ -50,16 +50,16 @@ NW-BASIC should grow toward a broad, friendly BASIC command set:
 
 Graphics are part of the project identity.
 
-MODE 1 is tile/character graphics. Preserve and extend its cell-based model:
+MODE 2 is tile/character graphics. Preserve and extend its cell-based model:
 
 - Current commands include mode/display helpers such as `MODE`, `BGCOLOR`,
   `CLSCHAR`, `PSET`, `CHARAT`, `PRINTAT`, `FONT`, `FONTSET`, `LOCATE`, and
   `SCROLL`.
-- Future MODE 1 work should favor tile-friendly commands, character placement,
+- Future MODE 2 work should favor tile-friendly commands, character placement,
   color manipulation, scrolling, simple animation patterns, and game examples.
 
-MODE 2 is intended for pixel/surface drawing. It is not finished yet.
-Future MODE 2 commands should include pixel-perfect drawing tools such as:
+MODE 3 is intended for pixel/surface drawing. It is not finished yet.
+Future MODE 3 commands should include pixel-perfect drawing tools such as:
 
 - `PSET` / `PLOT`
 - `LINE`

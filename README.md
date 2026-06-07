@@ -37,7 +37,7 @@ A custom-built BASIC interpreter and code editor created using **GameMaker Studi
 - [Sound Commands](#sound-commands)
 - [Program Control](#program-control)
 - [Mode Control](#mode-control)
-- [MODE 1 Commands](#mode-1-commands)
+- [MODE 2 Commands](#mode-2-commands)
 - [Math Functions](#math-functions)
 - [String Functions](#string-functions)
 - [System Functions](#system-functions)
@@ -121,7 +121,9 @@ Use colons (`:`) to separate multiple statements on one line.
 ### CLS
 ```basic
 10 CLS              ' Clear screen (MODE 0: clears text output)
-                    ' (MODE 1: clears grid and resets cursor)
+                    ' (MODE 1: clears text output)
+                    ' (MODE 2: clears grid and resets cursor)
+                    ' (MODE 3: clears pixel surface and text overlay)
 ```
 
 ---
@@ -263,20 +265,22 @@ BEEP <spec> [<spec> ...]
 
 ## Mode Control
 
-**Note:** Unless specifically noted as MODE 1, all commands are intended for MODE 0 (text mode, the default).
+**Note:** Unless specifically noted as MODE 2 or MODE 3, commands are intended for text mode. `MODE 0` is kept as a text-mode compatibility alias; `MODE 1` is the public text mode.
 
 ### Mode Switching
 ```basic
 10 MODE 0           ' Text mode (default - no command needed)
-20 MODE 1           ' Tile graphics mode  
-30 MODE 1, 8        ' Tile mode with 8x8 pixel tiles
-40 MODE 1, 16       ' Tile mode with 16x16 pixel tiles
-50 MODE 1, 32       ' Tile mode with 32x32 pixel tiles (default)
+20 MODE 1           ' Text mode
+30 MODE 2           ' Tile graphics mode
+40 MODE 2, 8        ' Tile mode with 8x8 pixel tiles
+50 MODE 2, 16       ' Tile mode with 16x16 pixel tiles
+60 MODE 2, 32       ' Tile mode with 32x32 pixel tiles (default)
+70 MODE 3           ' Pixel graphics mode
 ```
 
 ---
 
-## MODE 1 Commands (Tile Graphics)
+## MODE 2 Commands (Tile Graphics)
 
 ### Character/Tile Graphics
 ```basic
@@ -288,7 +292,7 @@ BEEP <spec> [<spec> ...]
 60 CLSCHAR 32, GREEN, BLACK        ' Fill screen with spaces
 ```
 
-### Font Control (MODE 1)
+### Font Control (MODE 2)
 ```basic
 10 FONT "DEFAULT_16"    ' Switch to 16x16 font
 20 FONT "8x8"          ' Switch to 8x8 font
@@ -297,7 +301,7 @@ BEEP <spec> [<spec> ...]
 
 Available fonts: DEFAULT_8, DEFAULT_16, DEFAULT_32, SPECIAL, 16x16, etc.
 
-### Screen Positioning (MODE 1)
+### Screen Positioning (MODE 2)
 ```basic
 10 LOCATE 5, 10        ' Set cursor to row 5, column 10
 20 SCROLL "UP", 3      ' Scroll screen up 3 lines
@@ -307,14 +311,14 @@ Available fonts: DEFAULT_8, DEFAULT_16, DEFAULT_32, SPECIAL, 16x16, etc.
 60 SCROLL 2            ' Scroll up 2 lines (default direction)
 ```
 
-### Color Functions (MODE 1)
+### Color Functions (MODE 2)
 Get information about screen contents:
 ```basic
 10 C = mode1_get_char(10, 5)    ' Get character at position
 20 CLR = mode1_get_color(10, 5) ' Get foreground color at position
 ```
 
-### Additional MODE 1 Features
+### Additional MODE 2 Features
 ```basic
 10 FONTSET "DEFAULT_8"     ' Lock font (prevents MODE changes)
 20 ' Grid refresh and management

@@ -73,8 +73,8 @@ function help_build_topics() {
     });
     ds_list_add(global.help_topics, t3);
 
-    // Topic 4: MODE 1 (Tile) Basics
-    var t4 = { title: "MODE 1 (Tile) Basics", subs: [] };
+    // Topic 4: MODE 2 (Tile) Basics
+    var t4 = { title: "MODE 2 (Tile) Basics", subs: [] };
     array_push(t4.subs, { 
         title: "PRINTAT / CHARAT / PSET", 
         lines: [

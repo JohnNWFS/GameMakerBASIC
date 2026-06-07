@@ -105,11 +105,14 @@ global.colors[? "NAVY"] = make_color_rgb(0, 0, 128);
 global.colors[? "DKGRAY"] = make_color_rgb(64, 64, 64);
 
 // MODE control
-global.current_mode = 0; // 0 = Text, 1 = Tile graphics, 2 = Pixel graphics
+// Public BASIC modes: 0/1 = text, 2 = tile graphics, 3 = pixel graphics.
+// MODE 0 remains as a compatibility alias for text mode.
+global.current_mode = 0;
 global.mode_rooms = ds_map_create();
 global.mode_rooms[? 0] = rm_basic_interpreter; // Text
-global.mode_rooms[? 1] = rm_mode1_graphics;    // Tile graphics
-global.mode_rooms[? 2] = rm_mode2_pixel;       // Pixel graphics
+global.mode_rooms[? 1] = rm_basic_interpreter; // Text
+global.mode_rooms[? 2] = rm_mode1_graphics;    // Tile graphics
+global.mode_rooms[? 3] = rm_mode2_pixel;       // Pixel graphics
 
 // MODE 1 sprite sheet container
 // FONT registry for MODE 1

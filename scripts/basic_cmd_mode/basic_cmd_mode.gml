@@ -1,11 +1,11 @@
 // FILE: scripts/basic_cmd_mode.gml
 // FUNCTION: basic_cmd_mode(arg)
-// BEHAVIOR: MODE 1 optionally accepts a size (8,16,32). Sets global.mode1_cell_px,
+// BEHAVIOR: MODE 2 optionally accepts a size (8,16,32). Sets global.mode1_cell_px,
 //           selects a size-matched default font from global.font_sheets, and switches rooms when needed.
 function basic_cmd_mode(arg) {
     var mode    = 0;
     var size_px = -1;
-    // --- Parse "1" or "1,16" (CSV-aware) ---
+    // --- Parse "2" or "2,16" (CSV-aware) ---
     var s = string_trim(arg);
     if (string_pos(",", s) > 0) {
         var parts = basic_parse_csv_args(s);
@@ -19,12 +19,11 @@ function basic_cmd_mode(arg) {
         basic_show_message("Invalid MODE: " + string(mode));
         return;
     }
-    // --- MODE 1: accept 8/16/32; default 32 for back-compat ---
-// --- Only MODE 1 supports size selection (8/16/32), default 32 ---
-if (mode == 1) {
+    // --- MODE 2 tile graphics: accept 8/16/32; default 32 ---
+if (mode == 2) {
     if (size_px != 8 && size_px != 16 && size_px != 32) size_px = 32;
     global.mode1_cell_px = size_px;
-    dbg_log(DBG_FLOW, "MODE 1: cell size set to " + string(size_px) + " px");
+    dbg_log(DBG_FLOW, "MODE 2 tile: cell size set to " + string(size_px) + " px");
 
     // Pick a matching DEFAULT_* only if user hasn't FONTSET-locked a font
     if (!variable_global_exists("font_locked") || !global.font_locked) {

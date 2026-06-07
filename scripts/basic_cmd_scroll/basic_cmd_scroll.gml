@@ -2,7 +2,7 @@
 /// @function basic_cmd_scroll(arg)
 /// @description SCROLL [direction,] amount  -- direction defaults to UP when omitted or numeric-first.
 function basic_cmd_scroll(arg) {
-    if (global.current_mode < 1) {
+    if (global.current_mode != 2) {
         dbg_log(DBG_FLOW, "SCROLL: Not implemented in text mode");
         return;
     }

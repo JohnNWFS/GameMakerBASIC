@@ -4,9 +4,9 @@
 function basic_cmd_pset(arg) {
     var args = basic_parse_csv_args(arg);
 
-    if (global.current_mode == 2) {
+    if (global.current_mode == 3) {
         if (array_length(args) < 2) {
-            dbg_log(DBG_FLOW, "PSET MODE2 requires at least x,y");
+            dbg_log(DBG_FLOW, "PSET MODE3 requires at least x,y");
             return;
         }
 
@@ -27,7 +27,7 @@ function basic_cmd_pset(arg) {
             draw_set_color(col);
             draw_point(px, py);
             surface_reset_target();
-            dbg_log(DBG_FLOW, "PSET MODE2: (" + string(px) + "," + string(py) + ") color=" + string(col));
+            dbg_log(DBG_FLOW, "PSET MODE3: (" + string(px) + "," + string(py) + ") color=" + string(col));
         }
         return;
     }

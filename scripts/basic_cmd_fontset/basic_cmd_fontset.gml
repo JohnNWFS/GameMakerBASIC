@@ -2,7 +2,7 @@
 /// @function basic_cmd_fontset(arg)
 /// @description FONTSET "<registry-key>"
 function basic_cmd_fontset(arg) {
-    if (global.current_mode < 1) {
+    if (global.current_mode != 2) {
         basic_show_message("FONTSET not implemented in MODE " + string(global.current_mode));
         return;
     }

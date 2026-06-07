@@ -3,7 +3,7 @@
 // LOCATE command - set cursor position for next PRINT
 // =================================================================
 function basic_cmd_locate(arg) {
-    if (global.current_mode < 1) {
+    if (global.current_mode != 2) {
         // In text mode, just ignore or show message
         dbg_log(DBG_FLOW, "LOCATE: Not implemented in text mode");
         return;
