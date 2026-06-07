@@ -450,7 +450,8 @@ case "OR": {
                     break;
                 }
 
-                case "GETMODE": array_push(stack, global.current_mode); break;
+                case "GETMODE":
+                case "SCREEN": array_push(stack, global.current_mode); break;
 
                 case "EOF": {
                     var _eof_chan = floor(safe_real_pop(stack));

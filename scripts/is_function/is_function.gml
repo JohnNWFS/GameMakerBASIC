@@ -28,6 +28,7 @@ function is_function(t) {
          || fn == "RTRIM$"
          || fn == "INSTR"
          || fn == "GETMODE"
+         || fn == "SCREEN"
          || fn == "REPEAT$"
          || fn == "TIMER"
          || fn == "TIME$"
