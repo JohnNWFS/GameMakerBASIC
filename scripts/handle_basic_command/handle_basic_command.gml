@@ -236,6 +236,17 @@ function handle_basic_command(cmd, arg) {
             case "DIM":       basic_cmd_dim(_rest); break; // 1-D arrays
 
             case "END":       basic_cmd_end(); break;
+            case "STOP":      basic_cmd_end(); break;  // STOP = END for now
+
+            case "RANDOMIZE": {
+                var _seed = string_trim(_rest);
+                if (_seed == "") {
+                    randomize();
+                } else {
+                    random_set_seed(floor(real(basic_evaluate_expression_v2(_seed))));
+                }
+                break;
+            }
 
             case "REM":
                 // no-op
