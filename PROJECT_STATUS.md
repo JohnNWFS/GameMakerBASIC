@@ -28,7 +28,7 @@ See `objects/obj_basic_interpreter/Create_0.gml` lines 23–30.
 - Core BASIC commands: `PRINT`, `LET`, implicit assignment, `GOTO`, `INPUT`, `COLOR`, `CLS`, `END`, `REM`, `PAUSE`, `BEEP`.
 - Structured flow: inline `IF`, block `IF`, `ELSEIF`, `ELSE`, `ENDIF`, `FOR`, `NEXT`, `WHILE`, `WEND`, `GOSUB`, `RETURN`.
 - Data and arrays: `DATA`, `READ`, `RESTORE`, `DIM`, 1-D and multi-dimensional array assignment/access (`DIM A(M,N)`, `A(I,J) = V`, `V = A(I,J)`).
-- Mode and display commands: `MODE`, `BGCOLOR`, `CLSCHAR`, `PSET` (MODE 2 tile form and MODE 3 pixel form), `CHARAT`, `PRINTAT`, `FONT`, `FONTSET`, `LOCATE`, `SCROLL`.
+- Mode and display commands: `MODE`, `BGCOLOR`, `CLSCHAR`, `PSET` (MODE 2 tile form and MODE 3 pixel form), `CHARAT`, `PRINTAT`, `PLOT`, `TILE`, `DRAWSTR`, `BOX`, `FILL`, `HLINE`, `VLINE`, `FONT`, `FONTSET`, `LOCATE`, `SCROLL`.
 - File I/O: `OPEN`, `CLOSE`, `PRINT #n`, `INPUT #n`, `LINE INPUT #n`, `EOF(n)`.
 - PRINT layout tokens handled by the command layer: `TAB`, `SPC`, comma zones, and trailing semicolon newline suppression.
 
@@ -38,7 +38,7 @@ See `objects/obj_basic_interpreter/Create_0.gml` lines 23–30.
 - Numeric functions: `RND`, `ABS`, `INT`, `EXP`, `LOG`, `LOG10`, `SGN`, `SIN`, `COS`, `TAN`, `SQR`, `ATN`.
 - String/conversion functions: `STR$`, `CHR$`, `VAL`, `LEFT$`, `RIGHT$`, `MID$`, `REPEAT$`, `STRING$`, `SPACE$`, `LEN`, `ASC`, `UCASE$`, `LCASE$`, `LTRIM$`, `RTRIM$`, `INSTR`.
 - System/input functions: `TIMER`, `TIME$`, `DATE$`, `INKEY$`, `EOF`.
-- Mode helper functions: `GETMODE`, `SCREEN` (alias for GETMODE), `POINT` (MODE 3 pixel color readback), `mode1_get_char`, `mode1_get_color`, `mode1_color_name`.
+- Mode helper functions: `GETMODE`, `SCREEN` (alias for GETMODE), `POINT` (MODE 3 pixel color readback), `TILECHAR`, `TILECOLOR`, `TILENAME$`, `mode1_get_char`, `mode1_get_color`, `mode1_color_name`.
 
 ## Autotest Workflow
 
@@ -63,7 +63,7 @@ See `objects/obj_basic_interpreter/Create_0.gml` lines 23–30.
 - Random/control flow: `RANDOMIZE`, `STOP`, `ON GOTO`, `ON GOSUB`.
 - Additional functions: `FIX`, `CINT`, `PEEK`, `POKE`, and further math/string extensions as needed.
 - Array/memory quality-of-life: `ERASE`, optional `OPTION BASE`, 3D+ arrays (2D done), and compatibility behavior review.
-- Original MODE 2 tile work: broaden tile-friendly commands, editable character/tile workflows, and examples.
+- Original MODE 2 tile work: editable character/tile workflows, maps, windows/clipping, and examples.
 - Future MODE 3 drawing commands: `LINE`, `RECT`/`BOX`, `CIRCLE`, fill/paint behavior, sprite overlay commands, and richer MODE 2/3 utilities.
 
 ## Recently Completed (2026-06-07 session)
@@ -78,6 +78,7 @@ See `objects/obj_basic_interpreter/Create_0.gml` lines 23–30.
 - **MODE 2/3 PRINT improved:** MODE 2 tile `PRINT` and MODE 3 pixel/text overlay `PRINT` now preserve mixed semicolon/comma expression output, so output like `PRINT "POINT(10,10)="; POINT(10,10)` is preserved.
 - **MODE 3 visual verification added:** `diagnostics/mode3_pixel_visual_inventory.bas` confirms `MODE 3`, text overlay `PRINT`, `CLS`, `PSET`, and `POINT()` together by pausing in MODE 3 for screenshot inspection. Verified readbacks: white `16777215`, red `255`, green `32768`, blue `16711680`.
 - **Public mode numbers remapped:** MODE 0 remains a text compatibility alias, MODE 1 is public text mode, MODE 2 is tile/character graphics, and MODE 3 is pixel/surface graphics. Validation after remap: MODE 2 tile inventory reports `FAILS=0`, MODE 3 pixel visual inventory shows text plus pixel markers and correct `POINT()` readbacks, and MODE 1 text alias smoke prints `SCREEN=1`.
+- **MODE 2 tile vocabulary expanded:** Added public tile aliases/functions `PLOT`, `TILE`, `DRAWSTR`, `BOX`, `FILL`, `HLINE`, `VLINE`, `TILECHAR`, `TILECOLOR`, and `TILENAME$`. `diagnostics/mode2_tile_command_inventory.bas` validates them with `FAILS=0`.
 
 ## Recently Consolidated
 
@@ -88,5 +89,5 @@ See `objects/obj_basic_interpreter/Create_0.gml` lines 23–30.
 - Block `IF` / `ELSE` / `ENDIF` smoke tests now pass.
 - `INKEY$` now flushes stale run-start input and handles modal Enter/letter waits in the current smoke tests.
 - Autotest autorun plus `autotest_output.txt` transcript loop added for faster LLM-assisted debugging.
-- `diagnostics/mode2_tile_command_inventory.bas` currently passes with `FAILS=0`; it covers LET/assignment, math/operators, strings, arrays, FOR/NEXT, WHILE/WEND, block and inline IF, GOTO, GOSUB/RETURN, DATA/READ/RESTORE including named streams, MODE 2 PRINT/PRINTAT/CHARAT/PSET/SCROLL/FONT/FONTSET, `BEEP` no-crash, and nonblocking `INKEY$` expression use.
+- `diagnostics/mode2_tile_command_inventory.bas` currently passes with `FAILS=0`; it covers LET/assignment, math/operators, strings, arrays, FOR/NEXT, WHILE/WEND, block and inline IF, GOTO, GOSUB/RETURN, DATA/READ/RESTORE including named streams, MODE 2 PRINT/PRINTAT/CHARAT/PSET/PLOT/TILE/DRAWSTR/BOX/FILL/HLINE/VLINE/SCROLL/FONT/FONTSET, `BEEP` no-crash, tile helper functions, and nonblocking `INKEY$` expression use.
 - Tile helper functions are still internally named `mode1_get_char`, `mode1_get_color`, and `mode1_color_name`; they remain registered as BASIC expression functions for compatibility.

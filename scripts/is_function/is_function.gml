@@ -40,6 +40,9 @@ function is_function(t) {
          || fn == "MODE1_GET_CHAR"
          || fn == "MODE1_GET_COLOR"
          || fn == "MODE1_COLOR_NAME"
+         || fn == "TILECHAR"
+         || fn == "TILECOLOR"
+         || fn == "TILENAME$"
 		 || fn == "LEN"
          || fn == "EOF"
          || fn == "STRING$";

@@ -598,6 +598,15 @@ case "OR": {
                     break;
                 }
 
+                case "TILECHAR": {
+                    var tile_row = safe_real_pop(stack);
+                    var tile_col = safe_real_pop(stack);
+                    var tile_ch = mode1_get_char(tile_col, tile_row);
+                    array_push(stack, tile_ch);
+                    dbg_log(DBG_PARSE, "POSTFIX: TILECHAR(" + string(tile_col) + "," + string(tile_row) + ") → " + string(tile_ch));
+                    break;
+                }
+
                 case "MODE1_GET_COLOR": {
                     var rowc = safe_real_pop(stack);
                     var colc = safe_real_pop(stack);
@@ -607,11 +616,28 @@ case "OR": {
                     break;
                 }
 
+                case "TILECOLOR": {
+                    var tile_rowc = safe_real_pop(stack);
+                    var tile_colc = safe_real_pop(stack);
+                    var tile_c = mode1_get_color(tile_colc, tile_rowc);
+                    array_push(stack, tile_c);
+                    dbg_log(DBG_PARSE, "POSTFIX: TILECOLOR(" + string(tile_colc) + "," + string(tile_rowc) + ") → " + string(tile_c));
+                    break;
+                }
+
                 case "MODE1_COLOR_NAME": {
                     var color_value = safe_real_pop(stack);
                     var cname = mode1_color_name(color_value);
                     array_push(stack, cname);
                     dbg_log(DBG_PARSE, "POSTFIX: MODE1_COLOR_NAME(" + string(color_value) + ") → " + cname);
+                    break;
+                }
+
+                case "TILENAME$": {
+                    var tile_color_value = safe_real_pop(stack);
+                    var tile_cname = mode1_color_name(tile_color_value);
+                    array_push(stack, tile_cname);
+                    dbg_log(DBG_PARSE, "POSTFIX: TILENAME$(" + string(tile_color_value) + ") → " + tile_cname);
                     break;
                 }
 

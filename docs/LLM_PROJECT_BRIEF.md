@@ -53,8 +53,8 @@ Graphics are part of the project identity.
 MODE 2 is tile/character graphics. Preserve and extend its cell-based model:
 
 - Current commands include mode/display helpers such as `MODE`, `BGCOLOR`,
-  `CLSCHAR`, `PSET`, `CHARAT`, `PRINTAT`, `FONT`, `FONTSET`, `LOCATE`, and
-  `SCROLL`.
+  `CLSCHAR`, `PSET`, `CHARAT`, `PRINTAT`, `PLOT`, `TILE`, `DRAWSTR`, `BOX`,
+  `FILL`, `HLINE`, `VLINE`, `FONT`, `FONTSET`, `LOCATE`, and `SCROLL`.
 - Future MODE 2 work should favor tile-friendly commands, character placement,
   color manipulation, scrolling, simple animation patterns, and game examples.
 

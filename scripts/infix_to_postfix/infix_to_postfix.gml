@@ -173,7 +173,7 @@ function infix_to_postfix(tokens) {
             }
 
             // ---------- SPECIAL: 2-arg graphics helpers ----------
-            if (fn_name == "MODE1_GET_CHAR" || fn_name == "MODE1_GET_COLOR" || fn_name == "POINT") {
+            if (fn_name == "MODE1_GET_CHAR" || fn_name == "MODE1_GET_COLOR" || fn_name == "TILECHAR" || fn_name == "TILECOLOR" || fn_name == "POINT") {
                 var lvlM = 0, partM = "", partsM = [];
                 for (var cmi = 1; cmi <= string_length(f_inner); cmi++) {
                     var chM = string_char_at(f_inner, cmi);

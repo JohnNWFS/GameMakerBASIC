@@ -286,10 +286,15 @@ BEEP <spec> [<spec> ...]
 ```basic
 10 PSET 10, 5, 65, WHITE, BLACK    ' Set char 'A' at (10,5)
 20 CHARAT 0, 0, 72                 ' Set char 'H' at top-left
-30 CHARAT 5, 5, 32, RED            ' Set space with red foreground
-40 PRINTAT 5, 10, "HELLO"          ' Print text at position
-50 PRINTAT 0, 0, "TEST", BLUE, YELLOW  ' With colors
-60 CLSCHAR 32, GREEN, BLACK        ' Fill screen with spaces
+30 TILE 5, 5, 32, RED              ' Alias for character/tile placement
+40 PLOT 6, 5, 42, CYAN, BLACK      ' Tile-friendly alias for placement
+50 PRINTAT 5, 10, "HELLO"          ' Print text at position
+60 DRAWSTR 0, 0, "TEST", BLUE, YELLOW  ' Alias for PRINTAT
+70 CLSCHAR 32, GREEN, BLACK        ' Fill screen with spaces
+80 BOX 0,0,10,4,35,YELLOW,BLACK    ' Draw a tile rectangle border
+90 FILL 1,1,9,3,46,BLUE,BLACK      ' Fill a tile rectangle
+100 HLINE 0,10,6,45,CYAN,BLACK     ' Horizontal tile line
+110 VLINE 12,0,6,124,MAGENTA,BLACK ' Vertical tile line
 ```
 
 ### Font Control (MODE 2)
@@ -314,8 +319,10 @@ Available fonts: DEFAULT_8, DEFAULT_16, DEFAULT_32, SPECIAL, 16x16, etc.
 ### Color Functions (MODE 2)
 Get information about screen contents:
 ```basic
-10 C = mode1_get_char(10, 5)    ' Get character at position
-20 CLR = mode1_get_color(10, 5) ' Get foreground color at position
+10 C = TILECHAR(10, 5)       ' Get character/tile code at position
+20 CLR = TILECOLOR(10, 5)    ' Get foreground color at position
+30 N$ = TILENAME$(CLR)       ' Convert color value to a name if known
+40 C2 = mode1_get_char(10, 5) ' Older internal helper remains available
 ```
 
 ### Additional MODE 2 Features

@@ -76,11 +76,12 @@ function help_build_topics() {
     // Topic 4: MODE 2 (Tile) Basics
     var t4 = { title: "MODE 2 (Tile) Basics", subs: [] };
     array_push(t4.subs, { 
-        title: "PRINTAT / CHARAT / PSET", 
+        title: "PRINTAT / CHARAT / TILE", 
         lines: [
             "PRINTAT x,y,\"TEXT\"[,FG,BG]",
             "CHARAT x,y,code[,FG,BG] places a tile/char.",
-            "PSET x,y,code[,FG,BG,BG] shorthand."
+            "TILE/PLOT x,y,code[,FG,BG] are tile aliases.",
+            "BOX/FILL/HLINE/VLINE draw tile shapes."
         ]
     });
     // Topic 5: Math & Random

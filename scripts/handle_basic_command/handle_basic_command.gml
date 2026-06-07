@@ -293,6 +293,13 @@ function handle_basic_command(cmd, arg) {
             case "MODE":      basic_cmd_mode(_rest); break;
             case "CLSCHAR":   basic_cmd_clschar(_rest); break;
             case "PSET":      basic_cmd_pset(_rest); break;
+            case "PLOT":      basic_cmd_charat(_rest); break;
+            case "TILE":      basic_cmd_charat(_rest); break;
+            case "DRAWSTR":   basic_cmd_printat(_rest); break;
+            case "BOX":       basic_cmd_tile_box(_rest); break;
+            case "FILL":      basic_cmd_tile_fill(_rest); break;
+            case "HLINE":     basic_cmd_tile_hline(_rest); break;
+            case "VLINE":     basic_cmd_tile_vline(_rest); break;
             case "CHARAT":    basic_cmd_charat(_rest); break;
             case "PRINTAT":   basic_cmd_printat(_rest); break;
             case "FONT":      basic_cmd_font(_rest); break;
