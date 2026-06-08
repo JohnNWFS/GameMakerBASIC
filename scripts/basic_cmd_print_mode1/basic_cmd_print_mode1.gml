@@ -68,6 +68,28 @@ function basic_cmd_print_mode1(arg) {
         }
 
         var part = parts[part_index];
+
+        // TAB(n) — move to absolute column n
+        var _pu = string_upper(part);
+        if (string_copy(_pu, 1, 4) == "TAB(" && string_char_at(part, string_length(part)) == ")") {
+            var _tab_expr = string_copy(part, 5, string_length(part) - 5);
+            var _tab_col  = max(0, round(real(evaluate_postfix(infix_to_postfix(basic_tokenize_expression_v2(_tab_expr))))));
+            if (_tab_col > col) {
+                output_text += string_repeat(" ", _tab_col - col);
+                col = _tab_col;
+            }
+            continue;
+        }
+
+        // SPC(n) — insert n spaces
+        if (string_copy(_pu, 1, 4) == "SPC(" && string_char_at(part, string_length(part)) == ")") {
+            var _spc_expr = string_copy(part, 5, string_length(part) - 5);
+            var _spc_n    = max(0, round(real(evaluate_postfix(infix_to_postfix(basic_tokenize_expression_v2(_spc_expr))))));
+            output_text += string_repeat(" ", _spc_n);
+            col += _spc_n;
+            continue;
+        }
+
         var text_piece = "";
 
         if (is_quoted_string(part)) {
