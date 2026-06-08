@@ -218,12 +218,18 @@ LOCATE has no effect in MODE 1 text mode.
 
 ### BEEP - Musical Note Sequences
 ```basic
-10 BEEP C1             ' Play middle C for 1 beat
-20 BEEP A0.5 B0.5 C2   ' A eighth, B eighth, C half note
-30 BEEP C#1 Db1 F#2    ' Sharps (#) and flats (b) supported
-40 BEEP R1 C1          ' R1 = 1-beat rest, then C
-50 BEEP O2 C1 D1       ' O2 = octave 2, affects following notes
-60 BEEP O-1 A4 O1 G2   ' Octave changes apply until changed again
+10 PRINT "A single note: middle C, one beat."
+20 BEEP C1
+30 PRINT "Three notes in one line: A eighth, B eighth, C half."
+40 BEEP A0.5 B0.5 C2
+50 PRINT "Sharps and flats: C#, Db, F#."
+60 BEEP C#1 Db1 F#2
+70 PRINT "A rest followed by a note: silence, then C."
+80 BEEP R1 C1
+90 PRINT "Switching to octave 2: C and D sound higher."
+100 BEEP O2 C1 D1
+110 PRINT "Octave changes mid-sequence: A low, G higher."
+120 BEEP O-1 A4 O1 G2
 ```
 
 #### BEEP Syntax
