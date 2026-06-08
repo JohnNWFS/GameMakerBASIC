@@ -269,16 +269,16 @@ BEEP <spec> [<spec> ...]
 #### Inline IF
 ```basic
 10 PRINT "X has never been set, so it defaults to 0."
-20 PRINT "Testing IF X = 5 -- this will be false, so nothing prints:"
+20 PRINT "Testing IF X = 5 — this will be false, so nothing prints:"
 30 IF X = 5 THEN PRINT "Five"
 40 PRINT "(Correct - nothing printed above.)"
 50 LET X = 5
-60 PRINT "Now X = 5. Testing again -- this time it prints:"
+60 PRINT "Now X = 5. Testing again — this time it prints:"
 70 IF X = 5 THEN PRINT "Five"
 80 LET A = 10 : LET B = 3
 90 PRINT "A = 10, B = 3. The true branch of ELSE runs:"
 100 IF A > B THEN PRINT "A is bigger" ELSE PRINT "B is bigger"
-110 PRINT "IF can run multiple statements -- setting Y and Z:"
+110 PRINT "IF can run multiple statements — setting Y and Z:"
 120 IF X = 5 THEN Y = 2 : Z = 3
 130 PRINT "Y = " + STR$(Y) + ", Z = " + STR$(Z)
 ```
