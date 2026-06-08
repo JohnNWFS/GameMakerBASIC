@@ -172,8 +172,9 @@ In 10 years you will be 35.
 
 ### LOCATE (MODE 2 only)
 ```basic
-10 LOCATE row, col   ' Set cursor position for next PRINT (1-based)
-20 LOCATE 5, 10      ' Row 5, column 10
+10 MODE 2
+20 LOCATE row, col   ' Set cursor position for next PRINT (1-based)
+30 LOCATE 5, 10      ' Row 5, column 10
 ```
 LOCATE has no effect in MODE 1 text mode.
 
