@@ -24,7 +24,7 @@ See `objects/obj_basic_interpreter/Create_0.gml` lines 23–30.
 
 ## Completed Commands
 
-- Core editor/immediate commands: `RUN`, `NEW`, `SAVE`, `LOAD`, `DIR`, `HELP`, `:PASTE`, `:LOADURL`, `QUIT`, `SCREENEDIT`/`SE`, `LIST`, `LIST range`.
+- Core editor/immediate commands: `RUN`, `NEW`, `SAVE`, `LOAD`, `DIR`, `HELP`, `:PASTE`, `:LOADURL`, `QUIT`, `SCREENEDIT`/`SE`, `LIST`, `LIST range`, `GO`/`G`.
 - Core BASIC commands: `PRINT`, `LET`, implicit assignment, `GOTO`, `INPUT`, `COLOR`, `CLS`, `END`, `REM`, `PAUSE`, `BEEP`.
 - Structured flow: inline `IF`, block `IF`, `ELSEIF`, `ELSE`, `ENDIF`, `FOR`, `NEXT`, `WHILE`, `WEND`, `GOSUB`, `RETURN`.
 - Data and arrays: `DATA`, `READ`, `RESTORE`, `DIM`, 1-D and multi-dimensional array assignment/access (`DIM A(M,N)`, `A(I,J) = V`, `V = A(I,J)`).
@@ -65,7 +65,24 @@ See `objects/obj_basic_interpreter/Create_0.gml` lines 23–30.
 - Additional functions: `FIX`, `CINT`, `PEEK`, `POKE`, and further math/string extensions as needed.
 - Array/memory quality-of-life: `ERASE`, optional `OPTION BASE`, 3D+ arrays (2D done), and compatibility behavior review.
 - Original MODE 2 tile work: interactive tile editor UI, maps, windows/clipping, animation helpers, and examples.
-- Future MODE 3 drawing commands: `LINE`, `RECT`/`BOX`, `CIRCLE`, fill/paint behavior, sprite overlay commands, and richer MODE 2/3 utilities.
+- Future MODE 3 drawing commands: keep `PSET`/loop-based drawing as the classic slow BASIC layer, and add accelerated GML-backed commands that still look like pure BASIC to the user.
+
+## MODE 3 Drawing Command Plan
+
+MODE 3 should support two kinds of pixel graphics commands:
+
+- **Classic/pure BASIC commands:** `PSET`, `POINT`, and explicit BASIC loops. These preserve old 8-bit style graphics programming and are acceptable even when slow.
+- **Accelerated GML-backed commands:** BASIC commands that dispatch to GameMaker drawing primitives on the MODE 3 surface. These hide GML from the BASIC user while using the engine for speed.
+
+Initial accelerated command roadmap:
+
+1. `CIRCLE x,y,r[,lineColor[,fillFlag[,fillColor]]]` — outline or filled circle through GameMaker surface drawing.
+2. `LINE x1,y1,x2,y2[,color[,thickness]]` — fast line drawing.
+3. `BOX x1,y1,x2,y2[,lineColor[,fillFlag[,fillColor[,thickness]]]]` — outline or filled rectangle through GameMaker surface drawing.
+4. `PLOT x,y[,color]` — MODE 3 point-drawing alias for `PSET`.
+5. `CIRCLEF x,y,r[,color]` — possible future convenience alias for filled circles.
+6. `PAINT x,y[,fillColor[,borderColor]]` — flood fill if feasible and performant.
+7. Later review candidates from historical BASICs/extensions: `DRAW` vector strings, ellipse/arc options for `CIRCLE`, and sprite/image overlay commands.
 
 ## Recently Completed (2026-06-07 session)
 

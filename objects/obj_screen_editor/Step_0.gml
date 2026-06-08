@@ -14,63 +14,71 @@ if (!variable_instance_exists(id, "line_modified")) {
     line_modified = false;
 }
 
-// Initialize key repeat timer for smoother arrow key movement
-if (!variable_instance_exists(id, "arrow_repeat_timer")) {
-    arrow_repeat_timer = 0;
-}
+// Initialize horizontal key repeat state. A tap moves once; held keys wait
+// longer before repeating so short arrow taps do not jump two characters.
+if (!variable_instance_exists(id, "horizontal_repeat_key")) horizontal_repeat_key = 0;
+if (!variable_instance_exists(id, "horizontal_repeat_timer")) horizontal_repeat_timer = 0;
 
-// Handle cursor movement with horizontal scrolling
-if (keyboard_check(vk_left)) {
-    if (arrow_repeat_timer <= 0) {
-        if (cursor_x > 0) {
-            cursor_x--;
-        } else if (horizontal_offset > 0) {
-            // At left edge of screen, scroll left
-            horizontal_offset--;
+var horizontal_initial_delay = 14;
+var horizontal_repeat_delay = 4;
+
+var move_left_once = function() {
+    if (cursor_x > 0) {
+        cursor_x--;
+    } else if (horizontal_offset > 0) {
+        horizontal_offset--;
+        screen_editor_load_program(id);
+        dbg_log(DBG_FLOW, "SCREEN_EDITOR: Scrolled left - new h_offset=" + string(horizontal_offset));
+    }
+    dbg_log(DBG_FLOW, "SCREEN_EDITOR: Cursor left to (" + string(cursor_x) + "," + string(cursor_y) + "), h_offset=" + string(horizontal_offset));
+};
+
+var move_right_once = function() {
+    var line_index = cursor_y + scroll_offset;
+    var full_line_text = "";
+
+    if (line_index < ds_list_size(global.line_numbers)) {
+        var line_num = ds_list_find_value(global.line_numbers, line_index);
+        var code = ds_map_find_value(global.program_lines, line_num);
+        full_line_text = string(line_num) + " " + code;
+    }
+
+    var actual_cursor_pos = cursor_x + horizontal_offset;
+    var full_line_length = string_length(full_line_text);
+
+    dbg_log(DBG_FLOW, "SCREEN_EDITOR: Right arrow - cursor_x=" + string(cursor_x) + ", h_offset=" + string(horizontal_offset) + ", actual_pos=" + string(actual_cursor_pos) + ", full_line_len=" + string(full_line_length));
+
+    if (actual_cursor_pos < full_line_length && actual_cursor_pos < 200) {
+        if (cursor_x < 79) {
+            cursor_x++;
+        } else {
+            horizontal_offset++;
             screen_editor_load_program(id);
-            dbg_log(DBG_FLOW, "SCREEN_EDITOR: Scrolled left - new h_offset=" + string(horizontal_offset));
+            dbg_log(DBG_FLOW, "SCREEN_EDITOR: Scrolled right - new h_offset=" + string(horizontal_offset));
         }
-        dbg_log(DBG_FLOW, "SCREEN_EDITOR: Cursor left to (" + string(cursor_x) + "," + string(cursor_y) + "), h_offset=" + string(horizontal_offset));
-        arrow_repeat_timer = 4; // 4-frame delay between movements
     }
-}
+    dbg_log(DBG_FLOW, "SCREEN_EDITOR: After right - cursor(" + string(cursor_x) + "," + string(cursor_y) + "), h_offset=" + string(horizontal_offset));
+};
 
-if (keyboard_check(vk_right)) {
-    if (arrow_repeat_timer <= 0) {
-        // Get the FULL line content directly from program storage, not from screen buffer
-        var line_index = cursor_y + scroll_offset;
-        var full_line_text = "";
-        
-        if (line_index < ds_list_size(global.line_numbers)) {
-            var line_num = ds_list_find_value(global.line_numbers, line_index);
-            var code = ds_map_find_value(global.program_lines, line_num);
-            full_line_text = string(line_num) + " " + code;
-        }
-        
-        var actual_cursor_pos = cursor_x + horizontal_offset;
-        var full_line_length = string_length(full_line_text);
-        
-        dbg_log(DBG_FLOW, "SCREEN_EDITOR: Right arrow - cursor_x=" + string(cursor_x) + ", h_offset=" + string(horizontal_offset) + ", actual_pos=" + string(actual_cursor_pos) + ", full_line_len=" + string(full_line_length));
-        
-        // Allow scrolling through the entire line content
-        if (actual_cursor_pos < full_line_length && actual_cursor_pos < 200) {
-            if (cursor_x < 79) {  // Use 79 for your 80-character screen
-                cursor_x++;
-            } else {
-                // At right edge of screen, scroll right
-                horizontal_offset++;
-                screen_editor_load_program(id);
-                dbg_log(DBG_FLOW, "SCREEN_EDITOR: Scrolled right - new h_offset=" + string(horizontal_offset));
-            }
-        }
-        dbg_log(DBG_FLOW, "SCREEN_EDITOR: After right - cursor(" + string(cursor_x) + "," + string(cursor_y) + "), h_offset=" + string(horizontal_offset));
-        arrow_repeat_timer = 4; // 4-frame delay between movements
+if (keyboard_check_pressed(vk_left)) {
+    move_left_once();
+    horizontal_repeat_key = vk_left;
+    horizontal_repeat_timer = horizontal_initial_delay;
+} else if (keyboard_check_pressed(vk_right)) {
+    move_right_once();
+    horizontal_repeat_key = vk_right;
+    horizontal_repeat_timer = horizontal_initial_delay;
+} else if (horizontal_repeat_key != 0 && keyboard_check(horizontal_repeat_key)) {
+    if (horizontal_repeat_timer > 0) {
+        horizontal_repeat_timer--;
+    } else {
+        if (horizontal_repeat_key == vk_left) move_left_once();
+        else if (horizontal_repeat_key == vk_right) move_right_once();
+        horizontal_repeat_timer = horizontal_repeat_delay;
     }
-}
-
-// Decrement the arrow key repeat timer
-if (arrow_repeat_timer > 0) {
-    arrow_repeat_timer--;
+} else if (!keyboard_check(vk_left) && !keyboard_check(vk_right)) {
+    horizontal_repeat_key = 0;
+    horizontal_repeat_timer = 0;
 }
 
 if (keyboard_check_pressed(vk_up)) {
@@ -329,15 +337,73 @@ if (keyboard_check_pressed(vk_backspace)) {
 // Enter key
 if (keyboard_check_pressed(vk_enter)) {
     dbg_log(DBG_FLOW, "SCREEN_EDITOR: Enter pressed - committing row " + string(cursor_y));
+
+    var insert_requested = keyboard_check(vk_shift);
+    var current_line_index = cursor_y + scroll_offset;
+
     screen_editor_commit_row(id, cursor_y);
-    
+
     horizontal_offset = 0;
-    cursor_x = 0;
-    
-    screen_editor_load_program(id);
-    
-    if (cursor_y < screen_rows - 1) {
-        cursor_y++;
+
+    var total_lines_after_commit = ds_list_size(global.line_numbers);
+
+    if (insert_requested) {
+        if (current_line_index >= 0 && current_line_index < total_lines_after_commit - 1) {
+            var cur_line_num = ds_list_find_value(global.line_numbers, current_line_index);
+            var next_line_num = ds_list_find_value(global.line_numbers, current_line_index + 1);
+            var gap = next_line_num - cur_line_num;
+
+            if (gap > 1) {
+                var new_line_num = (gap == 2) ? (cur_line_num + 1) : floor((cur_line_num + next_line_num) / 2);
+                ds_map_set(global.program_lines, new_line_num, "");
+                insert_line_number_ordered(new_line_num);
+                dbg_log(DBG_FLOW, "SCREEN_EDITOR: Inserted blank line " + string(new_line_num) + " between " + string(cur_line_num) + " and " + string(next_line_num));
+
+                if (cursor_y < screen_rows - 1) {
+                    cursor_y++;
+                } else {
+                    scroll_offset = min(max(0, ds_list_size(global.line_numbers) - screen_rows), scroll_offset + 1);
+                }
+                cursor_x = string_length(string(new_line_num) + " ");
+                screen_editor_load_program(id);
+            } else {
+                basic_show_message("No line number gap below current line");
+                cursor_x = min(cursor_x, 79);
+                screen_editor_load_program(id);
+            }
+        } else {
+            basic_show_message("Shift+Enter inserts only between existing lines");
+            cursor_x = min(cursor_x, 79);
+            screen_editor_load_program(id);
+        }
+    } else if (current_line_index >= total_lines_after_commit - 1 && total_lines_after_commit > 0) {
+        var last_line_num = ds_list_find_value(global.line_numbers, total_lines_after_commit - 1);
+        var append_line_num = min(65535, last_line_num + 10);
+
+        if (append_line_num > last_line_num) {
+            ds_map_set(global.program_lines, append_line_num, "");
+            insert_line_number_ordered(append_line_num);
+            dbg_log(DBG_FLOW, "SCREEN_EDITOR: Appended blank line " + string(append_line_num));
+
+            if (cursor_y < screen_rows - 1) {
+                cursor_y++;
+            } else {
+                scroll_offset = min(max(0, ds_list_size(global.line_numbers) - screen_rows), scroll_offset + 1);
+            }
+            cursor_x = string_length(string(append_line_num) + " ");
+            screen_editor_load_program(id);
+        } else {
+            basic_show_message("Cannot append past max line number");
+            cursor_x = min(cursor_x, 79);
+            screen_editor_load_program(id);
+        }
+    } else {
+        cursor_x = 0;
+        screen_editor_load_program(id);
+
+        if (cursor_y < screen_rows - 1) {
+            cursor_y++;
+        }
     }
 }
 

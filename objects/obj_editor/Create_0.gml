@@ -11,6 +11,9 @@
  input_buffer = "";               // Buffer for key repeat handling
  // Display variables
  display_start_line = 0;          // For scrolling through program
+ list_range_active = false;       // LIST start-end view filter
+ list_range_start_line = 0;
+ list_range_end_line = 0;
  lines_per_screen = 20;           // How many lines to show
  font_height = 16;                // Adjust based on your font
  screen_width = room_width;

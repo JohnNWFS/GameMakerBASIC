@@ -79,6 +79,7 @@
     {"id":{"name":"basic_cmd_beep","path":"scripts/basic_cmd_beep/basic_cmd_beep.yy",},},
     {"id":{"name":"basic_cmd_bgcolor","path":"scripts/basic_cmd_bgcolor/basic_cmd_bgcolor.yy",},},
     {"id":{"name":"basic_cmd_charat","path":"scripts/basic_cmd_charat/basic_cmd_charat.yy",},},
+    {"id":{"name":"basic_cmd_circle","path":"scripts/basic_cmd_circle/basic_cmd_circle.yy",},},
     {"id":{"name":"basic_cmd_close","path":"scripts/basic_cmd_close/basic_cmd_close.yy",},},
     {"id":{"name":"basic_cmd_cls_mode1","path":"scripts/basic_cmd_cls_mode1/basic_cmd_cls_mode1.yy",},},
     {"id":{"name":"basic_cmd_cls","path":"scripts/basic_cmd_cls/basic_cmd_cls.yy",},},

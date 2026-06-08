@@ -5,6 +5,7 @@ function list_saved_programs()
     if (ed == noone) { dbg_log(DBG_IO, "[DIR] no obj_editor instance"); return; }
 
     if (!variable_instance_exists(ed, "dir_listing"))          ed.dir_listing = [];
+    if (!variable_instance_exists(ed, "dir_sizes"))            ed.dir_sizes = [];
     if (!variable_instance_exists(ed, "showing_dir_overlay"))  ed.showing_dir_overlay = false;
 
     var save_dir = get_save_directory();
@@ -16,16 +17,28 @@ function list_saved_programs()
 
     // Build listing (.bas only)
     ed.dir_listing = [];
+    ed.dir_sizes = [];
     var mask = save_dir + "*.bas";
     var fname = file_find_first(mask, 0); // IMPORTANT: 0 = no attribute filter
     var count = 0;
     while (fname != "") {
         array_push(ed.dir_listing, fname);
+        var fsize = -1;
+        var fpath = save_dir + fname;
+        if (os_browser == browser_not_a_browser && file_exists(fpath)) {
+            var bf = file_bin_open(fpath, 0);
+            fsize = file_bin_size(bf);
+            file_bin_close(bf);
+        }
+        array_push(ed.dir_sizes, fsize);
         count += 1;
         fname = file_find_next();
     }
     file_find_close();
-    if (count == 0) array_push(ed.dir_listing, "No .bas files found.");
+    if (count == 0) {
+        array_push(ed.dir_listing, "No .bas files found.");
+        array_push(ed.dir_sizes, -1);
+    }
 
     // Initialize overlay state (ASCII UI)
     ed.dir_sel                 = 0;           // selected row (0-based in view)

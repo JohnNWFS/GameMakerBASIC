@@ -16,7 +16,22 @@ function autotest_bootstrap() {
     }
 
     dbg_log(DBG_FLOW, "AUTOTEST: loading " + path);
+
+    global.autotest_run_active = true;
+    global.autotest_source_text = "";
+    var src = file_text_open_read(path);
+    while (!file_text_eof(src)) {
+        global.autotest_source_text += file_text_read_string(src) + "\n";
+        file_text_readln(src);
+    }
+    file_text_close(src);
+
     load_program_from(filename);
+
+    if (file_exists(path)) {
+        file_delete(path);
+        dbg_log(DBG_FLOW, "AUTOTEST: consumed and deleted " + path);
+    }
 
     if (ds_exists(global.line_numbers, ds_type_list) && ds_list_size(global.line_numbers) > 0) {
         dbg_log(DBG_FLOW, "AUTOTEST: running " + filename);

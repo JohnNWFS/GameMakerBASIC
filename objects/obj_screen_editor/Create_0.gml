@@ -20,6 +20,8 @@ screen_buffer = array_create(screen_cols * screen_rows, ord(" "));
 cursor_x = 0;
 cursor_y = 0;
 horizontal_offset = 0;
+horizontal_repeat_key = 0;
+horizontal_repeat_timer = 0;
 scroll_margin = 5;
 scroll_offset = 0;
 

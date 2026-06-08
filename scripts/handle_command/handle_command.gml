@@ -26,6 +26,11 @@ var original_command = string_trim(command);
                 list_program_range(cmd_params);
             }
             break;
+
+        case "GO":
+        case "G":
+            go_program_line(cmd_params);
+            break;
             
         case "RUN":
             run_program();

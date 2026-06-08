@@ -53,15 +53,19 @@ if (showing_dir_overlay) {
     var right_x = room_width - x_pad;
     // top border
     draw_text(left_x, top_y - row_h, "+-------------------------------------------+");
+    var size_col_x = max(left_x + 360, right_x - 120);
+
+    draw_set_color(c_lime);
+    draw_text(size_col_x, top_y - row_h, "Size");
+
     // list rows
     var draw_y = top_y;
     for (var i = first_index; i <= last_index; i++) {
         var idx3 = string_format(string(i + 1), 3, 0); // 001, 002...
         var name = dir_listing[i];
 
-        // Assemble row: index, filename (trim), actions
-        var action_txt = "   >  X";
-        var max_name_px = (right_x - left_x) - string_width(idx3 + " ") - string_width(action_txt) - 24;
+        // Assemble row: index, filename, size
+        var max_name_px = max(80, size_col_x - left_x - string_width(idx3 + " ") - 24);
         var name_trim = name;
 
         // crude pixel trimming to fit line
@@ -71,18 +75,27 @@ if (showing_dir_overlay) {
         if (name_trim != name) name_trim += "...";
 
         var row_text = idx3 + " " + name_trim;
+        var size_text = "";
+        if (variable_instance_exists(id, "dir_sizes") && is_array(dir_sizes) && i < array_length(dir_sizes)) {
+            var sz = dir_sizes[i];
+            if (sz >= 0) {
+                if (sz < 1024) size_text = string(sz) + " B";
+                else if (sz < 1048576) size_text = string_format(sz / 1024, 0, 1) + " KB";
+                else size_text = string_format(sz / 1048576, 0, 1) + " MB";
+            }
+        }
 
         // Selected row highlight (inverse via black rect + lime text)
         if (i == dir_sel) {
             draw_set_color(c_dkgray);
             draw_rectangle(left_x - 6, draw_y - 2, right_x - 6, draw_y + row_h, false);
+            draw_set_color(c_yellow);
+        } else {
             draw_set_color(c_lime);
         }
 
         draw_text(left_x, draw_y, row_text);
-        // draw actions at right
-        var act_x = right_x - string_width(">  X") - 16;
-        draw_text(act_x, draw_y, ">  X");
+        draw_text(size_col_x, draw_y, size_text);
 
         draw_y += row_h;
     }
@@ -116,8 +129,8 @@ if (showing_dir_overlay) {
     }
 
     // Short help/footer
-    draw_set_color(c_dkgray);
-    draw_text(x_pad, room_height - row_h - y_pad, "(ASCII dir) Load: Enter/>   Delete: D/X (Desktop only)   Close: ESC");
+    draw_set_color(c_yellow);
+    draw_text(x_pad, room_height - row_h - y_pad, "Load: Enter or >   Delete: D/X (Desktop only)   Close: ESC");
 
     return; // overlay draws above everything
 }
@@ -134,6 +147,9 @@ var max_lines = floor(available_height / actual_font_height);
 
 for (var i = display_start_line; i < total_lines && lines_shown < max_lines; i++) {
     var line_num = ds_list_find_value(global.line_numbers, i);
+    if (list_range_active && line_num < list_range_start_line) continue;
+    if (list_range_active && line_num > list_range_end_line) break;
+
     var code = ds_map_find_value(global.program_lines, line_num);
     var display_text = string(line_num) + " " + code;
     

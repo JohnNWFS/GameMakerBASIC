@@ -555,7 +555,9 @@ All editor commands are typed on a line that **does not begin with a number**:
 | `NEW` | Clear program (same as CLEAR) |
 | `CLEAR` | Wipe all program lines from memory |
 | `LIST` | Display all currently stored BASIC lines |
+| `LIST 100` | Move the editor window to line 100, or the next stored line after it |
 | `LIST 10-50` | List lines 10 through 50 |
+| `GO 100` or `G 100` | Move the editor window to line 100, or the next stored line after it |
 | `F5` | Output the full program as a raw BASIC listing to console |
 | `:PASTE` | Paste multi-line programs from clipboard |
 | `SCREENEDIT` or `SE` | Enter full-screen C64-style editor |

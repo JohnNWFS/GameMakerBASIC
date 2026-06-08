@@ -154,11 +154,17 @@ if (keyboard_check_pressed(vk_enter)) {
     navigate_history_down();
  }
  else if (keyboard_check_pressed(vk_pageup)) {
-    display_start_line = max(0, display_start_line - lines_per_screen);
+    draw_set_font(fnt_basic);
+    var page_lines_up = max(1, floor((room_height - 128) / string_height("A")));
+    lines_per_screen = page_lines_up;
+    display_start_line = max(editor_scroll_min_index(), display_start_line - page_lines_up);
  }
  else if (keyboard_check_pressed(vk_pagedown)) {
-    var max_start = max(0, ds_list_size(global.line_numbers) - lines_per_screen);
-    display_start_line = min(max_start, display_start_line + lines_per_screen);
+    draw_set_font(fnt_basic);
+    var page_lines_down = max(1, floor((room_height - 128) / string_height("A")));
+    lines_per_screen = page_lines_down;
+    var max_start = editor_scroll_max_index(page_lines_down);
+    display_start_line = min(max_start, display_start_line + page_lines_down);
  }
  else if (keyboard_check(vk_control) && keyboard_check_pressed(ord("Z"))) {
     undo_last_change();
@@ -171,6 +177,11 @@ if (keyboard_check_pressed(vk_enter)) {
     // Handle character input with repeat
     handle_character_input();
  }
+
+ draw_set_font(fnt_basic);
+ var page_lines_clamp = max(1, floor((room_height - 128) / string_height("A")));
+ lines_per_screen = page_lines_clamp;
+ display_start_line = clamp(display_start_line, editor_scroll_min_index(), editor_scroll_max_index(page_lines_clamp));
  
   // In Step Event
  if (message_timer > 0) {

@@ -49,6 +49,7 @@
     {"name":"basic_cmd_beep","order":1,"path":"scripts/basic_cmd_beep/basic_cmd_beep.yy",},
     {"name":"basic_cmd_bgcolor","order":20,"path":"scripts/basic_cmd_bgcolor/basic_cmd_bgcolor.yy",},
     {"name":"basic_cmd_charat","order":4,"path":"scripts/basic_cmd_charat/basic_cmd_charat.yy",},
+    {"name":"basic_cmd_circle","order":21,"path":"scripts/basic_cmd_circle/basic_cmd_circle.yy",},
     {"name":"basic_cmd_close","order":30,"path":"scripts/basic_cmd_close/basic_cmd_close.yy",},
     {"name":"basic_cmd_cls_mode1","order":12,"path":"scripts/basic_cmd_cls_mode1/basic_cmd_cls_mode1.yy",},
     {"name":"basic_cmd_cls","order":7,"path":"scripts/basic_cmd_cls/basic_cmd_cls.yy",},

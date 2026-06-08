@@ -11,18 +11,26 @@ function basic_output_transcript_reset() {
     if (os_browser != browser_not_a_browser) return;
 
     var autotest_path = get_save_directory() + "autotest.bas";
-    global.autotest_transcript_enabled = file_exists(autotest_path);
+    var forced_autotest = variable_global_exists("autotest_run_active") && global.autotest_run_active;
+    global.autotest_transcript_enabled = forced_autotest || file_exists(autotest_path);
     if (!global.autotest_transcript_enabled) return;
 
-    var src = file_text_open_read(autotest_path);
-    while (!file_text_eof(src)) {
-        var line_text = string_upper(file_text_read_string(src));
-        file_text_readln(src);
-        if (string_pos("AUTOTEST_SCREENSHOT", line_text) > 0) {
+    if (forced_autotest && variable_global_exists("autotest_source_text")) {
+        var source_text = string_upper(global.autotest_source_text);
+        if (string_pos("AUTOTEST_SCREENSHOT", source_text) > 0) {
             global.autotest_screenshot_requested = true;
         }
+    } else if (file_exists(autotest_path)) {
+        var src = file_text_open_read(autotest_path);
+        while (!file_text_eof(src)) {
+            var line_text = string_upper(file_text_read_string(src));
+            file_text_readln(src);
+            if (string_pos("AUTOTEST_SCREENSHOT", line_text) > 0) {
+                global.autotest_screenshot_requested = true;
+            }
+        }
+        file_text_close(src);
     }
-    file_text_close(src);
 
     if (file_exists(global.autotest_transcript_path)) {
         file_delete(global.autotest_transcript_path);

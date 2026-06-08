@@ -65,16 +65,29 @@ MODE 2 is tile/character graphics. Preserve and extend its cell-based model:
   color manipulation, scrolling, interactive tile editing, maps/windows,
   simple animation patterns, and game examples.
 
-MODE 3 is intended for pixel/surface drawing. It is not finished yet.
-Future MODE 3 commands should include pixel-perfect drawing tools such as:
+MODE 3 is intended for pixel/surface drawing. It has two deliberate command
+families:
 
-- `PSET` / `PLOT`
-- `LINE`
-- `RECT` / `BOX`
-- `CIRCLE`
-- `PAINT` / fill behavior if feasible
-- color and palette tools
-- sprite or image overlay commands if they fit the engine and UX
+- **Classic/pure BASIC pixel commands:** Commands such as `PSET` and BASIC
+  loops that plot one point at a time should remain available because they
+  represent the old 8-bit style of graphics programming. They are useful for
+  teaching algorithms and preserving the retro feel, even when they are slow.
+- **Accelerated engine-backed commands:** Higher-level BASIC commands should
+  hide the GML layer while using GameMaker's drawing engine internally. The
+  user writes pure BASIC, but commands such as `CIRCLE` should draw directly
+  onto the MODE 3 surface through GML primitives where available.
+
+Planned accelerated MODE 3 command set:
+
+- `LINE x1,y1,x2,y2[,color[,thickness]]`
+- `BOX x1,y1,x2,y2[,lineColor[,fillFlag[,fillColor[,thickness]]]]`
+- `CIRCLE x,y,r[,lineColor[,fillFlag[,fillColor]]]`
+- `CIRCLEF x,y,r[,color]` for filled circles
+- `PAINT x,y[,fillColor[,borderColor]]` if feasible on the surface
+- `PLOT x,y[,color]` as a MODE 3 point-drawing alias for `PSET`
+- Potential later additions inspired by older BASICs and extensions: `DRAW`
+  for compact vector strings, ellipse/arc options for `CIRCLE`, and
+  sprite/image overlay commands if they fit the engine and UX
 
 When implementing graphics, add visual tests. If text transcripts are insufficient,
 use the autotest screenshot flag described in `docs/AUTOTEST_WORKFLOW.md`.

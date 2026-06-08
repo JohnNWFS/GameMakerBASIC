@@ -261,6 +261,8 @@ function handle_basic_command(cmd, arg) {
                 if (string_length(_line_up) >= 5 && string_copy(_line_up, 1, 5) == "INPUT") {
                     var _li_rest = string_trim(string_copy(_rest, 7, string_length(_rest)));
                     basic_cmd_line_input_file(_li_rest);
+                } else {
+                    basic_cmd_line(_rest);
                 }
                 break;
             }
@@ -293,10 +295,14 @@ function handle_basic_command(cmd, arg) {
             case "MODE":      basic_cmd_mode(_rest); break;
             case "CLSCHAR":   basic_cmd_clschar(_rest); break;
             case "PSET":      basic_cmd_pset(_rest); break;
-            case "PLOT":      basic_cmd_charat(_rest); break;
+            case "CIRCLE":    basic_cmd_circle(_rest); break;
+            case "PLOT":
+                if (global.current_mode == 3) basic_cmd_pset(_rest);
+                else basic_cmd_charat(_rest);
+                break;
             case "TILE":      basic_cmd_charat(_rest); break;
             case "DRAWSTR":   basic_cmd_printat(_rest); break;
-            case "BOX":       basic_cmd_tile_box(_rest); break;
+            case "BOX":       basic_cmd_box(_rest); break;
             case "FILL":      basic_cmd_tile_fill(_rest); break;
             case "HLINE":     basic_cmd_tile_hline(_rest); break;
             case "VLINE":     basic_cmd_tile_vline(_rest); break;
