@@ -22,7 +22,8 @@ function mode1_scroll_grid(grid_obj, direction, amount) {
                     for (var col = 0; col < cols; col++) {
                         var src_i = col + (row + amt_row) * cols;
                         var dst_i = col + row * cols;
-                        grid[dst_i] = grid[src_i];
+                        var _s = grid[src_i];
+                        grid[dst_i] = { char: _s.char, fg: _s.fg, bg: _s.bg };
                     }
                 }
                 // Clear bottom rows to spaces only (keep existing colors)
@@ -40,7 +41,8 @@ function mode1_scroll_grid(grid_obj, direction, amount) {
                     for (var col = 0; col < cols; col++) {
                         var src_i = col + (row - amt_row) * cols;
                         var dst_i = col + row * cols;
-                        grid[dst_i] = grid[src_i];
+                        var _s = grid[src_i];
+                        grid[dst_i] = { char: _s.char, fg: _s.fg, bg: _s.bg };
                     }
                 }
                 // Clear top rows
@@ -57,7 +59,8 @@ function mode1_scroll_grid(grid_obj, direction, amount) {
                     for (var col = 0; col < cols - amt_col; col++) {
                         var src_i = (col + amt_col) + row * cols;
                         var dst_i = col + row * cols;
-                        grid[dst_i] = grid[src_i];
+                        var _s = grid[src_i];
+                        grid[dst_i] = { char: _s.char, fg: _s.fg, bg: _s.bg };
                     }
                     // Clear right columns
                     for (var col = cols - amt_col; col < cols; col++) {
@@ -72,7 +75,8 @@ function mode1_scroll_grid(grid_obj, direction, amount) {
                     for (var col = cols - 1; col >= amt_col; col--) {
                         var src_i = (col - amt_col) + row * cols;
                         var dst_i = col + row * cols;
-                        grid[dst_i] = grid[src_i];
+                        var _s = grid[src_i];
+                        grid[dst_i] = { char: _s.char, fg: _s.fg, bg: _s.bg };
                     }
                     // Clear left columns
                     for (var col = 0; col < amt_col; col++) {
