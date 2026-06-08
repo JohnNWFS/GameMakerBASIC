@@ -77,9 +77,10 @@ Use colons (`:`) to separate multiple statements on one line.
 
 ### Variable Assignment
 ```basic
-10 LET X = 5        ' Numeric variable
-20 A$ = "HELLO"     ' String variable ($ suffix)
-30 Y = X + 10       ' LET keyword optional
+10 LET X = 5
+20 A$ = "HELLO"
+30 Y = X + 10       ' LET is optional
+40 PRINT "X ="; X; "  A$ ="; A$; "  Y ="; Y
 ```
 
 - Numeric variables default to 0 if read before being set.
@@ -299,45 +300,55 @@ BEEP <spec> [<spec> ...]
 
 #### Logical Operators
 ```basic
-10 IF X > 5 AND Y < 10 THEN PRINT "Both true"
-20 IF A = 1 OR B = 2 THEN PRINT "Either true"
+10 LET X = 8 : LET Y = 7
+20 IF X > 5 AND Y < 10 THEN PRINT "Both conditions true — X > 5 and Y < 10."
+30 LET A = 1 : LET B = 9
+40 IF A = 1 OR B = 2 THEN PRINT "One condition true — A = 1 matches."
 ```
 
 ### Loops
 
 #### FOR/NEXT
 ```basic
-10 FOR I = 1 TO 10
-20   PRINT I
-30 NEXT I
-
-40 FOR J = 10 TO 1 STEP -2
-50   PRINT J
-60 NEXT J
+10 PRINT "Counting up from 1 to 5:"
+20 FOR I = 1 TO 5
+30   PRINT I
+40 NEXT I
+50 PRINT "Counting down from 10 to 2, stepping by 2:"
+60 FOR J = 10 TO 2 STEP -2
+70   PRINT J
+80 NEXT J
 ```
 
 #### WHILE/WEND
 ```basic
-10 X = 1
-20 WHILE X <= 5
-30   PRINT X
-40   X = X + 1
-50 WEND
+10 PRINT "Printing X while it is <= 5:"
+20 X = 1
+30 WHILE X <= 5
+40   PRINT X
+50   X = X + 1
+60 WEND
 ```
 
 ### Subroutines
 ```basic
-10 GOSUB 100
-20 END
-100 PRINT "Subroutine"
+10 PRINT "Calling the subroutine at line 100:"
+20 GOSUB 100
+30 PRINT "Back in the main program."
+40 END
+100 PRINT "Inside the subroutine."
 110 RETURN
 ```
 
 ### ON GOTO / ON GOSUB
 ```basic
-10 N = 2
-20 ON N GOTO 100, 200, 300   ' Jump to line 200 (N=2)
-30 ON N GOSUB 100, 200       ' Call subroutine at line 200
+10 LET N = 2
+20 PRINT "N = 2, so ON GOTO jumps to the second target:"
+30 ON N GOTO 100, 200, 300
+40 END
+100 PRINT "Branch 1 — N was 1." : END
+200 PRINT "Branch 2 — N was 2." : END
+300 PRINT "Branch 3 — N was 3." : END
 ```
 If `N` is out of range (less than 1 or greater than the number of targets), execution falls through to the next line.
 
@@ -766,18 +777,21 @@ ORANGE   LIME     NAVY     LIGHTGRAY
 
 ### Comparison
 ```basic
-10 IF X = Y THEN PRINT "Equal"
-20 IF A <> B THEN PRINT "Not equal"
-30 IF X < 10 THEN PRINT "Less than"
-40 IF Y > 5 THEN PRINT "Greater than"
-50 IF Z <= 100 THEN PRINT "Less or equal"
-60 IF W >= 50 THEN PRINT "Greater or equal"
+10 LET X = 5 : LET Y = 5 : LET A = 3 : LET B = 7
+20 IF X = Y THEN PRINT "X = Y — equal."
+30 IF A <> B THEN PRINT "A <> B — not equal."
+40 IF A < 10 THEN PRINT "A < 10 — less than."
+50 IF B > 5 THEN PRINT "B > 5 — greater than."
+60 IF X <= 100 THEN PRINT "X <= 100 — less than or equal."
+70 IF B >= 5 THEN PRINT "B >= 5 — greater than or equal."
 ```
 
 ### Logical
 ```basic
-10 IF X > 5 AND Y < 10 THEN PRINT "Both true"
-20 IF A = 1 OR B = 2 THEN PRINT "Either true"
+10 LET X = 8 : LET Y = 7
+20 IF X > 5 AND Y < 10 THEN PRINT "Both conditions true."
+30 LET A = 1 : LET B = 9
+40 IF A = 1 OR B = 2 THEN PRINT "At least one condition true — A = 1 matches."
 ```
 
 ### String Concatenation
