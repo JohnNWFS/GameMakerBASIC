@@ -268,21 +268,33 @@ BEEP <spec> [<spec> ...]
 
 #### Inline IF
 ```basic
-10 IF X = 5 THEN PRINT "Five"
-20 IF A > B THEN PRINT "A bigger" ELSE PRINT "B bigger"
-30 IF X = 1 THEN Y = 2 : Z = 3     ' Multiple statements in THEN arm
+10 PRINT "X has never been set, so it defaults to 0."
+20 PRINT "Testing IF X = 5 -- this will be false, so nothing prints:"
+30 IF X = 5 THEN PRINT "Five"
+40 PRINT "(Correct - nothing printed above.)"
+50 LET X = 5
+60 PRINT "Now X = 5. Testing again -- this time it prints:"
+70 IF X = 5 THEN PRINT "Five"
+80 LET A = 10 : LET B = 3
+90 PRINT "A = 10, B = 3. The true branch of ELSE runs:"
+100 IF A > B THEN PRINT "A is bigger" ELSE PRINT "B is bigger"
+110 PRINT "IF can run multiple statements -- setting Y and Z:"
+120 IF X = 5 THEN Y = 2 : Z = 3
+130 PRINT "Y = " + STR$(Y) + ", Z = " + STR$(Z)
 ```
 
 #### Block IF (Multi-line)
 ```basic
-10 IF X > 10 THEN
-20   PRINT "X is large"
-30   Y = X * 2
-40 ELSEIF X > 5 THEN
-50   PRINT "X is medium"
-60 ELSE
-70   PRINT "X is small"
-80 ENDIF
+10 LET X = 7
+20 PRINT "X = 7. Block IF checks it step by step:"
+30 IF X > 10 THEN
+40   PRINT "X is large"
+50   Y = X * 2
+60 ELSEIF X > 5 THEN
+70   PRINT "X is medium"
+80 ELSE
+90   PRINT "X is small"
+100 ENDIF
 ```
 
 #### Logical Operators
