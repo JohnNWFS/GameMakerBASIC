@@ -245,16 +245,13 @@ BEEP <spec> [<spec> ...]
 
 #### BEEP Examples
 ```basic
-10 ' C major scale
+10 PRINT "C major scale - 8 notes ascending."
 20 BEEP C1 D1 E1 F1 G1 A1 B1 C2
-
-30 ' Rhythm and rests
+30 PRINT "Rhythm with rests - short notes and a pause."
 40 BEEP C0.5 C0.5 G1 R0.5 F0.5 E1
-
-50 ' Octave shifts
+50 PRINT "Octave shifts - same note, three octaves rising."
 60 BEEP O-1 C2 O0 C2 O1 C2
-
-70 ' Sharps and flats
+70 PRINT "Sharps and flats - C, C#, D, Eb, E."
 80 BEEP C1 C#1 D1 Eb1 E1
 ```
 
