@@ -183,27 +183,30 @@ LOCATE has no effect in MODE 1 text mode.
 ### SCROLL (MODE 2 only)
 ```basic
 10 MODE 2
+15 LET S = 10
 20 FOR I = 1 TO 10
 30   PRINTAT 0, I-1, "Row " + STR$(I), WHITE, BLACK
 40 NEXT I
 50 GOSUB 500
-60 PRINTAT 0, 11, "Press ENTER to scroll up 3...", YELLOW, BLACK
+60 PRINTAT 0, S, "Press ENTER to scroll up 3...", YELLOW, BLACK
 70 PAUSE
 80 SCROLL UP, 3
+85 LET S = S - 3
 90 GOSUB 500
-100 PRINTAT 0, 11, "Press ENTER to scroll down 1...", YELLOW, BLACK
+100 PRINTAT 0, S, "Press ENTER to scroll down 1...", YELLOW, BLACK
 110 PAUSE
 120 SCROLL DOWN, 1
+125 LET S = S + 1
 130 GOSUB 500
-140 PRINTAT 0, 11, "Press ENTER to scroll left 2...", YELLOW, BLACK
+140 PRINTAT 0, S, "Press ENTER to scroll left 2...", YELLOW, BLACK
 150 PAUSE
 160 SCROLL LEFT, 2
 170 GOSUB 500
-180 PRINTAT 0, 11, "Press ENTER to scroll right 1...", YELLOW, BLACK
+180 PRINTAT 0, S, "Press ENTER to scroll right 1...", YELLOW, BLACK
 190 PAUSE
 200 SCROLL RIGHT, 1
 210 END
-500 FOR R = 11 TO 20
+500 FOR R = S TO 20
 510   PRINTAT 0, R, "                                        ", BLACK, BLACK
 520 NEXT R
 530 RETURN
