@@ -12,12 +12,9 @@ function split_on_unquoted_colons(line) {
             inStr = !inStr;
             buf  += ch;
         }
-        else if (ch == "’" && !inStr) {
-            // apostrophe comment — consume remaining characters one by one, stop splitting
-            buf += ch;
-            for (var _j = i + 1; _j <= len; _j++) {
-                buf += string_char_at(line, _j);
-            }
+        else if (ord(ch) == 39 && !inStr) {
+            // apostrophe comment (U+0027) — consume the rest of the line as-is
+            buf += string_copy(line, i, len - i + 1);
             break;
         }
         else if (ch == ":" && !inStr) {
