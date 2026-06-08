@@ -84,6 +84,17 @@ function help_build_topics() {
             "BOX/FILL/HLINE/VLINE draw tile shapes."
         ]
     });
+    array_push(t4.subs, {
+        title: "Custom Tiles",
+        lines: [
+            "TILEDEF code[,w,h] creates an editable tile.",
+            "TILEPX code,x,y[,on] sets one tile pixel.",
+            "TILESAVE/TILELOAD store alternate tile masks.",
+            "TILEBIT(code,x,y) reads a custom tile pixel."
+        ]
+    });
+    ds_list_add(global.help_topics, t4);
+
     // Topic 5: Math & Random
     var t5 = { title: "Math & Random", subs: [] };
     array_push(t5.subs, { 

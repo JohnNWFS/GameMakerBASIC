@@ -300,6 +300,11 @@ function handle_basic_command(cmd, arg) {
             case "FILL":      basic_cmd_tile_fill(_rest); break;
             case "HLINE":     basic_cmd_tile_hline(_rest); break;
             case "VLINE":     basic_cmd_tile_vline(_rest); break;
+            case "TILEDEF":   basic_cmd_tiledef(_rest); break;
+            case "TILEPX":    basic_cmd_tilepx(_rest); break;
+            case "TILECLEAR": basic_cmd_tileclear(_rest); break;
+            case "TILESAVE":  basic_cmd_tilesave(_rest); break;
+            case "TILELOAD":  basic_cmd_tileload(_rest); break;
             case "CHARAT":    basic_cmd_charat(_rest); break;
             case "PRINTAT":   basic_cmd_printat(_rest); break;
             case "FONT":      basic_cmd_font(_rest); break;

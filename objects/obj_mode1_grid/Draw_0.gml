@@ -43,7 +43,12 @@ for (var _y = 0; _y < rows; _y++) {
             draw_set_color(tile.bg);
             draw_rectangle(x0, y0, x1, y1, false);
 
-            // 2) Decide whether to draw a glyph and which subimage to use
+            // 2) Custom tiles override selected character codes; standard font glyphs remain the fallback.
+            if (custom_tile_draw(tile.char, x0, y0, tile_w, tile_h, tile.fg)) {
+                continue;
+            }
+
+            // 3) Decide whether to draw a glyph and which subimage to use
             var intent_subimg = clamp(tile.char, 0, max_chars - 1);
 
             // Special-case SPACE (32): if a substitute subimage is configured, use it.

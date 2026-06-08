@@ -625,6 +625,16 @@ case "OR": {
                     break;
                 }
 
+                case "TILEBIT": {
+                    var bit_y = safe_real_pop(stack);
+                    var bit_x = safe_real_pop(stack);
+                    var bit_code = safe_real_pop(stack);
+                    var bit_val = custom_tile_get_bit(bit_code, bit_x, bit_y);
+                    array_push(stack, bit_val);
+                    dbg_log(DBG_PARSE, "POSTFIX: TILEBIT(" + string(bit_code) + "," + string(bit_x) + "," + string(bit_y) + ") → " + string(bit_val));
+                    break;
+                }
+
                 case "MODE1_COLOR_NAME": {
                     var color_value = safe_real_pop(stack);
                     var cname = mode1_color_name(color_value);

@@ -113,6 +113,7 @@
     {"id":{"name":"basic_cmd_restore","path":"scripts/basic_cmd_restore/basic_cmd_restore.yy",},},
     {"id":{"name":"basic_cmd_return","path":"scripts/basic_cmd_return/basic_cmd_return.yy",},},
     {"id":{"name":"basic_cmd_scroll","path":"scripts/basic_cmd_scroll/basic_cmd_scroll.yy",},},
+    {"id":{"name":"basic_cmd_tile_custom","path":"scripts/basic_cmd_tile_custom/basic_cmd_tile_custom.yy",},},
     {"id":{"name":"basic_cmd_tile_draw","path":"scripts/basic_cmd_tile_draw/basic_cmd_tile_draw.yy",},},
     {"id":{"name":"basic_cmd_wend","path":"scripts/basic_cmd_wend/basic_cmd_wend.yy",},},
     {"id":{"name":"basic_cmd_while","path":"scripts/basic_cmd_while/basic_cmd_while.yy",},},

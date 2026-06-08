@@ -20,6 +20,7 @@ if (ds_exists(global.if_block_map, ds_type_map)) {
 }
 if (ds_exists(global.mode_rooms, ds_type_map)) ds_map_destroy(global.mode_rooms);
 if (ds_exists(global.font_sheets, ds_type_map)) ds_map_destroy(global.font_sheets);
+if (variable_global_exists("custom_tile_defs") && ds_exists(global.custom_tile_defs, ds_type_map)) ds_map_destroy(global.custom_tile_defs);
 if (ds_exists(global.config, ds_type_map)) ds_map_destroy(global.config);
 if (ds_exists(global.data_streams, ds_type_map)) {
     var _key = ds_map_find_first(global.data_streams);

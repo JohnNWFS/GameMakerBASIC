@@ -306,6 +306,31 @@ BEEP <spec> [<spec> ...]
 
 Available fonts: DEFAULT_8, DEFAULT_16, DEFAULT_32, SPECIAL, 16x16, etc.
 
+### Custom Tiles (MODE 2)
+Custom tiles are editable bitmap masks assigned to specific tile codes. When a
+cell uses a custom code, NW-BASIC draws the custom mask tinted with that cell's
+foreground color. Other codes still come from the active font sheet, so normal
+text remains available.
+
+```basic
+10 MODE 2,16
+20 TILEDEF 200,16,16          ' Create/clear custom tile code 200
+30 FOR I=0 TO 15
+40 TILEPX 200,I,I,1           ' Draw diagonal pixels
+50 TILEPX 200,15-I,I,1
+60 NEXT I
+70 TILE 2,4,200,CYAN,BLACK    ' Draw custom tile
+80 PRINTAT 4,4,"TEXT",WHITE,BLACK
+90 TILESAVE "mytiles"         ' Writes mytiles.nwtile
+100 TILECLEAR 200
+110 TILELOAD "mytiles"
+120 PRINT TILEBIT(200,0,0)    ' Read custom tile pixel: 1 or 0
+```
+
+Commands: `TILEDEF code[,w[,h]]`, `TILEPX code,x,y[,on]`,
+`TILECLEAR code`, `TILESAVE "file"`, `TILELOAD "file"`.
+Function: `TILEBIT(code,x,y)`.
+
 ### Screen Positioning (MODE 2)
 ```basic
 10 LOCATE 5, 10        ' Set cursor to row 5, column 10
@@ -322,7 +347,8 @@ Get information about screen contents:
 10 C = TILECHAR(10, 5)       ' Get character/tile code at position
 20 CLR = TILECOLOR(10, 5)    ' Get foreground color at position
 30 N$ = TILENAME$(CLR)       ' Convert color value to a name if known
-40 C2 = mode1_get_char(10, 5) ' Older internal helper remains available
+40 B = TILEBIT(200,0,0)      ' Get custom tile pixel bit
+50 C2 = mode1_get_char(10, 5) ' Older internal helper remains available
 ```
 
 ### Additional MODE 2 Features

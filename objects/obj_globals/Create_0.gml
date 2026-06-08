@@ -117,6 +117,7 @@ global.mode_rooms[? 3] = rm_mode2_pixel;       // Pixel graphics
 // MODE 1 sprite sheet container
 // FONT registry for MODE 1
 global.font_sheets = ds_map_create();
+global.custom_tile_defs = ds_map_create();
 
 // Base character sheet
 ds_map_add(global.font_sheets, "DEFAULT", spr_charactersheet);

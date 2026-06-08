@@ -198,6 +198,35 @@ function infix_to_postfix(tokens) {
                 }
             }
 
+            // ---------- SPECIAL: 3-arg tile bitmap helper ----------
+            if (fn_name == "TILEBIT") {
+                var lvlB = 0, partB = "", partsB = [];
+                for (var cbi = 1; cbi <= string_length(f_inner); cbi++) {
+                    var chB = string_char_at(f_inner, cbi);
+                    if (chB == "(") { lvlB++; partB += chB; }
+                    else if (chB == ")") { lvlB--; partB += chB; }
+                    else if (chB == "," && lvlB == 0) { array_push(partsB, string_trim(partB)); partB = ""; }
+                    else { partB += chB; }
+                }
+                array_push(partsB, string_trim(partB));
+
+                if (array_length(partsB) == 3) {
+                    var tB1 = basic_tokenize_expression_v2(partsB[0]);
+                    var tB2 = basic_tokenize_expression_v2(partsB[1]);
+                    var tB3 = basic_tokenize_expression_v2(partsB[2]);
+                    var pB1 = infix_to_postfix(tB1);
+                    var pB2 = infix_to_postfix(tB2);
+                    var pB3 = infix_to_postfix(tB3);
+                    _push_all(output, pB1);
+                    _push_all(output, pB2);
+                    _push_all(output, pB3);
+                    array_push(output, fn_name);
+                    dbg_log(DBG_PARSE, "Processed TILEBIT(" + partsB[0] + "," + partsB[1] + "," + partsB[2] + ")");
+                    i = f_end;
+                    continue;
+                }
+            }
+
             // ---------- SPECIAL: LEFT$/RIGHT$/MID$ (multi-arg) ----------
             if (fn_name == "LEFT$" || fn_name == "RIGHT$" || fn_name == "MID$") {
                 var lvl2 = 0, part2 = "", parts_lr = [];
