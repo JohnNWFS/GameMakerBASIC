@@ -186,18 +186,18 @@ LOCATE has no effect in MODE 1 text mode.
 20 FOR I = 1 TO 10
 30   PRINTAT 0, I-1, "Row " + STR$(I), WHITE, BLACK
 40 NEXT I
-50 PRINTAT 0, 11, "Press ENTER...", YELLOW, BLACK
+50 PRINTAT 0, 11, "Press ENTER to scroll up 3...", YELLOW, BLACK
 60 PAUSE
-70 SCROLL UP, 3       ' Scroll tile grid up 3 rows
-80 PRINTAT 0, 11, "Press ENTER...", YELLOW, BLACK
+70 SCROLL UP, 3
+80 PRINTAT 0, 11, "Press ENTER to scroll down 1...", YELLOW, BLACK
 90 PAUSE
-100 SCROLL DOWN, 1    ' Scroll down 1 row
-110 PRINTAT 0, 11, "Press ENTER...", YELLOW, BLACK
+100 SCROLL DOWN, 1
+110 PRINTAT 0, 11, "Press ENTER to scroll left 2...", YELLOW, BLACK
 120 PAUSE
-130 SCROLL LEFT, 2    ' Scroll left 2 columns
-140 PRINTAT 0, 11, "Press ENTER...", YELLOW, BLACK
+130 SCROLL LEFT, 2
+140 PRINTAT 0, 11, "Press ENTER to scroll right 1...", YELLOW, BLACK
 150 PAUSE
-160 SCROLL RIGHT, 1   ' Scroll right 1 column
+160 SCROLL RIGHT, 1
 ```
 
 ---
