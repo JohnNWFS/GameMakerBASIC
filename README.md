@@ -182,11 +182,12 @@ LOCATE has no effect in MODE 1 text mode.
 
 ### SCROLL (MODE 2 only)
 ```basic
-10 SCROLL UP, 3       ' Scroll tile grid up 3 rows
-20 SCROLL DOWN, 1     ' Scroll down 1 row
-30 SCROLL LEFT, 2     ' Scroll left 2 columns
-40 SCROLL RIGHT, 1    ' Scroll right 1 column
-50 SCROLL 2           ' Scroll up 2 rows (direction defaults to UP)
+10 MODE 2
+20 SCROLL UP, 3       ' Scroll tile grid up 3 rows
+30 SCROLL DOWN, 1     ' Scroll down 1 row
+40 SCROLL LEFT, 2     ' Scroll left 2 columns
+50 SCROLL RIGHT, 1    ' Scroll right 1 column
+60 SCROLL 2           ' Scroll up 2 rows (direction defaults to UP)
 ```
 
 ---
@@ -361,80 +362,90 @@ In MODE 2, `PRINT` writes text to the tile grid at the current cursor position. 
 
 ### PRINTAT / DRAWSTR
 ```basic
-10 PRINTAT col, row, "text" [, fg [, bg]]
-20 PRINTAT 5, 10, "HELLO", WHITE, BLACK
-30 DRAWSTR 0, 0, "TEST", BLUE, YELLOW    ' DRAWSTR is an alias for PRINTAT
+10 MODE 2
+20 PRINTAT col, row, "text" [, fg [, bg]]
+30 PRINTAT 5, 10, "HELLO", WHITE, BLACK
+40 DRAWSTR 0, 0, "TEST", BLUE, YELLOW    ' DRAWSTR is an alias for PRINTAT
 ```
 
 ### PSET (MODE 2)
 ```basic
-10 PSET col, row, charCode, fg, bg
-20 PSET 10, 5, 65, WHITE, BLACK   ' Place 'A' (ASCII 65) at column 10, row 5
+10 MODE 2
+20 PSET col, row, charCode, fg, bg
+30 PSET 10, 5, 65, WHITE, BLACK   ' Place 'A' (ASCII 65) at column 10, row 5
 ```
 All five arguments are required in MODE 2.
 
 ### CHARAT / TILE / PLOT (MODE 2)
 ```basic
-10 CHARAT col, row, charCode [, fg [, bg]]
-20 CHARAT 0, 0, 72               ' Place 'H' at top-left, preserve existing colors
-30 CHARAT 5, 3, 65, RED, BLACK   ' Place 'A' with colors
+10 MODE 2
+20 CHARAT col, row, charCode [, fg [, bg]]
+30 CHARAT 0, 0, 72               ' Place 'H' at top-left, preserve existing colors
+40 CHARAT 5, 3, 65, RED, BLACK   ' Place 'A' with colors
 
-40 TILE col, row, charCode [, fg [, bg]]   ' TILE is an alias for CHARAT
-50 TILE 5, 5, 42, RED
+50 TILE col, row, charCode [, fg [, bg]]   ' TILE is an alias for CHARAT
+60 TILE 5, 5, 42, RED
 
-60 PLOT col, row, charCode [, fg [, bg]]   ' PLOT is an alias for CHARAT in MODE 2
-70 PLOT 6, 5, 42, CYAN, BLACK
+70 PLOT col, row, charCode [, fg [, bg]]   ' PLOT is an alias for CHARAT in MODE 2
+80 PLOT 6, 5, 42, CYAN, BLACK
 ```
 
 ### BOX (MODE 2)
 Draws a rectangle border using the given character code.
 ```basic
-10 BOX x1, y1, x2, y2, charCode [, fg [, bg]]
-20 BOX 0, 0, 10, 4, 35, YELLOW, BLACK   ' '#' border rectangle
+10 MODE 2
+20 BOX x1, y1, x2, y2, charCode [, fg [, bg]]
+30 BOX 0, 0, 10, 4, 35, YELLOW, BLACK   ' '#' border rectangle
 ```
 
 ### FILL (MODE 2)
 Fills a rectangular region with the given character.
 ```basic
-10 FILL x1, y1, x2, y2, charCode [, fg [, bg]]
-20 FILL 1, 1, 9, 3, 46, BLUE, BLACK    ' '.' fill
+10 MODE 2
+20 FILL x1, y1, x2, y2, charCode [, fg [, bg]]
+30 FILL 1, 1, 9, 3, 46, BLUE, BLACK    ' '.' fill
 ```
 
 ### HLINE / VLINE (MODE 2)
 ```basic
-10 HLINE x1, x2, row, charCode [, fg [, bg]]
-20 HLINE 0, 10, 6, 45, CYAN, BLACK     ' '-' horizontal line at row 6
+10 MODE 2
+20 HLINE x1, x2, row, charCode [, fg [, bg]]
+30 HLINE 0, 10, 6, 45, CYAN, BLACK     ' '-' horizontal line at row 6
 
-30 VLINE col, y1, y2, charCode [, fg [, bg]]
-40 VLINE 12, 0, 6, 124, MAGENTA, BLACK ' '|' vertical line at col 12
+40 VLINE col, y1, y2, charCode [, fg [, bg]]
+50 VLINE 12, 0, 6, 124, MAGENTA, BLACK ' '|' vertical line at col 12
 ```
 
 ### CLSCHAR
 ```basic
-10 CLSCHAR charCode [, fg [, bg]]
-20 CLSCHAR 32, GREEN, BLACK    ' Fill entire screen with spaces
+10 MODE 2
+20 CLSCHAR charCode [, fg [, bg]]
+30 CLSCHAR 32, GREEN, BLACK    ' Fill entire screen with spaces
 ```
 
 ### Tile Grid Read Functions (MODE 2)
 ```basic
-10 C = TILECHAR(col, row)      ' Get character code at position
-20 CLR = TILECOLOR(col, row)   ' Get foreground color value at position
-30 N$ = TILENAME$(CLR)         ' Convert color value to name string (e.g., "GREEN")
+10 MODE 2
+20 C = TILECHAR(col, row)      ' Get character code at position
+30 CLR = TILECOLOR(col, row)   ' Get foreground color value at position
+40 N$ = TILENAME$(CLR)         ' Convert color value to name string (e.g., "GREEN")
 ```
 
 Legacy aliases (still work):
 ```basic
-10 C = mode1_get_char(col, row)
-20 CLR = mode1_get_color(col, row)
-30 N$ = mode1_color_name(CLR)
+10 MODE 2
+20 C = mode1_get_char(col, row)
+30 CLR = mode1_get_color(col, row)
+40 N$ = mode1_color_name(CLR)
 ```
 
 ### Font Control (MODE 2)
 ```basic
-10 FONT "DEFAULT_16"    ' Switch to 16x16 font
-20 FONT "DEFAULT_8"     ' Switch to 8x8 font
-30 FONT "DEFAULT_32"    ' Switch to 32x32 font
-40 FONTSET "DEFAULT_8"  ' Lock font to 8x8 (survives MODE switches)
+10 MODE 2
+20 FONT "DEFAULT_16"    ' Switch to 16x16 font
+30 FONT "DEFAULT_8"     ' Switch to 8x8 font
+40 FONT "DEFAULT_32"    ' Switch to 32x32 font
+50 FONTSET "DEFAULT_8"  ' Lock font to 8x8 (survives MODE switches)
 ```
 
 Available font keys: `DEFAULT_8`, `DEFAULT_16`, `DEFAULT_32`. `FONTSET` locks the choice so that subsequent `MODE 2` switches do not override it.
@@ -489,40 +500,46 @@ MODE 3 renders to a full-screen pixel surface. Text overlay `PRINT` is available
 
 ### PLOT (MODE 3)
 ```basic
-10 PLOT x, y [, color]       ' Alias for PSET in MODE 3
-20 PLOT 320, 240, GREEN
+10 MODE 3
+20 PLOT x, y [, color]       ' Alias for PSET in MODE 3
+30 PLOT 320, 240, GREEN
 ```
 
 ### CIRCLE (MODE 3 only)
 ```basic
-10 CIRCLE x, y, radius [, lineColor [, fillFlag [, fillColor]]]
-20 CIRCLE 320, 240, 50, WHITE                    ' Outline circle
-30 CIRCLE 320, 240, 50, YELLOW, 1, BLUE          ' Filled circle (fillFlag=1)
+10 MODE 3
+20 CIRCLE x, y, radius [, lineColor [, fillFlag [, fillColor]]]
+30 CIRCLE 320, 240, 50, WHITE                    ' Outline circle
+40 CIRCLE 320, 240, 50, YELLOW, 1, BLUE          ' Filled circle (fillFlag=1)
 ```
 
 ### LINE (MODE 3 only)
 ```basic
-10 LINE x1, y1, x2, y2 [, color [, thickness]]
-20 LINE 0, 0, 640, 480, GREEN                    ' Green diagonal line
-30 LINE 100, 200, 300, 200, CYAN, 4              ' Thick cyan horizontal line
+10 MODE 3
+20 LINE x1, y1, x2, y2 [, color [, thickness]]
+30 LINE 0, 0, 640, 480, GREEN                    ' Green diagonal line
+40 LINE 100, 200, 300, 200, CYAN, 4              ' Thick cyan horizontal line
 ```
 
 ### BOX (MODE 3)
 In MODE 3, `BOX` draws a pixel-coordinate rectangle outline or filled box.
 ```basic
-10 BOX x1, y1, x2, y2 [, lineColor [, fillFlag [, fillColor [, thickness]]]]
-20 BOX 100, 100, 300, 200, WHITE                    ' Outline only
-30 BOX 100, 100, 300, 200, MAGENTA, 1, DKGRAY, 4   ' Filled, thick border
+10 MODE 3
+20 BOX x1, y1, x2, y2 [, lineColor [, fillFlag [, fillColor [, thickness]]]]
+30 BOX 100, 100, 300, 200, WHITE                    ' Outline only
+40 BOX 100, 100, 300, 200, MAGENTA, 1, DKGRAY, 4   ' Filled, thick border
 ```
 
 ### POINT (MODE 3)
 ```basic
-10 C = POINT(x, y)   ' Returns the pixel color at (x, y), or -1 if surface not available
+10 MODE 3
+20 C = POINT(x, y)   ' Returns the pixel color at (x, y), or -1 if surface not available
 ```
 
 ### CLS (MODE 3)
 ```basic
-10 CLS   ' Clears the pixel surface to black
+10 MODE 3
+20 CLS   ' Clears the pixel surface to black
 ```
 
 ---
