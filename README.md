@@ -189,15 +189,18 @@ LOCATE has no effect in MODE 1 text mode.
 50 PRINTAT 0, 11, "Press ENTER to scroll up 3...", YELLOW, BLACK
 60 PAUSE
 70 SCROLL UP, 3
-80 PRINTAT 0, 11, "Press ENTER to scroll down 1...", YELLOW, BLACK
-90 PAUSE
-100 SCROLL DOWN, 1
-110 PRINTAT 0, 11, "Press ENTER to scroll left 2...", YELLOW, BLACK
-120 PAUSE
-130 SCROLL LEFT, 2
-140 PRINTAT 0, 11, "Press ENTER to scroll right 1...", YELLOW, BLACK
-150 PAUSE
-160 SCROLL RIGHT, 1
+80 FILL 0, 8, 39, 11, 32, BLACK, BLACK   ' Clear any scrolled-up prompt debris
+90 PRINTAT 0, 11, "Press ENTER to scroll down 1...", YELLOW, BLACK
+100 PAUSE
+110 SCROLL DOWN, 1
+120 FILL 0, 8, 39, 11, 32, BLACK, BLACK
+130 PRINTAT 0, 11, "Press ENTER to scroll left 2...", YELLOW, BLACK
+140 PAUSE
+150 SCROLL LEFT, 2
+160 FILL 0, 8, 39, 11, 32, BLACK, BLACK
+170 PRINTAT 0, 11, "Press ENTER to scroll right 1...", YELLOW, BLACK
+180 PAUSE
+190 SCROLL RIGHT, 1
 ```
 
 ---
