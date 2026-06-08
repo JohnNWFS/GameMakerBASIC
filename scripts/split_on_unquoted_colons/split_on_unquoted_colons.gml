@@ -13,8 +13,11 @@ function split_on_unquoted_colons(line) {
             buf  += ch;
         }
         else if (ch == "’" && !inStr) {
-            // apostrophe comment — consume the rest of the line as-is
-            buf += string_copy(line, i, len - i + 1);
+            // apostrophe comment — consume remaining characters one by one, stop splitting
+            buf += ch;
+            for (var _j = i + 1; _j <= len; _j++) {
+                buf += string_char_at(line, _j);
+            }
             break;
         }
         else if (ch == ":" && !inStr) {
