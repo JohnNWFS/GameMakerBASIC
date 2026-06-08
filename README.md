@@ -183,11 +183,17 @@ LOCATE has no effect in MODE 1 text mode.
 ### SCROLL (MODE 2 only)
 ```basic
 10 MODE 2
-20 SCROLL UP, 3       ' Scroll tile grid up 3 rows
-30 SCROLL DOWN, 1     ' Scroll down 1 row
-40 SCROLL LEFT, 2     ' Scroll left 2 columns
-50 SCROLL RIGHT, 1    ' Scroll right 1 column
-60 SCROLL 2           ' Scroll up 2 rows (direction defaults to UP)
+20 FOR I = 1 TO 10
+30   PRINTAT 0, I-1, "Row " + STR$(I), WHITE, BLACK
+40 NEXT I
+50 PAUSE
+60 SCROLL UP, 3       ' Scroll tile grid up 3 rows
+70 PAUSE
+80 SCROLL DOWN, 1     ' Scroll down 1 row
+90 PAUSE
+100 SCROLL LEFT, 2    ' Scroll left 2 columns
+110 PAUSE
+120 SCROLL RIGHT, 1   ' Scroll right 1 column
 ```
 
 ---
