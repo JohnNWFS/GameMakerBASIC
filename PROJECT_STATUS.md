@@ -61,30 +61,33 @@ See `objects/obj_basic_interpreter/Create_0.gml` lines 23–30.
 
 ## Not Yet Implemented / Future Work
 
-- Random/control flow: `RANDOMIZE`, `STOP`, `ON GOTO`, `ON GOSUB`.
+- `NOT` operator (logical unary prefix) — not yet implemented.
 - Additional functions: `FIX`, `CINT`, `PEEK`, `POKE`, and further math/string extensions as needed.
-- Array/memory quality-of-life: `ERASE`, optional `OPTION BASE`, 3D+ arrays (2D done), and compatibility behavior review.
+- 3D+ arrays (2D done).
 - Original MODE 2 tile work: interactive tile editor UI, maps, windows/clipping, animation helpers, and examples.
-- Future MODE 3 drawing commands: keep `PSET`/loop-based drawing as the classic slow BASIC layer, and add accelerated GML-backed commands that still look like pure BASIC to the user.
+- `STOP` as a true breakpoint (currently identical to `END`).
+- `ON ERROR GOTO` — error trapping.
+- `PAINT x,y[,fillColor[,borderColor]]` — flood fill for MODE 3 if feasible and performant.
+- `DRAW` vector strings — under consideration.
 
-## MODE 3 Drawing Command Plan
+## MODE 3 Drawing Architecture
 
-MODE 3 should support two kinds of pixel graphics commands:
+MODE 3 supports two kinds of pixel graphics commands:
 
 - **Classic/pure BASIC commands:** `PSET`, `POINT`, and explicit BASIC loops. These preserve old 8-bit style graphics programming and are acceptable even when slow.
-- **Accelerated GML-backed commands:** BASIC commands that dispatch to GameMaker drawing primitives on the MODE 3 surface. These hide GML from the BASIC user while using the engine for speed.
+- **Accelerated GML-backed commands (implemented):** BASIC commands that dispatch to GameMaker drawing primitives on the MODE 3 surface, hiding GML from the BASIC programmer while using the engine for speed.
 
-Initial accelerated command roadmap:
+Implemented accelerated commands:
+- `CIRCLE x,y,r[,lineColor[,fillFlag[,fillColor]]]` — outline or filled circle.
+- `LINE x1,y1,x2,y2[,color[,thickness]]` — fast line drawing.
+- `BOX x1,y1,x2,y2[,lineColor[,fillFlag[,fillColor[,thickness]]]]` — outline or filled rectangle.
+- `PLOT x,y[,color]` — point-drawing alias for `PSET`.
 
-1. `CIRCLE x,y,r[,lineColor[,fillFlag[,fillColor]]]` — outline or filled circle through GameMaker surface drawing.
-2. `LINE x1,y1,x2,y2[,color[,thickness]]` — fast line drawing.
-3. `BOX x1,y1,x2,y2[,lineColor[,fillFlag[,fillColor[,thickness]]]]` — outline or filled rectangle through GameMaker surface drawing.
-4. `PLOT x,y[,color]` — MODE 3 point-drawing alias for `PSET`.
-5. `CIRCLEF x,y,r[,color]` — possible future convenience alias for filled circles.
-6. `PAINT x,y[,fillColor[,borderColor]]` — flood fill if feasible and performant.
-7. Later review candidates from historical BASICs/extensions: `DRAW` vector strings, ellipse/arc options for `CIRCLE`, and sprite/image overlay commands.
+Future candidates: `CIRCLEF`, ellipse/arc options for `CIRCLE`, sprite/image overlay commands.
 
 ## Recently Completed (2026-06-08 session)
+
+- **Full README/PROJECT_STATUS reconciliation (2026-06-08):** Deep audit confirmed all commands, functions, operators, modes, and editor behaviors against source code. Key changes: removed stale RANDOMIZE/STOP/ERASE/OPTION BASE/ON GOTO/ON GOSUB entries from "Not Yet Implemented" (all implemented); added `NOT` (unary logical) as the one unimplemented operator; updated MODE 3 Drawing Command Plan to reflect CIRCLE/LINE/BOX/PLOT as completed; fixed misleading RANDOMIZE note in README Planned section. README snippets verified against parser — all existing snippets use valid syntax.
 
 - **README command inventory refreshed from code audit (2026-06-08):** Full audit of `handle_basic_command.gml`, `handle_command.gml`, `is_function.gml`, `evaluate_postfix.gml`, and all `basic_cmd_*` scripts. Key corrections vs. prior README:
   - Added missing commands: `LINE` (MODE 3 line drawing), `CIRCLE` (MODE 3), `ON GOTO`/`ON GOSUB`, `RANDOMIZE`, `STOP`, `ERASE`, `OPTION BASE`.

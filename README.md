@@ -871,12 +871,10 @@ These commands are typed at the prompt without a line number (immediate mode). T
 
 These features are on the roadmap but not yet available:
 
-- `RANDOMIZE` with system time — currently `RANDOMIZE` always seeds from system time; per-seed reproducibility is pending review
+- `NOT` — logical NOT operator (unary prefix); not yet implemented
 - `PEEK` / `POKE` — memory access (no plans to implement directly)
 - `FIX`, `CINT` — additional numeric rounding functions
-- `ERASE` for arrays — **implemented** (see Arrays section above)
-- `OPTION BASE` — **implemented**
-- 3-D arrays — planned
+- 3-D arrays — planned (1-D and 2-D are implemented)
 - Interactive tile editor UI, tile maps, window/clipping support
 - `PAINT x,y` — flood fill for MODE 3 (planned)
 - `DRAW` vector strings (classical BASIC DRAW command) — under consideration
