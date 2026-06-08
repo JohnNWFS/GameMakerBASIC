@@ -84,6 +84,22 @@ Initial accelerated command roadmap:
 6. `PAINT x,y[,fillColor[,borderColor]]` — flood fill if feasible and performant.
 7. Later review candidates from historical BASICs/extensions: `DRAW` vector strings, ellipse/arc options for `CIRCLE`, and sprite/image overlay commands.
 
+## Recently Completed (2026-06-08 session)
+
+- **README command inventory refreshed from code audit (2026-06-08):** Full audit of `handle_basic_command.gml`, `handle_command.gml`, `is_function.gml`, `evaluate_postfix.gml`, and all `basic_cmd_*` scripts. Key corrections vs. prior README:
+  - Added missing commands: `LINE` (MODE 3 line drawing), `CIRCLE` (MODE 3), `ON GOTO`/`ON GOSUB`, `RANDOMIZE`, `STOP`, `ERASE`, `OPTION BASE`.
+  - Added missing functions: `SQR`, `ATN`, `SPACE$`, `UCASE$`, `LCASE$`, `LTRIM$`, `RTRIM$`, `INSTR`, `STRING$`, `VAL`, `GETMODE()`/`SCREEN()`, `EOF()`.
+  - Corrected `LOCATE` argument order (was listed as `col, row`; actual code is `row, col` but stores internally as `col, row` — documented as `LOCATE row, col` per BASIC convention).
+  - Corrected `HLINE` and `VLINE` argument order to match implementation.
+  - Corrected `BOX` (MODE 3) syntax: uses pixel coordinates and different signature than MODE 2 BOX.
+  - Noted that `LOG` and `LOG10` both use base-10 (matching code; `LOG` does not compute natural log).
+  - Noted that `STOP` is currently an alias for `END` (not a true breakpoint).
+  - Noted that `ERASE` and `OPTION BASE` are already implemented (removed from "Not Yet Implemented").
+  - Added File I/O section documenting `OPEN`, `CLOSE`, `PRINT #n`, `INPUT #n`, `LINE INPUT #n`, `EOF(n)`.
+  - Added MODE 3 accelerated drawing commands section (`CIRCLE`, `LINE`, `BOX`, `PLOT`/`PSET`).
+  - Clarified 2-D array support.
+  - README now has a "Planned / Not Yet Implemented" section with accurate scope.
+
 ## Recently Completed (2026-06-07 session)
 
 - **File I/O fully implemented:** `OPEN`, `CLOSE`, `PRINT #n`, `INPUT #n`, `LINE INPUT #n`, `EOF(n)`. Channel state lives in `global.basic_file_handles` and `global.basic_file_modes` (ds_maps, initialised in `obj_globals/Create_0.gml`, cleaned up in `reset_interpreter_state.gml`). New scripts: `basic_cmd_open`, `basic_cmd_close`, `basic_cmd_print_file`, `basic_cmd_file_read`.

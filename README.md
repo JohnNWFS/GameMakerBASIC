@@ -1,16 +1,16 @@
 # NW-BASIC
 
-A custom-built BASIC interpreter and code editor created using **GameMaker Studio**. This project aims to recreate the feel of early home computer BASIC environments, while growing into a serious retro-modern BASIC with strong text programming, tile graphics, and future pixel-perfect drawing support.
+A custom-built BASIC interpreter and code editor created using **GameMaker Studio**. This project aims to recreate the feel of early home computer BASIC environments, while growing into a serious retro-modern BASIC with strong text programming, tile graphics, and pixel drawing support.
 
 > **Built for fun**, educational exploration, and retro coding joy — this project is co-developed using LLMs (Large Language Models) to assist with iterative code design, debugging, and feature expansion.
 
 ---
 
-## 🎯 Project Goals
+## Project Goals
 
 - Build a **fully functional** interpreted BASIC environment from scratch
 - Grow toward a broad, high-quality BASIC command set for text programs, games, education, and creative coding
-- Treat text mode, tile graphics, and future pixel/surface graphics as first-class programming environments
+- Treat text mode, tile graphics, and pixel/surface graphics as first-class programming environments
 - Run on **GameMaker Studio** and be easily portable to **Android devices**
 - Maintain a lightweight and nostalgic programming feel
 - Encourage experimentation, creativity, and fun with retro-style code
@@ -33,22 +33,24 @@ A custom-built BASIC interpreter and code editor created using **GameMaker Studi
 ## Table of Contents
 - [Program Structure](#program-structure)
 - [Variables and Data Types](#variables-and-data-types)
+- [Arrays](#arrays)
 - [Input/Output Commands](#inputoutput-commands)
 - [Sound Commands](#sound-commands)
 - [Program Control](#program-control)
 - [Mode Control](#mode-control)
-- [MODE 2 Commands](#mode-2-commands)
+- [MODE 2 Commands (Tile Graphics)](#mode-2-commands-tile-graphics)
+- [MODE 3 Commands (Pixel Graphics)](#mode-3-commands-pixel-graphics)
+- [File I/O](#file-io)
 - [Math Functions](#math-functions)
 - [String Functions](#string-functions)
 - [System Functions](#system-functions)
 - [Data Handling](#data-handling)
-- [Array Operations](#array-operations)
 - [Color Control](#color-control)
+- [Operators](#operators)
 - [Editor Commands](#editor-commands)
-- [Advanced Features](#advanced-features)
 - [Error Handling](#error-handling)
 - [Programming Tips](#programming-tips)
-- [Advanced Topics](#advanced-topics)
+- [Example Programs](#example-programs)
 
 ---
 
@@ -65,7 +67,7 @@ A custom-built BASIC interpreter and code editor created using **GameMaker Studi
 
 ### Multiple Statements
 ```basic
-10 PRINT "A"; : PRINT "B" : PRINT "C"
+10 PRINT "A" : PRINT "B" : PRINT "C"
 ```
 Use colons (`:`) to separate multiple statements on one line.
 
@@ -80,14 +82,33 @@ Use colons (`:`) to separate multiple statements on one line.
 30 Y = X + 10       ' LET keyword optional
 ```
 
-### Arrays (1D Only)
+- Numeric variables default to 0 if read before being set.
+- String variables default to `""` if read before being set.
+- Variable names are case-insensitive. `score` and `SCORE` are the same variable.
+
+---
+
+## Arrays
+
 ```basic
-10 DIM A(10)        ' Creates array A with indices 0-10
-20 DIM B(5), C$(20) ' Multiple arrays
-30 A(3) = 42        ' Set array element
-40 PRINT A(3)       ' Read array element
+10 DIM A(10)           ' 1-D array with indices 0-10 (11 elements)
+20 DIM B(5), C$(20)    ' Multiple declarations in one statement
+30 DIM M(3, 4)         ' 2-D array: valid indices (0..3, 0..4)
+40 A(3) = 42           ' Set element
+50 PRINT A(3)          ' Read element
+60 M(1, 2) = 99        ' Set 2-D element
+70 PRINT M(1, 2)       ' Read 2-D element
 ```
-**Note:** Only 1-dimensional arrays are supported.
+
+- Arrays are **0-based** by default (index 0 through N).
+- Use `OPTION BASE 1` to switch to 1-based indexing.
+- 1-D and 2-D arrays are supported. Arrays must be declared with `DIM` before use.
+- `ERASE name` removes an array from memory.
+
+```basic
+10 OPTION BASE 1        ' Arrays use indices 1..N
+20 DIM A(10)            ' A(1) through A(10)
+```
 
 ---
 
@@ -96,34 +117,54 @@ Use colons (`:`) to separate multiple statements on one line.
 ### PRINT
 ```basic
 10 PRINT "Hello World"
-20 PRINT X          ' Print variable
-30 PRINT "X="; X    ' Print with semicolon (no newline)
-40 PRINT A, B, C    ' Multiple values (comma-separated)
+20 PRINT X                  ' Print variable
+30 PRINT "X="; X            ' Semicolon: no space between items
+40 PRINT A, B, C            ' Comma: tab-stop spacing
+50 PRINT "Hi ";             ' Trailing semicolon suppresses newline
+60 PRINT TAB(10); "here"    ' TAB(n) moves to column n
+70 PRINT SPC(5); "spaced"   ' SPC(n) inserts n spaces
 ```
 
-**Special Print Behavior:**
-- `;` at the end of a `PRINT` line **suppresses the newline**, continuing on the next `PRINT`.
-- `+` is used to concatenate strings and variables:
-
-```basic
-10 PRINT "HELLO ";
-20 PRINT name$
-30 PRINT "HELLO " + name$
-```
+**Special print behavior:**
+- `;` suppresses the newline and prints the next item immediately.
+- `,` advances to the next tab zone (approximately every 14 characters).
+- `TAB(n)` and `SPC(n)` work inside PRINT statements.
+- `+` concatenates strings: `PRINT "Hello " + name$`
 
 ### INPUT
 ```basic
-10 INPUT "Enter name: ", N$
-20 INPUT X          ' Prompt with "? "
-30 INPUT "Age"; AGE ' Semicolon separator also works
+10 INPUT "Enter name: ", N$   ' Prompt with literal string
+20 INPUT X                    ' Prompt with "? "
+30 INPUT "Age"; AGE           ' Semicolon separator also works
 ```
 
 ### CLS
 ```basic
-10 CLS              ' Clear screen (MODE 0: clears text output)
-                    ' (MODE 1: clears text output)
-                    ' (MODE 2: clears grid and resets cursor)
-                    ' (MODE 3: clears pixel surface and text overlay)
+10 CLS   ' Clear screen
+         ' MODE 1 (text): clears text output
+         ' MODE 2 (tile): clears the tile grid and resets cursor
+         ' MODE 3 (pixel): clears pixel surface
+```
+
+### PAUSE
+```basic
+10 PAUSE   ' Pause execution until the user presses Enter
+```
+
+### LOCATE (MODE 2 only)
+```basic
+10 LOCATE row, col   ' Set cursor position for next PRINT (1-based)
+20 LOCATE 5, 10      ' Row 5, column 10
+```
+LOCATE has no effect in MODE 1 text mode.
+
+### SCROLL (MODE 2 only)
+```basic
+10 SCROLL UP, 3       ' Scroll tile grid up 3 rows
+20 SCROLL DOWN, 1     ' Scroll down 1 row
+30 SCROLL LEFT, 2     ' Scroll left 2 columns
+40 SCROLL RIGHT, 1    ' Scroll right 1 column
+50 SCROLL 2           ' Scroll up 2 rows (direction defaults to UP)
 ```
 
 ---
@@ -132,12 +173,12 @@ Use colons (`:`) to separate multiple statements on one line.
 
 ### BEEP - Musical Note Sequences
 ```basic
-10 BEEP C1          ' Play middle C for 1 beat
-20 BEEP A0.5 B0.5 C2 ' Play sequence: A eighth, B eighth, C half note
-30 BEEP C#1 Db1 F#2  ' Sharps and flats supported (# or b)
-40 BEEP R1 C1        ' R1 = 1-beat rest, then C
-50 BEEP O2 C1 D1     ' O2 = octave 2, affects following notes
-60 BEEP O-1 A4 O1 G2 ' Octave changes apply until changed again
+10 BEEP C1             ' Play middle C for 1 beat
+20 BEEP A0.5 B0.5 C2   ' A eighth, B eighth, C half note
+30 BEEP C#1 Db1 F#2    ' Sharps (#) and flats (b) supported
+40 BEEP R1 C1          ' R1 = 1-beat rest, then C
+50 BEEP O2 C1 D1       ' O2 = octave 2, affects following notes
+60 BEEP O-1 A4 O1 G2   ' Octave changes apply until changed again
 ```
 
 #### BEEP Syntax
@@ -146,42 +187,30 @@ BEEP <spec> [<spec> ...]
 ```
 
 **Note Specifications:**
-- **NOTE**: `A`, `B`, `C`, `D`, `E`, `F`, `G` or `R` (rest)
-- **Accidentals**: `#` (sharp) or `b` (flat) - e.g., `C#`, `Bb`
-- **Duration**: Number of beats - `1` = quarter note, `2` = half note, `4` = whole note, `0.5` = eighth note, `0.25` = sixteenth note
-- **Octave**: `O<number>` sets octave relative to middle C (C4)
+- **Note**: `A`, `B`, `C`, `D`, `E`, `F`, `G` or `R` (rest)
+- **Accidentals**: `#` (sharp) or `b` (flat) — e.g., `C#`, `Bb`
+- **Duration**: Number of beats — `1` = quarter, `2` = half, `4` = whole, `0.5` = eighth, `0.25` = sixteenth
+- **Octave**: `O<number>` sets octave; changes persist until the next `O` token
 
 #### BEEP Examples
 ```basic
-10 ' Simple melody
+10 ' C major scale
 20 BEEP C1 D1 E1 F1 G1 A1 B1 C2
 
-30 ' With rhythm and rests
+30 ' Rhythm and rests
 40 BEEP C0.5 C0.5 G1 R0.5 F0.5 E1
 
-50 ' Octave changes
-60 BEEP O-1 C2 O0 C2 O1 C2    ' Low C, middle C, high C
+50 ' Octave shifts
+60 BEEP O-1 C2 O0 C2 O1 C2
 
 70 ' Sharps and flats
-80 BEEP C1 C#1 D1 Eb1 E1      ' Chromatic sequence
-
-90 ' Complex melody with tempo changes
-100 BEEP O0 G0.25 A0.25 B0.5 O1 C1 R0.5 O0 B0.5 A1
+80 BEEP C1 C#1 D1 Eb1 E1
 ```
 
 #### BEEP Technical Details
-- **Tempo**: Default 120 BPM (can be modified via `global.beep_tempo`)
-- **Pitch Range**: Supports multiple octaves relative to C4 (middle C)
-- **Sound Generation**: Uses pitch-shifted samples for different notes
-- **Sequence Behavior**: BEEP pauses program execution until the entire sequence completes
-- **Sample Requirements**: Requires `global.beep_samples` map with C2-C6 samples, or falls back to single `global.beep_sound`
-
-#### BEEP Programming Notes
-- Multiple BEEP commands can create musical programs
-- BEEP sequences are non-blocking between notes but block until complete
-- Octave settings persist until changed with another `O<number>`
-- Use rests (`R`) for musical timing and pauses
-- Duration `0` is interpreted as `0.25` (sixteenth note)
+- Default tempo: 120 BPM (adjustable via `global.beep_tempo`)
+- BEEP **blocks** program execution until the entire sequence completes
+- Duration `0` is treated as `0.25` (sixteenth note)
 
 ---
 
@@ -193,7 +222,7 @@ BEEP <spec> [<spec> ...]
 ```basic
 10 IF X = 5 THEN PRINT "Five"
 20 IF A > B THEN PRINT "A bigger" ELSE PRINT "B bigger"
-30 IF X = 1 THEN Y = 2 : Z = 3     ' Multiple statements
+30 IF X = 1 THEN Y = 2 : Z = 3     ' Multiple statements in THEN arm
 ```
 
 #### Block IF (Multi-line)
@@ -206,16 +235,6 @@ BEEP <spec> [<spec> ...]
 60 ELSE
 70   PRINT "X is small"
 80 ENDIF
-```
-
-#### Advanced IF Constructs
-```basic
-10 IF condition1 AND condition2 OR condition3 THEN
-20   PRINT "Complex logic"
-30 ENDIF
-
-' Nested conditions supported
-40 IF X > 0 THEN IF Y > 0 THEN PRINT "Both positive"
 ```
 
 #### Logical Operators
@@ -232,7 +251,7 @@ BEEP <spec> [<spec> ...]
 20   PRINT I
 30 NEXT I
 
-40 FOR J = 10 TO 1 STEP -2  ' With step
+40 FOR J = 10 TO 1 STEP -2
 50   PRINT J
 60 NEXT J
 ```
@@ -254,218 +273,372 @@ BEEP <spec> [<spec> ...]
 110 RETURN
 ```
 
+### ON GOTO / ON GOSUB
+```basic
+10 N = 2
+20 ON N GOTO 100, 200, 300   ' Jump to line 200 (N=2)
+30 ON N GOSUB 100, 200       ' Call subroutine at line 200
+```
+If `N` is out of range (less than 1 or greater than the number of targets), execution falls through to the next line.
+
 ### Program Flow
 ```basic
-10 GOTO 50          ' Jump to line 50
+10 GOTO 50          ' Jump unconditionally to line 50
 20 END              ' End program
-30 PAUSE            ' Pause until ENTER pressed
+30 STOP             ' End program (alias for END)
+```
+
+### RANDOMIZE
+```basic
+10 RANDOMIZE        ' Seed RNG from system time
+20 RANDOMIZE 42     ' Seed RNG with a specific value
 ```
 
 ---
 
 ## Mode Control
 
-**Note:** Unless specifically noted as MODE 2 or MODE 3, commands are intended for text mode. `MODE 0` is kept as a text-mode compatibility alias; `MODE 1` is the public text mode.
+NW-BASIC has three public modes:
 
-### Mode Switching
+| Mode | Description |
+|------|-------------|
+| `MODE 0` | Text mode (compatibility alias for MODE 1) |
+| `MODE 1` | Text mode (default) |
+| `MODE 2` | Tile/character graphics |
+| `MODE 3` | Pixel/surface graphics |
+
 ```basic
-10 MODE 0           ' Text mode (default - no command needed)
-20 MODE 1           ' Text mode
-30 MODE 2           ' Tile graphics mode
-40 MODE 2, 8        ' Tile mode with 8x8 pixel tiles
-50 MODE 2, 16       ' Tile mode with 16x16 pixel tiles
-60 MODE 2, 32       ' Tile mode with 32x32 pixel tiles (default)
-70 MODE 3           ' Pixel graphics mode
+10 MODE 1           ' Text mode
+20 MODE 2           ' Tile graphics, default 32x32 pixel tiles
+30 MODE 2, 8        ' Tile mode with 8x8 pixel tiles
+40 MODE 2, 16       ' Tile mode with 16x16 pixel tiles
+50 MODE 2, 32       ' Tile mode with 32x32 pixel tiles
+60 MODE 3           ' Pixel graphics mode
+```
+
+Query the current mode:
+```basic
+10 M = GETMODE()    ' Returns 1, 2, or 3
+20 M = SCREEN()     ' Alias for GETMODE()
 ```
 
 ---
 
 ## MODE 2 Commands (Tile Graphics)
 
-### Character/Tile Graphics
+MODE 2 uses a grid of character-sized cells. Each cell has a character code, a foreground color, and a background color. Coordinates are always **column, row** (x, y), 0-based from the top-left.
+
+### PRINT (MODE 2)
+In MODE 2, `PRINT` writes text to the tile grid at the current cursor position. Use `LOCATE` to position the cursor first.
+
 ```basic
-10 PSET 10, 5, 65, WHITE, BLACK    ' Set char 'A' at (10,5)
-20 CHARAT 0, 0, 72                 ' Set char 'H' at top-left
-30 TILE 5, 5, 32, RED              ' Alias for character/tile placement
-40 PLOT 6, 5, 42, CYAN, BLACK      ' Tile-friendly alias for placement
-50 PRINTAT 5, 10, "HELLO"          ' Print text at position
-60 DRAWSTR 0, 0, "TEST", BLUE, YELLOW  ' Alias for PRINTAT
-70 CLSCHAR 32, GREEN, BLACK        ' Fill screen with spaces
-80 BOX 0,0,10,4,35,YELLOW,BLACK    ' Draw a tile rectangle border
-90 FILL 1,1,9,3,46,BLUE,BLACK      ' Fill a tile rectangle
-100 HLINE 0,10,6,45,CYAN,BLACK     ' Horizontal tile line
-110 VLINE 12,0,6,124,MAGENTA,BLACK ' Vertical tile line
+10 MODE 2, 16
+20 LOCATE 3, 5       ' Row 3, column 5
+30 PRINT "Hello"     ' Prints at that position
+```
+
+### PRINTAT / DRAWSTR
+```basic
+10 PRINTAT col, row, "text" [, fg [, bg]]
+20 PRINTAT 5, 10, "HELLO", WHITE, BLACK
+30 DRAWSTR 0, 0, "TEST", BLUE, YELLOW    ' DRAWSTR is an alias for PRINTAT
+```
+
+### PSET (MODE 2)
+```basic
+10 PSET col, row, charCode, fg, bg
+20 PSET 10, 5, 65, WHITE, BLACK   ' Place 'A' (ASCII 65) at column 10, row 5
+```
+All five arguments are required in MODE 2.
+
+### CHARAT / TILE / PLOT (MODE 2)
+```basic
+10 CHARAT col, row, charCode [, fg [, bg]]
+20 CHARAT 0, 0, 72               ' Place 'H' at top-left, preserve existing colors
+30 CHARAT 5, 3, 65, RED, BLACK   ' Place 'A' with colors
+
+40 TILE col, row, charCode [, fg [, bg]]   ' TILE is an alias for CHARAT
+50 TILE 5, 5, 42, RED
+
+60 PLOT col, row, charCode [, fg [, bg]]   ' PLOT is an alias for CHARAT in MODE 2
+70 PLOT 6, 5, 42, CYAN, BLACK
+```
+
+### BOX (MODE 2)
+Draws a rectangle border using the given character code.
+```basic
+10 BOX x1, y1, x2, y2, charCode [, fg [, bg]]
+20 BOX 0, 0, 10, 4, 35, YELLOW, BLACK   ' '#' border rectangle
+```
+
+### FILL (MODE 2)
+Fills a rectangular region with the given character.
+```basic
+10 FILL x1, y1, x2, y2, charCode [, fg [, bg]]
+20 FILL 1, 1, 9, 3, 46, BLUE, BLACK    ' '.' fill
+```
+
+### HLINE / VLINE (MODE 2)
+```basic
+10 HLINE x1, x2, row, charCode [, fg [, bg]]
+20 HLINE 0, 10, 6, 45, CYAN, BLACK     ' '-' horizontal line at row 6
+
+30 VLINE col, y1, y2, charCode [, fg [, bg]]
+40 VLINE 12, 0, 6, 124, MAGENTA, BLACK ' '|' vertical line at col 12
+```
+
+### CLSCHAR
+```basic
+10 CLSCHAR charCode [, fg [, bg]]
+20 CLSCHAR 32, GREEN, BLACK    ' Fill entire screen with spaces
+```
+
+### Tile Grid Read Functions (MODE 2)
+```basic
+10 C = TILECHAR(col, row)      ' Get character code at position
+20 CLR = TILECOLOR(col, row)   ' Get foreground color value at position
+30 N$ = TILENAME$(CLR)         ' Convert color value to name string (e.g., "GREEN")
+```
+
+Legacy aliases (still work):
+```basic
+10 C = mode1_get_char(col, row)
+20 CLR = mode1_get_color(col, row)
+30 N$ = mode1_color_name(CLR)
 ```
 
 ### Font Control (MODE 2)
 ```basic
 10 FONT "DEFAULT_16"    ' Switch to 16x16 font
-20 FONT "8x8"          ' Switch to 8x8 font
-30 FONTSET "DEFAULT_8"  ' Lock font to 8x8 (prevents MODE changes)
+20 FONT "DEFAULT_8"     ' Switch to 8x8 font
+30 FONT "DEFAULT_32"    ' Switch to 32x32 font
+40 FONTSET "DEFAULT_8"  ' Lock font to 8x8 (survives MODE switches)
 ```
 
-Available fonts: DEFAULT_8, DEFAULT_16, DEFAULT_32, SPECIAL, 16x16, etc.
+Available font keys: `DEFAULT_8`, `DEFAULT_16`, `DEFAULT_32`. `FONTSET` locks the choice so that subsequent `MODE 2` switches do not override it.
 
-### Custom Tiles (MODE 2)
-Custom tiles are editable bitmap masks assigned to specific tile codes. When a
-cell uses a custom code, NW-BASIC draws the custom mask tinted with that cell's
-foreground color. Other codes still come from the active font sheet, so normal
-text remains available.
+---
+
+## Custom Tiles (MODE 2)
+
+Custom tiles are editable bitmap masks assigned to specific tile codes. When a cell uses a custom code, NW-BASIC draws the custom mask tinted with that cell's foreground color. All other codes continue to use the active font sheet, so normal text remains available alongside custom graphics.
 
 ```basic
-10 MODE 2,16
-20 TILEDEF 200,16,16          ' Create/clear custom tile code 200
-30 FOR I=0 TO 15
-40 TILEPX 200,I,I,1           ' Draw diagonal pixels
-50 TILEPX 200,15-I,I,1
+10 MODE 2, 16
+20 TILEDEF 200, 16, 16         ' Create/clear custom tile at code 200 (16x16 bitmap)
+30 FOR I = 0 TO 15
+40   TILEPX 200, I, I, 1       ' Set pixel on (diagonal line)
+50   TILEPX 200, 15-I, I, 1   ' Set pixel on (other diagonal)
 60 NEXT I
-70 TILE 2,4,200,CYAN,BLACK    ' Draw custom tile
-80 PRINTAT 4,4,"TEXT",WHITE,BLACK
-90 TILESAVE "mytiles"         ' Writes mytiles.nwtile
-100 TILECLEAR 200
-110 TILELOAD "mytiles"
-120 TILERESTORE 200           ' Remove override; use font glyph again
-130 PRINT TILEBIT(200,0,0)    ' Read custom tile pixel: 1 or 0
+70 TILE 2, 4, 200, CYAN, BLACK ' Draw custom tile at (col 2, row 4)
+80 PRINTAT 4, 4, "TEXT", WHITE, BLACK  ' Normal text beside it
+90 TILESAVE "mytiles"          ' Save to mytiles.nwtile
+100 TILECLEAR 200              ' Erase all pixels in tile 200 (keeps the definition)
+110 TILELOAD "mytiles"         ' Reload from file
+120 TILERESTORE 200            ' Remove custom override; tile 200 reverts to font glyph
+130 PRINT TILEBIT(200, 0, 0)   ' Read a pixel: returns 1 or 0
 ```
 
-Commands: `TILEDEF code[,w[,h]]`, `TILEPX code,x,y[,on]`,
-`TILECLEAR code`, `TILERESTORE code`, `TILESAVE "file"`, `TILELOAD "file"`.
-Function: `TILEBIT(code,x,y)`.
+**Custom tile commands:**
 
-### Screen Positioning (MODE 2)
+| Command | Syntax | Description |
+|---------|--------|-------------|
+| `TILEDEF` | `TILEDEF code [,w [,h]]` | Create/reset custom tile. Default size = current cell pixel size. |
+| `TILEPX` | `TILEPX code, x, y [,on]` | Set pixel at (x,y) in tile. `on` defaults to 1 (set); pass 0 to clear. |
+| `TILECLEAR` | `TILECLEAR code` | Clear all pixels in tile (keeps the definition). |
+| `TILERESTORE` | `TILERESTORE code` | Remove custom tile; code reverts to font glyph. |
+| `TILESAVE` | `TILESAVE "filename"` | Save all custom tiles to `filename.nwtile`. |
+| `TILELOAD` | `TILELOAD "filename"` | Load custom tiles from `filename.nwtile`. |
+| `TILEBIT` | `TILEBIT(code, x, y)` | Read a custom tile pixel: returns 1 (set) or 0 (clear). |
+
+---
+
+## MODE 3 Commands (Pixel Graphics)
+
+MODE 3 renders to a full-screen pixel surface. Text overlay `PRINT` is available at the same time. Coordinates are in **pixels** from the top-left corner.
+
+### PSET (MODE 3)
 ```basic
-10 LOCATE 5, 10        ' Set cursor to row 5, column 10
-20 SCROLL "UP", 3      ' Scroll screen up 3 lines
-30 SCROLL "DOWN", 1    ' Scroll down 1 line
-40 SCROLL "LEFT", 2    ' Scroll left 2 columns
-50 SCROLL "RIGHT", 1   ' Scroll right 1 column
-60 SCROLL 2            ' Scroll up 2 lines (default direction)
+10 MODE 3
+20 PSET x, y [, color]       ' Draw a single pixel
+30 PSET 100, 80, RED         ' Red pixel at (100,80)
+40 PSET 200, 150             ' White pixel (default)
 ```
 
-### Color Functions (MODE 2)
-Get information about screen contents:
+### PLOT (MODE 3)
 ```basic
-10 C = TILECHAR(10, 5)       ' Get character/tile code at position
-20 CLR = TILECOLOR(10, 5)    ' Get foreground color at position
-30 N$ = TILENAME$(CLR)       ' Convert color value to a name if known
-40 B = TILEBIT(200,0,0)      ' Get custom tile pixel bit
-50 C2 = mode1_get_char(10, 5) ' Older internal helper remains available
+10 PLOT x, y [, color]       ' Alias for PSET in MODE 3
+20 PLOT 320, 240, GREEN
 ```
 
-### Additional MODE 2 Features
+### CIRCLE (MODE 3 only)
 ```basic
-10 FONTSET "DEFAULT_8"     ' Lock font (prevents MODE changes)
-20 ' Grid refresh and management
-30 ' Automatic cursor tracking
-40 ' Character-based graphics with full color control
+10 CIRCLE x, y, radius [, lineColor [, fillFlag [, fillColor]]]
+20 CIRCLE 320, 240, 50, WHITE                    ' Outline circle
+30 CIRCLE 320, 240, 50, YELLOW, 1, BLUE          ' Filled circle (fillFlag=1)
 ```
+
+### LINE (MODE 3 only)
+```basic
+10 LINE x1, y1, x2, y2 [, color [, thickness]]
+20 LINE 0, 0, 640, 480, GREEN                    ' Green diagonal line
+30 LINE 100, 200, 300, 200, CYAN, 4              ' Thick cyan horizontal line
+```
+
+### BOX (MODE 3)
+In MODE 3, `BOX` draws a pixel-coordinate rectangle outline or filled box.
+```basic
+10 BOX x1, y1, x2, y2 [, lineColor [, fillFlag [, fillColor [, thickness]]]]
+20 BOX 100, 100, 300, 200, WHITE                    ' Outline only
+30 BOX 100, 100, 300, 200, MAGENTA, 1, DKGRAY, 4   ' Filled, thick border
+```
+
+### POINT (MODE 3)
+```basic
+10 C = POINT(x, y)   ' Returns the pixel color at (x, y), or -1 if surface not available
+```
+
+### CLS (MODE 3)
+```basic
+10 CLS   ' Clears the pixel surface to black
+```
+
+---
+
+## File I/O
+
+NW-BASIC supports reading and writing text files using numbered channels (1 and up).
+
+```basic
+10 OPEN "data.txt" FOR OUTPUT AS #1    ' Create/overwrite file
+20 PRINT #1, "Hello"                   ' Write a line
+30 PRINT #1, "Value="; 42             ' Write with expression
+40 CLOSE #1                            ' Close the file
+
+50 OPEN "data.txt" FOR INPUT AS #1     ' Open for reading
+60 WHILE NOT EOF(1)
+70   INPUT #1, LINE$                   ' Read one line (whole-line, type-converted)
+80   PRINT LINE$
+90 WEND
+100 CLOSE #1
+
+110 OPEN "log.txt" FOR APPEND AS #2    ' Append to existing file
+120 PRINT #2, "New entry"
+130 CLOSE #2
+```
+
+**LINE INPUT #n** reads a whole line as a string, without any type conversion:
+```basic
+10 OPEN "notes.txt" FOR INPUT AS #1
+20 LINE INPUT #1, L$    ' Reads entire line into L$ as-is
+30 CLOSE #1
+```
+
+**Notes:**
+- Files are stored in the GameMaker save directory (`Documents/BasicInterpreter/` on desktop).
+- Channel numbers are integers (1, 2, 3, ...).
+- `EOF(n)` returns -1 (true in BASIC) when channel n is at end of file, 0 otherwise.
+- `OPEN` modes: `INPUT`, `OUTPUT`, `APPEND`.
+- Opening a channel that is already open closes the old handle first.
 
 ---
 
 ## Math Functions
 
-### Basic Math Functions
 ```basic
 10 PRINT ABS(-5)       ' Absolute value: 5
-20 PRINT INT(3.7)      ' Integer part: 3
+20 PRINT INT(3.7)      ' Floor (integer part): 3
 30 PRINT SGN(-10)      ' Sign: -1, 0, or 1
-40 PRINT EXP(1)        ' e^1
-50 PRINT LOG(100)      ' Base-10 logarithm
-60 PRINT LOG10(1000)   ' Base-10 logarithm: 3
+40 PRINT SQR(16)       ' Square root: 4
+50 PRINT EXP(1)        ' e^1 ≈ 2.718...
+60 PRINT LOG(100)      ' Base-10 logarithm: 2  (note: both LOG and LOG10 use base 10)
+70 PRINT LOG10(1000)   ' Base-10 logarithm: 3
 ```
 
-### Trigonometric Functions
+### Trigonometric Functions (radians)
 ```basic
-10 PRINT SIN(1.57)     ' Sine (radians)
+10 PRINT SIN(1.5708)   ' Sine: ~1
 20 PRINT COS(0)        ' Cosine: 1
-30 PRINT TAN(0.785)    ' Tangent
+30 PRINT TAN(0.7854)   ' Tangent: ~1
+40 PRINT ATN(1) * 4    ' Pi: ~3.14159 (ATN = arctangent)
 ```
 
 ### Random Numbers
 ```basic
-10 PRINT RND(6)        ' Random 1-6
-20 PRINT RND(1, 10)    ' Random between 1-10
-30 X = RND(1)          ' Random 0-1 (floating point)
-40 Y = RND             ' Same as RND(1)
+10 PRINT RND(6)        ' Random integer 1-6
+20 PRINT RND(1, 10)    ' Random integer between 1 and 10 (inclusive)
+30 X = RND(1)          ' Random float 0.0 to 0.999...
 ```
 
-### Operators
-```basic
-10 PRINT 5 + 3         ' Addition: 8
-20 PRINT 10 - 4        ' Subtraction: 6
-30 PRINT 6 * 7         ' Multiplication: 42
-40 PRINT 15 / 3        ' Division: 5
-50 PRINT 17 \ 5        ' Integer division: 3 (truncates toward zero)
-60 PRINT 2 ^ 3         ' Exponentiation: 8
-70 PRINT 17 MOD 5      ' Modulo: 2
-80 PRINT 17 % 5        ' Modulo (alternate): 2
-```
+Use `RANDOMIZE` to seed the random number generator before calling `RND`.
 
 ---
 
 ## String Functions
 
-### String Manipulation
 ```basic
 10 A$ = "HELLO WORLD"
 20 PRINT LEFT$(A$, 5)      ' "HELLO"
 30 PRINT RIGHT$(A$, 5)     ' "WORLD"
-40 PRINT MID$(A$, 7, 5)    ' "WORLD" (start pos, length)
-50 PRINT REPEAT$("#", 10)  ' "##########"
-60 L = LEN(A$)             ' String length: 11
+40 PRINT MID$(A$, 7, 5)    ' "WORLD" (start position, length)
+50 L = LEN(A$)             ' String length: 11
+60 PRINT UCASE$("hello")   ' "HELLO"
+70 PRINT LCASE$("WORLD")   ' "world"
+80 PRINT LTRIM$("  hi")    ' "hi"
+90 PRINT RTRIM$("hi  ")    ' "hi"
+100 P = INSTR(A$, "WORLD") ' Position of "WORLD" in A$: 7 (0 if not found)
 ```
 
-### String Conversion
+### Repeat and Fill
 ```basic
-10 N$ = STR$(123)          ' Convert number to string: "123"
-20 PRINT CHR$(65)          ' Convert ASCII to char: "A"
-30 C = ASC("A")            ' Convert char to ASCII: 65
+10 PRINT REPEAT$("#", 10)     ' "##########"
+20 PRINT STRING$(65, 5)       ' "AAAAA" (ASCII 65 = 'A', repeated 5 times)
+21 PRINT STRING$("*", 5)      ' "*****" (character repeated 5 times)
+30 PRINT SPACE$(8)            ' "        " (8 spaces)
 ```
 
-### String Concatenation
+### Conversion Functions
 ```basic
-10 FIRST$ = "Hello"
-20 LAST$ = "World"
-30 FULL$ = FIRST$ + " " + LAST$   ' "Hello World"
+10 N$ = STR$(123)      ' Number to string: "123"
+20 N = VAL("3.14")     ' String to number: 3.14
+30 PRINT CHR$(65)      ' ASCII code to character: "A"
+40 C = ASC("A")        ' Character to ASCII code: 65
 ```
 
 ---
 
 ## System Functions
 
-### INKEY$ - Advanced Keyboard Input
+### INKEY$ - Non-Blocking Keyboard Input
 ```basic
-10 K$ = INKEY$         ' Get keypress without waiting (returns "" if none)
-20 IF K$ <> "" THEN PRINT "Key pressed: "; K$
-30 ' INKEY$ captures extended keys as 2-character sequences:
-40 ' Arrow keys return CHR$(0) + scan code
-50 ' Supports full printable ASCII range (32-126)
-60 ' Queue-based system prevents key loss
+10 K$ = INKEY$            ' Read one keypress (returns "" if none queued)
+20 IF K$ <> "" THEN PRINT "Pressed: "; K$
 ```
+- `INKEY$` is non-blocking: it reads from a key queue and returns `""` if no key is waiting.
+- Use it in a loop to create responsive interactive programs.
+- Arrow keys and other extended keys arrive as two-character sequences.
 
 ### Mobile/Touch Support (Android)
-- Screen divided into directional regions for INKEY$ input
-- Touch top-center: "W", bottom-center: "S" 
-- Touch left-center: "A", touch right-center: "D"
-- Enables mobile-friendly game control schemes
+- The screen is divided into directional regions that inject `INKEY$` values:
+  - Top-center touch → `"W"`, Bottom-center → `"S"`, Left-center → `"A"`, Right-center → `"D"`
 
 ### Time and Date
 ```basic
 10 PRINT TIME$         ' Current time: "HH:MM:SS"
 20 PRINT DATE$         ' Current date: "YYYY-MM-DD"
-30 T = TIMER           ' Seconds since program start
+30 T = TIMER           ' Seconds since game start (integer)
 ```
 
 ---
 
 ## Data Handling
 
-### DATA/READ/RESTORE
+### DATA / READ / RESTORE
 ```basic
 10 DATA 1, 2, 3, "HELLO", 5.5
 20 READ X, Y, Z, MSG$, F
 30 PRINT X, Y, Z, MSG$, F
-40 RESTORE             ' Reset data pointer
+40 RESTORE             ' Reset data pointer to the beginning
 50 READ FIRST          ' Read 1 again
 ```
 
@@ -475,115 +648,105 @@ Get information about screen contents:
 20 DATA @names: "ALICE", "BOB", "CHARLIE"
 30 READ @numbers, X, Y
 40 READ @names, N$
-50 RESTORE @numbers    ' Reset specific stream
+50 RESTORE @numbers    ' Reset only the @numbers stream
 ```
-
----
-
-## Array Operations
-
-### Array Declaration and Usage
-```basic
-10 DIM A(10)           ' Creates array A with indices 0-10
-20 DIM B(5), C$(20)    ' Multiple arrays in one statement
-30 A(0) = 42           ' Set first element
-40 A(10) = 99          ' Set last element (arrays are 0-based)
-50 PRINT A(5)          ' Read array element
-60 FOR I = 0 TO 10     ' Loop through array
-70   A(I) = I * 2      ' Set each element
-80 NEXT I
-```
-
-### Advanced Array Operations
-```basic
-10 DIM A(X+5)          ' Dynamic sizing with expressions
-20 A(I*2+1) = VALUE    ' Complex index expressions
-30 A(RND(1,10)) = 42   ' Random index access
-```
-
-**Note:** Only 1-dimensional arrays are supported. Arrays use 0-based indexing.
 
 ---
 
 ## Color Control
 
-### Text Colors
+### COLOR and BGCOLOR
 ```basic
-10 COLOR RED           ' Set text color to red
-20 COLOR GREEN, BLACK  ' Set text to green on black background
-30 BGCOLOR BLUE        ' Set background color only
-40 COLOR RGB(255,128,0)' Custom color (orange)
+10 COLOR RED                ' Set foreground text color
+20 COLOR GREEN, BLACK       ' Set foreground and background
+30 BGCOLOR BLUE             ' Set background color only
+40 COLOR RGB(255, 128, 0)   ' Custom color using RGB values (0-255 each)
 ```
 
-### Advanced Color Specifications
-```basic
-10 COLOR &HFF8000       ' Hexadecimal color (orange)
-20 COLOR #FF8000        ' Web-style hex color
-30 COLOR $FF8000        ' Dollar-prefix hex
-40 COLOR 16711680       ' Decimal color value
-50 COLOR LIGHTGRAY      ' Additional color names supported
+### Available Named Colors
+```
+BLACK    WHITE    RED      GREEN    BLUE
+CYAN     MAGENTA  YELLOW   GRAY     DKGRAY
+ORANGE   LIME     NAVY     LIGHTGRAY
 ```
 
-### Available Colors
-- RED, GREEN, BLUE, CYAN, MAGENTA, YELLOW
-- WHITE, BLACK, GRAY, DKGRAY, LIGHTGRAY, ORANGE, LIME, NAVY
+**Note:** `COLOR` and `BGCOLOR` apply to subsequent `PRINT` output. Individual tile commands (`PRINTAT`, `CHARAT`, `PSET`, etc.) take their own fg/bg color arguments and do not use these globals.
 
 ---
 
-## Comparison Operators
+## Operators
 
+### Arithmetic
+```basic
+10 PRINT 5 + 3         ' Addition: 8
+20 PRINT 10 - 4        ' Subtraction: 6
+30 PRINT 6 * 7         ' Multiplication: 42
+40 PRINT 15 / 3        ' Division: 5.0
+50 PRINT 17 \ 5        ' Integer division (truncates toward zero): 3
+60 PRINT 2 ^ 3         ' Exponentiation: 8
+70 PRINT 17 MOD 5      ' Modulo: 2
+80 PRINT 17 % 5        ' Modulo (alternate): 2
+```
+
+### Comparison
 ```basic
 10 IF X = Y THEN PRINT "Equal"
-20 IF A <> B THEN PRINT "Not equal"  
+20 IF A <> B THEN PRINT "Not equal"
 30 IF X < 10 THEN PRINT "Less than"
 40 IF Y > 5 THEN PRINT "Greater than"
 50 IF Z <= 100 THEN PRINT "Less or equal"
 60 IF W >= 50 THEN PRINT "Greater or equal"
 ```
 
+### Logical
+```basic
+10 IF X > 5 AND Y < 10 THEN PRINT "Both true"
+20 IF A = 1 OR B = 2 THEN PRINT "Either true"
+```
+
+### String Concatenation
+```basic
+10 FULL$ = "Hello" + " " + "World"   ' "Hello World"
+```
+
 ---
 
 ## Editor Commands
-(Entered in immediate mode, not in programs)
 
-### Built-in Editor Commands
-All editor commands are typed on a line that **does not begin with a number**:
+These commands are typed at the prompt without a line number (immediate mode). They cannot be used inside a program.
 
-| Command | Action |
-|---------|--------|
-| `RUN` | Run the current BASIC program in the interpreter |
-| `NEW` | Clear program (same as CLEAR) |
-| `CLEAR` | Wipe all program lines from memory |
-| `LIST` | Display all currently stored BASIC lines |
-| `LIST 100` | Move the editor window to line 100, or the next stored line after it |
+### Program Management
+
+| Command | Description |
+|---------|-------------|
+| `RUN` | Run the current program |
+| `NEW` | Clear the program from memory |
+| `LIST` | List all program lines |
+| `LIST 100` | Jump the editor view to line 100 (or next stored line) |
 | `LIST 10-50` | List lines 10 through 50 |
-| `GO 100` or `G 100` | Move the editor window to line 100, or the next stored line after it |
-| `F5` | Output the full program as a raw BASIC listing to console |
-| `:PASTE` | Paste multi-line programs from clipboard |
+| `GO 100` or `G 100` | Jump the editor view to line 100 |
+| `SAVE "filename"` | Save program to disk (`.bas` extension added automatically) |
+| `LOAD "filename"` | Load a program from disk |
+| `DIR` | Open the interactive file browser |
+| `HELP` | Open the built-in help browser |
+| `:PASTE` | Paste a multi-line program from the clipboard |
+| `:LOADURL url` | Load a program from a URL (HTML build) |
 | `SCREENEDIT` or `SE` | Enter full-screen C64-style editor |
-| `QUIT` | Exit BASIC |
+| `QUIT` or `Q` | Exit NW-BASIC |
 
-### File Operations (Enhanced)
-```
-SAVE "filename"       - Auto-adds .bas extension
-LOAD "filename"       - Supports drag-and-drop loading
-DIR                   - Interactive file browser with:
-                       * Arrow key navigation
-                       * Enter to load
-                       * D/X to delete (desktop only)
-                       * ESC to close
-```
+### File Browser (DIR)
+- Arrow keys to navigate
+- Enter to load the selected file
+- D/X to delete (desktop only)
+- Esc to close
 
-### Screen Editor Mode
-```
-SCREENEDIT or SE      - Enter full-screen editor
-                      - Use arrow keys to navigate
-                      - Type directly to edit lines
-                      - ENTER commits current line
-                      - ESC exits back to line editor
-                      - Home/End for line navigation
-                      - Page Up/Down for scrolling
-```
+### Screen Editor (SCREENEDIT / SE)
+- Arrow keys to navigate lines
+- Type directly to edit
+- Enter commits the current line
+- Esc returns to line editor
+- Home/End for line navigation
+- Page Up/Down to scroll
 
 ### Navigation Shortcuts
 
@@ -598,59 +761,27 @@ SCREENEDIT or SE      - Enter full-screen editor
 
 ---
 
-## Advanced Features
-
-### Expression Evaluation
-The BASIC interpreter supports complex expressions in most contexts:
-```basic
-10 X = (A + B) * SIN(C) + RND(1,6)
-20 IF (X > Y AND Z < 100) OR W = 0 THEN PRINT "Complex condition"
-30 A(I+1) = B(J*2) + C(K)  ' Array indexing with expressions
-```
-
-### Advanced Expression Features
-- **Parentheses for precedence**: `(A + B) * C`
-- **Function calls in expressions**: `SIN(X) + COS(Y)`
-- **Nested function calls**: `LEFT$(STR$(X), 3)`
-- **Array access in expressions**: `A(B(C))`
-- **Mixed string/numeric operations** with auto-conversion
-
-### Program Validation
-- **Pre-execution syntax checking**
-- **INKEY$ usage validation** (must be in assignments)
-- **Matching IF/ENDIF, FOR/NEXT, WHILE/WEND** validation
-- **DATA stream integrity** checking
-- **Comprehensive error reporting** with hints
-
-### Memory Management
-- Variables are automatically created when first assigned
-- Arrays must be dimensioned with DIM before use (except auto-growing in assignments)
-- String variables automatically distinguished by $ suffix
-
----
-
 ## Error Handling
 
-The interpreter provides comprehensive error handling:
-- **Syntax errors** show exact line and position
-- **Runtime errors** with helpful hints
-- **INKEY$ usage validation** (must be in assignments)
-- **Comprehensive validation** before program execution
-- **Graceful error recovery** with program state preservation
+- **Syntax errors** show the line number and a description.
+- **Runtime errors** include hints to help diagnose the problem.
+- Pre-execution validation checks for mismatched `IF`/`ENDIF`, `FOR`/`NEXT`, `WHILE`/`WEND`, and `GOSUB`/`RETURN`.
+- `INKEY$` usage is validated (must appear in an assignment or expression context).
+- Program state is preserved after errors so you can inspect variables.
 
 ---
 
 ## Programming Tips
 
-1. **Use meaningful variable names**: `SCORE` instead of `S`
-2. **Comment your code**: Use `REM` or `'` for documentation
-3. **Structure with subroutines**: Break complex logic into GOSUB routines
+1. **Use meaningful names**: `SCORE` instead of `S`
+2. **Comment your code**: `REM` or `'` for notes
+3. **Use subroutines**: Break logic into `GOSUB` routines
 4. **Test incrementally**: Run small sections before building larger programs
 5. **Use MODE commands**: Switch to graphics modes for visual programs
-6. **Leverage INKEY$**: Create responsive, interactive programs
-7. **Use arrays wisely**: Remember they're 0-based and 1-dimensional only
-8. **Create musical programs**: Use BEEP for sound effects and melodies
-9. **Combine BEEP with loops**: Create dynamic musical sequences
+6. **Leverage INKEY$**: Create responsive, interactive programs without blocking
+7. **Arrays are 0-based by default**: Use `OPTION BASE 1` if you prefer 1-based
+8. **BEEP sequences block**: Use them for sound effects and melodies
+9. **File I/O saves and loads data**: Use `OPEN`/`CLOSE` for persistence
 
 ---
 
@@ -673,11 +804,11 @@ The interpreter provides comprehensive error handling:
 130 PRINT "Sorry! The number was "; SECRET : END
 140 COLOR GREEN
 150 PRINT "Correct! You got it in "; TRIES; " tries!"
-160 BEEP O1 C0.5 E0.5 G1    ' Victory fanfare
+160 BEEP O1 C0.5 E0.5 G1
 170 END
 ```
 
-### Musical Scale Program
+### Musical Scale
 ```basic
 10 REM ** Musical Scales **
 20 CLS
@@ -686,39 +817,72 @@ The interpreter provides comprehensive error handling:
 50 PRINT "Playing Chromatic Scale..."
 60 BEEP C0.5 C#0.5 D0.5 Eb0.5 E0.5 F0.5 F#0.5 G0.5
 70 BEEP G#0.5 A0.5 Bb0.5 B0.5 O1 C1
-80 PRINT "Playing Arpeggio..."
-90 BEEP O0 C0.5 E0.5 G0.5 O1 C0.5 O0 G0.5 E0.5 C1
+80 END
+```
+
+### Tile Graphics Demo (MODE 2)
+```basic
+10 REM ** Tile Border Demo **
+20 MODE 2, 16
+30 CLSCHAR 32, WHITE, BLACK
+40 BOX 0, 0, 19, 12, 35, YELLOW, BLACK    ' '#' border
+50 FILL 1, 1, 18, 11, 32, BLACK, BLACK    ' Clear interior
+60 PRINTAT 3, 5, "TILE GRAPHICS", CYAN, BLACK
+70 PRINTAT 3, 7, "NW-BASIC MODE 2", GREEN, BLACK
+80 PAUSE
+90 END
+```
+
+### Pixel Graphics Demo (MODE 3)
+```basic
+10 REM ** Pixel Drawing Demo **
+20 MODE 3
+30 CLS
+40 CIRCLE 320, 240, 100, WHITE
+50 CIRCLE 320, 240, 60, YELLOW, 1, BLUE
+60 LINE 100, 100, 540, 380, RED, 2
+70 BOX 400, 50, 580, 150, GREEN, 1, DKGRAY
+80 PRINT "MODE 3 PIXEL GRAPHICS"
+90 PAUSE
 100 END
+```
+
+### File I/O Example
+```basic
+10 REM ** Write and Read a Data File **
+20 OPEN "scores.txt" FOR OUTPUT AS #1
+30 FOR I = 1 TO 5
+40   PRINT #1, "Score "; I; " = "; RND(1, 100)
+50 NEXT I
+60 CLOSE #1
+70 PRINT "Written. Now reading..."
+80 OPEN "scores.txt" FOR INPUT AS #1
+90 WHILE NOT EOF(1)
+100   INPUT #1, L$
+110   PRINT L$
+120 WEND
+130 CLOSE #1
+140 END
 ```
 
 ---
 
-## Advanced Topics
+## Planned / Not Yet Implemented
 
-### Debug Features
-**Debug Control (Advanced users)**
-- F5 in interpreter: Dump program to console
-- Extensive debug logging with categories
-- Performance monitoring with frame quotas
-- Error tracing and validation
+These features are on the roadmap but not yet available:
 
-### Performance Features
-- **Automatic memory management**
-- **Efficient data structure usage**
-- **Queue-based input handling**
-- **Optimized expression evaluation**
-- **Configurable debug output quotas**
-
-### Code Architecture Notes
-The interpreter includes several sophisticated features:
-- **Quote-aware parsing** throughout
-- **Proper operator precedence**
-- **Statement-level jumping** for complex control flow
-- **Comprehensive validation pipeline**
-- **Multiple font support systems**
-- **Advanced expression evaluation** with function calls
-- **Musical note sequencing** with pitch calculation and timing
+- `RANDOMIZE` with system time — currently `RANDOMIZE` always seeds from system time; per-seed reproducibility is pending review
+- `PEEK` / `POKE` — memory access (no plans to implement directly)
+- `FIX`, `CINT` — additional numeric rounding functions
+- `ERASE` for arrays — **implemented** (see Arrays section above)
+- `OPTION BASE` — **implemented**
+- 3-D arrays — planned
+- Interactive tile editor UI, tile maps, window/clipping support
+- `PAINT x,y` — flood fill for MODE 3 (planned)
+- `DRAW` vector strings (classical BASIC DRAW command) — under consideration
+- `STOP` as a true breakpoint (currently behaves identically to `END`)
+- `ON ERROR GOTO` — error trapping
 
 ---
 
-This manual covers all the major features of this BASIC interpreter. The language supports both traditional line-by-line BASIC programming and more modern structured programming with block IF statements and proper variable scoping. The BEEP command adds musical capabilities, making it possible to create programs that combine computation, graphics, and sound.
+This manual covers all implemented features of NW-BASIC. The language supports traditional line-by-line BASIC programming, structured block `IF` statements, subroutines, file I/O, tile graphics, and pixel graphics. The `BEEP` command adds musical capabilities, making it possible to create programs that combine computation, graphics, and sound.
