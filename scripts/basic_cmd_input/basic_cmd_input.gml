@@ -40,13 +40,10 @@ function basic_cmd_input(arg) {
     }
     
     dbg_log(DBG_FLOW, "INPUT: Variable='" + varName + "', Prompt='" + prompt + "'");
-    
-    // Display the prompt
-    if (prompt != "") {
-        basic_output_commit(prompt, global.basic_text_color);
-    }
-    
+
     // Set up input state for your existing keyboard handler
+    global.input_prompt     = prompt;          // shown live in Draw alongside typed text
+    global.input_show_qmark = (prompt == "");  // no prompt → show default "? "
     global.awaiting_input = true;
     global.pause_mode = false;
     global.input_expected = true;

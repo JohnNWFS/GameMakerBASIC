@@ -26,6 +26,8 @@ if (is_undefined(global.input_ignore_enter_until_release)) global.input_ignore_e
 if (is_undefined(global.input_guard_frames)) global.input_guard_frames = 0;
 if (is_undefined(global.inkey_flush_frames)) global.inkey_flush_frames = 0;
 if (is_undefined(global.inkey_release_guard)) global.inkey_release_guard = false;
+if (!variable_global_exists("input_prompt"))     global.input_prompt     = "";
+if (!variable_global_exists("input_show_qmark")) global.input_show_qmark = true;
 
 if (global.inkey_flush_frames > 0) {
     keyboard_string = "";
@@ -147,10 +149,16 @@ if (global.awaiting_input) {
                 }
             }
 
+            // Echo the completed input line to output so it stays visible
+            var _echo = (global.input_show_qmark ? "? " : global.input_prompt) + _val;
+            basic_output_commit(_echo, global.basic_text_color);
+
             // Clear INPUT state; DO NOT set interpreter_resume_stmt_index here.
             global.awaiting_input    = false;
             global.input_expected    = false;
             global.input_target_var  = "";
+            global.input_prompt      = "";
+            global.input_show_qmark  = true;
             global.interpreter_input = "";
             global.interpreter_cursor_pos = 0;
             global.input_ignore_enter_until_release = false;

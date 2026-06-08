@@ -132,11 +132,30 @@ Use colons (`:`) to separate multiple statements on one line.
 - `+` concatenates strings: `PRINT "Hello " + name$`
 
 ### INPUT
+
+Collect a value from the user and store it in a variable. String variables
+end with `$`; numeric variables do not. The optional prompt is printed before
+the cursor — use `,` or `;` to separate the prompt string from the variable.
+With no prompt, a `?` is shown automatically.
+
 ```basic
-10 INPUT "Enter name: ", N$   ' Prompt with literal string
-20 INPUT X                    ' Prompt with "? "
-30 INPUT "Age"; AGE           ' Semicolon separator also works
+10 INPUT "Your name: ", N$
+20 INPUT "Your age: ", AGE
+30 PRINT "Hello, "; N$; "!"
+40 PRINT "In 10 years you will be "; AGE + 10; "."
 ```
+
+*Sample run:*
+```
+Your name: John
+Your age: 25
+Hello, John!
+In 10 years you will be 35.
+```
+
+- `,` and `;` both work as the separator between the prompt and the variable.
+- With no prompt (`INPUT X`), a `?` is displayed automatically.
+- String variables (`N$`, `A$`, ...) accept any text; numeric variables accept numbers.
 
 ### CLS
 ```basic

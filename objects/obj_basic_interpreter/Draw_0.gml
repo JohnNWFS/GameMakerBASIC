@@ -36,8 +36,11 @@ if (global.awaiting_input) {
     var input_str = "";
 
     if (global.input_expected) {
-        // We're in INPUT mode
-        input_str = "? " + global.interpreter_input;
+        // We're in INPUT mode — show stored prompt or default "? "
+        var _pfx = (variable_global_exists("input_show_qmark") && !global.input_show_qmark && variable_global_exists("input_prompt"))
+                   ? global.input_prompt
+                   : "? ";
+        input_str = _pfx + global.interpreter_input;
     } else {
         // We're in PAUSE mode
         input_str = global.interpreter_input;
