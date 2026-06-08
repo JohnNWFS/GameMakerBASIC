@@ -1,5 +1,6 @@
 /// @helper _lint_illegal_remark_position(stmt_raw)
-/// Returns >0 if a top-level REM or ' appears after code in the colon segment (illegal), else 0
+/// Returns >0 if a top-level REM appears after code in the colon segment (illegal), else 0.
+/// Apostrophe remarks are allowed after code and are stripped by strip_basic_remark().
 function _lint_illegal_remark_position(stmt_raw) {
     var s   = stmt_raw;
     var L   = string_length(s);
@@ -27,8 +28,9 @@ function _lint_illegal_remark_position(stmt_raw) {
         }
 
         if (!inq) {
-            // Apostrophe found later → illegal
-            if (ch == "'") return i;
+            // Apostrophe remarks are valid after code, classic-BASIC style.
+            // Runtime dispatch strips them before executing the statement.
+            if (ch == "'") return 0;
 
             // Check for REM token at top level with word-ish boundaries
             if (i + 2 <= L && string_upper(string_copy(s, i, 3)) == "REM") {

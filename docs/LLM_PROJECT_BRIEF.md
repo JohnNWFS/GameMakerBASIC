@@ -54,8 +54,9 @@ MODE 2 is tile/character graphics. Preserve and extend its cell-based model:
 
 - Current commands include mode/display helpers such as `MODE`, `BGCOLOR`,
   `CLSCHAR`, `PSET`, `CHARAT`, `PRINTAT`, `PLOT`, `TILE`, `DRAWSTR`, `BOX`,
-  `FILL`, `HLINE`, `VLINE`, `TILEDEF`, `TILEPX`, `TILECLEAR`, `TILESAVE`,
-  `TILELOAD`, `FONT`, `FONTSET`, `LOCATE`, and `SCROLL`.
+  `FILL`, `HLINE`, `VLINE`, `TILEDEF`, `TILEPX`, `TILECLEAR`,
+  `TILERESTORE`, `TILESAVE`, `TILELOAD`, `FONT`, `FONTSET`, `LOCATE`,
+  and `SCROLL`.
 - Custom tiles are bitmap masks attached to individual tile codes. The grid
   still stores character code plus foreground/background colors; custom tiles
   override only their selected codes, while all other codes use the active font

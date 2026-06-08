@@ -138,6 +138,22 @@ function basic_cmd_tileclear(arg) {
     global.custom_tile_defs[? key] = def;
 }
 
+function basic_cmd_tilerestore(arg) {
+    var args = basic_parse_csv_args(arg);
+    if (array_length(args) < 1) {
+        basic_syntax_error("TILERESTORE requires tile code", global.current_line_number, 0, "TILERESTORE_ARGS");
+        return;
+    }
+
+    __custom_tile_ensure_map();
+    var tile_code = floor(real(basic_evaluate_expression_v2(string_trim(args[0]))));
+    var key = string(tile_code);
+    if (ds_map_exists(global.custom_tile_defs, key)) {
+        ds_map_delete(global.custom_tile_defs, key);
+    }
+    dbg_log(DBG_FLOW, "TILERESTORE: code=" + key);
+}
+
 function basic_cmd_tilesave(arg) {
     var path = __custom_tile_eval_filename(arg);
     __custom_tile_ensure_map();

@@ -324,11 +324,12 @@ text remains available.
 90 TILESAVE "mytiles"         ' Writes mytiles.nwtile
 100 TILECLEAR 200
 110 TILELOAD "mytiles"
-120 PRINT TILEBIT(200,0,0)    ' Read custom tile pixel: 1 or 0
+120 TILERESTORE 200           ' Remove override; use font glyph again
+130 PRINT TILEBIT(200,0,0)    ' Read custom tile pixel: 1 or 0
 ```
 
 Commands: `TILEDEF code[,w[,h]]`, `TILEPX code,x,y[,on]`,
-`TILECLEAR code`, `TILESAVE "file"`, `TILELOAD "file"`.
+`TILECLEAR code`, `TILERESTORE code`, `TILESAVE "file"`, `TILELOAD "file"`.
 Function: `TILEBIT(code,x,y)`.
 
 ### Screen Positioning (MODE 2)

@@ -28,7 +28,7 @@ See `objects/obj_basic_interpreter/Create_0.gml` lines 23–30.
 - Core BASIC commands: `PRINT`, `LET`, implicit assignment, `GOTO`, `INPUT`, `COLOR`, `CLS`, `END`, `REM`, `PAUSE`, `BEEP`.
 - Structured flow: inline `IF`, block `IF`, `ELSEIF`, `ELSE`, `ENDIF`, `FOR`, `NEXT`, `WHILE`, `WEND`, `GOSUB`, `RETURN`.
 - Data and arrays: `DATA`, `READ`, `RESTORE`, `DIM`, 1-D and multi-dimensional array assignment/access (`DIM A(M,N)`, `A(I,J) = V`, `V = A(I,J)`).
-- Mode and display commands: `MODE`, `BGCOLOR`, `CLSCHAR`, `PSET` (MODE 2 tile form and MODE 3 pixel form), `CHARAT`, `PRINTAT`, `PLOT`, `TILE`, `DRAWSTR`, `BOX`, `FILL`, `HLINE`, `VLINE`, `TILEDEF`, `TILEPX`, `TILECLEAR`, `TILESAVE`, `TILELOAD`, `FONT`, `FONTSET`, `LOCATE`, `SCROLL`.
+- Mode and display commands: `MODE`, `BGCOLOR`, `CLSCHAR`, `PSET` (MODE 2 tile form and MODE 3 pixel form), `CHARAT`, `PRINTAT`, `PLOT`, `TILE`, `DRAWSTR`, `BOX`, `FILL`, `HLINE`, `VLINE`, `TILEDEF`, `TILEPX`, `TILECLEAR`, `TILERESTORE`, `TILESAVE`, `TILELOAD`, `FONT`, `FONTSET`, `LOCATE`, `SCROLL`.
 - File I/O: `OPEN`, `CLOSE`, `PRINT #n`, `INPUT #n`, `LINE INPUT #n`, `EOF(n)`.
 - PRINT layout tokens handled by the command layer: `TAB`, `SPC`, comma zones, and trailing semicolon newline suppression.
 
@@ -80,7 +80,7 @@ See `objects/obj_basic_interpreter/Create_0.gml` lines 23–30.
 - **MODE 3 visual verification added:** `diagnostics/mode3_pixel_visual_inventory.bas` confirms `MODE 3`, text overlay `PRINT`, `CLS`, `PSET`, and `POINT()` together by pausing in MODE 3 for screenshot inspection. Verified readbacks: white `16777215`, red `255`, green `32768`, blue `16711680`.
 - **Public mode numbers remapped:** MODE 0 remains a text compatibility alias, MODE 1 is public text mode, MODE 2 is tile/character graphics, and MODE 3 is pixel/surface graphics. Validation after remap: MODE 2 tile inventory reports `FAILS=0`, MODE 3 pixel visual inventory shows text plus pixel markers and correct `POINT()` readbacks, and MODE 1 text alias smoke prints `SCREEN=1`.
 - **MODE 2 tile vocabulary expanded:** Added public tile aliases/functions `PLOT`, `TILE`, `DRAWSTR`, `BOX`, `FILL`, `HLINE`, `VLINE`, `TILECHAR`, `TILECOLOR`, and `TILENAME$`. `diagnostics/mode2_tile_command_inventory.bas` validates them with `FAILS=0`.
-- **MODE 2 custom tile workflow added:** `TILEDEF`, `TILEPX`, `TILECLEAR`, `TILESAVE`, and `TILELOAD` let BASIC programs create editable bitmap-mask tiles for selected tile codes while preserving the active font sheet for normal text. `TILEBIT(code,x,y)` reads back custom tile pixels for tests and program logic. `diagnostics/mode2_custom_tile_editor_smoke.bas` verifies define/draw/save/clear/load/readback and visual coexistence with standard text.
+- **MODE 2 custom tile workflow added:** `TILEDEF`, `TILEPX`, `TILECLEAR`, `TILERESTORE`, `TILESAVE`, and `TILELOAD` let BASIC programs create editable bitmap-mask tiles for selected tile codes while preserving the active font sheet for normal text. `TILERESTORE code` removes a custom override so the active font glyph is used again. `TILEBIT(code,x,y)` reads back custom tile pixels for tests and program logic. `diagnostics/mode2_custom_tile_editor_smoke.bas` verifies define/draw/save/clear/load/readback and visual coexistence with standard text.
 
 ## Recently Consolidated
 

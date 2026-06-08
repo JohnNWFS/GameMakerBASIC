@@ -303,6 +303,7 @@ function handle_basic_command(cmd, arg) {
             case "TILEDEF":   basic_cmd_tiledef(_rest); break;
             case "TILEPX":    basic_cmd_tilepx(_rest); break;
             case "TILECLEAR": basic_cmd_tileclear(_rest); break;
+            case "TILERESTORE": basic_cmd_tilerestore(_rest); break;
             case "TILESAVE":  basic_cmd_tilesave(_rest); break;
             case "TILELOAD":  basic_cmd_tileload(_rest); break;
             case "CHARAT":    basic_cmd_charat(_rest); break;

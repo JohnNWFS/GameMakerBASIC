@@ -89,6 +89,7 @@ function help_build_topics() {
         lines: [
             "TILEDEF code[,w,h] creates an editable tile.",
             "TILEPX code,x,y[,on] sets one tile pixel.",
+            "TILERESTORE code removes a custom override.",
             "TILESAVE/TILELOAD store alternate tile masks.",
             "TILEBIT(code,x,y) reads a custom tile pixel."
         ]
