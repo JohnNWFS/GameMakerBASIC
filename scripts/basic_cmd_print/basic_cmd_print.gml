@@ -172,7 +172,9 @@ function basic_cmd_print(arg, line_number) {
     }
 
     // 4) Wrap + commit using your existing buffer
-    var wrap_width = 40;
+    draw_set_font(fnt_basic);
+    var _cw = max(1, string_width("A"));
+    var wrap_width = max(20, floor((room_width - 32) / _cw));
     var full_line  = global.print_line_buffer + line_accum;
 
     while (string_length(full_line) > wrap_width) {

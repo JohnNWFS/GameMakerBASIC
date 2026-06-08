@@ -22,9 +22,12 @@ if (string_pos("\n", src) > 0) {
         return;
     }
 
-    // Width: default 70 unless caller set global.wrap_width (>0)
+    // Width: computed from room/font unless caller set global.wrap_width (>0)
+    draw_set_font(fnt_basic);
+    var _cw = max(1, string_width("A"));
+    var _auto_width = max(20, floor((room_width - 32) / _cw));
     var wrap_width = (variable_global_exists("wrap_width") && is_real(global.wrap_width) && global.wrap_width > 0)
-        ? floor(global.wrap_width) : 70;
+        ? floor(global.wrap_width) : _auto_width;
     if (wrap_width < 4) wrap_width = 4; // safety
 
     // Defensive copy of input text (prevents any aliasing/truncation surprises)

@@ -11,7 +11,9 @@
 	        return;
 	    }
 
-	    var wrap_width = 40; // keep in sync with PRINT path
+	    draw_set_font(fnt_basic);
+	    var _cw = max(1, string_width("A"));
+	    var wrap_width = max(20, floor((room_width - 32) / _cw));
 	    var col = is_undefined(_color) ? global.current_draw_color : _color;
 	    dbg_log(DBG_FLOW, "Using color: " + string(col));
 
