@@ -470,7 +470,7 @@ Syntax: `CHARAT col, row, charCode [, fg [, bg]]`
 10 MODE 2
 20 CHARAT 0, 0, 72               ' Place 'H' at top-left, preserve existing colors
 30 CHARAT 5, 3, 65, RED, BLACK   ' Place 'A' with colors
-40 TILE 5, 5, 42, RED            ' TILE is an alias for CHARAT
+40 TILE 5, 5, 42, RED            ' TILE is an alias for CHARAT, 42 is an asterisk
 50 PLOT 6, 5, 42, CYAN, BLACK    ' PLOT is an alias for CHARAT in MODE 2
 ```
 
@@ -502,7 +502,9 @@ Syntax: `HLINE x1, x2, row, charCode [, fg [, bg]]` / `VLINE col, y1, y2, charCo
 `CLSCHAR` fills the entire tile grid with a single character, foreground color, and background color. Use character code 32 (space) to effectively clear the screen to a solid color. Syntax: `CLSCHAR charCode [, fg [, bg]]`
 ```basic
 10 MODE 2
-20 CLSCHAR 32, GREEN, BLACK    ' Fill entire screen with spaces
+20 CLSCHAR 64, WHITE, BLUE     ' Fill screen with '@' on blue
+25 PAUSE
+30 CLSCHAR 32, GREEN, BLACK    ' Fill screen with spaces on black
 ```
 
 ### Tile Grid Read Functions (MODE 2)
