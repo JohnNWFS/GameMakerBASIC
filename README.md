@@ -406,24 +406,29 @@ Switching modes clears the screen and resets the display. MODE 2 accepts an opti
 20 PRINT "MODE 1 — text mode. Scrolling PRINT output, default at startup."
 30 PAUSE
 40 MODE 2
-50 PRINTAT 0, 0, "MODE 2 — tile graphics, 32x32 tiles (default size).", WHITE, BLACK
-60 PAUSE
-70 MODE 2, 8
-80 PRINTAT 0, 0, "MODE 2, 8 — tile graphics, 8x8 tiles (most tiles on screen).", WHITE, BLACK
-90 PAUSE
-100 MODE 2, 16
-110 PRINTAT 0, 0, "MODE 2, 16 — tile graphics, 16x16 tiles.", WHITE, BLACK
-120 PAUSE
-130 MODE 2, 32
-140 PRINTAT 0, 0, "MODE 2, 32 — tile graphics, 32x32 tiles (largest, fewest tiles).", WHITE, BLACK
+50 PRINTAT 0, 0, "MODE 2: tile graphics", WHITE, BLACK
+60 PRINTAT 0, 1, "32x32 tiles (default)", WHITE, BLACK
+70 PAUSE
+80 MODE 2, 8
+90 PRINTAT 0, 0, "MODE 2, 8: tile graphics", WHITE, BLACK
+100 PRINTAT 0, 1, "8x8 tiles (most on screen)", WHITE, BLACK
+110 PAUSE
+120 MODE 2, 16
+130 PRINTAT 0, 0, "MODE 2, 16: tile graphics", WHITE, BLACK
+140 PRINTAT 0, 1, "16x16 tiles", WHITE, BLACK
 150 PAUSE
-160 MODE 3
-170 PRINT "MODE 3 — pixel graphics. Draw lines, circles, and individual pixels."
-180 PAUSE
-190 MODE 1
-200 M = GETMODE()
-210 PRINT "Back to MODE 1. GETMODE() returns: "; M
-220 PRINT "(SCREEN() is an alias for GETMODE().)"
+160 MODE 2, 32
+170 PRINTAT 0, 0, "MODE 2, 32: tile graphics", WHITE, BLACK
+180 PRINTAT 0, 1, "32x32 tiles (largest)", WHITE, BLACK
+190 PAUSE
+200 MODE 3
+210 PRINT "MODE 3: pixel graphics."
+220 PRINT "Draw lines, circles, and pixels."
+230 PAUSE
+240 MODE 1
+250 M = GETMODE()
+260 PRINT "Back to MODE 1. GETMODE() = "; M
+270 PRINT "SCREEN() is an alias for GETMODE()."
 ```
 
 ---
