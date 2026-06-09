@@ -475,54 +475,52 @@ Syntax: `CHARAT col, row, charCode [, fg [, bg]]`
 ```
 
 ### BOX (MODE 2)
-Draws a rectangle border using the given character code.
+Draws a rectangle border using the given character code. Syntax: `BOX x1, y1, x2, y2, charCode [, fg [, bg]]`
 ```basic
 10 MODE 2
-20 BOX x1, y1, x2, y2, charCode [, fg [, bg]]
-30 BOX 0, 0, 10, 4, 35, YELLOW, BLACK   ' '#' border rectangle
+20 BOX 0, 0, 10, 4, 35, YELLOW, BLACK   ' '#' border rectangle
 ```
 
 ### FILL (MODE 2)
-Fills a rectangular region with the given character.
+Fills a rectangular region with the given character. Syntax: `FILL x1, y1, x2, y2, charCode [, fg [, bg]]`
 ```basic
 10 MODE 2
-20 FILL x1, y1, x2, y2, charCode [, fg [, bg]]
-30 FILL 1, 1, 9, 3, 46, BLUE, BLACK    ' '.' fill
+20 FILL 1, 1, 9, 3, 46, BLUE, BLACK    ' '.' fill
 ```
 
 ### HLINE / VLINE (MODE 2)
 `HLINE` draws a horizontal line of a single character across a row between two columns. `VLINE` draws a vertical line down a column between two rows. Both accept optional colors.
+
+Syntax: `HLINE x1, x2, row, charCode [, fg [, bg]]` / `VLINE col, y1, y2, charCode [, fg [, bg]]`
 ```basic
 10 MODE 2
-20 HLINE x1, x2, row, charCode [, fg [, bg]]
-30 HLINE 0, 10, 6, 45, CYAN, BLACK     ' '-' horizontal line at row 6
-
-40 VLINE col, y1, y2, charCode [, fg [, bg]]
-50 VLINE 12, 0, 6, 124, MAGENTA, BLACK ' '|' vertical line at col 12
+20 HLINE 0, 10, 6, 45, CYAN, BLACK     ' '-' horizontal line at row 6
+30 VLINE 12, 0, 6, 124, MAGENTA, BLACK ' '|' vertical line at col 12
 ```
 
 ### CLSCHAR
-`CLSCHAR` fills the entire tile grid with a single character, foreground color, and background color. Use character code 32 (space) to effectively clear the screen to a solid color.
+`CLSCHAR` fills the entire tile grid with a single character, foreground color, and background color. Use character code 32 (space) to effectively clear the screen to a solid color. Syntax: `CLSCHAR charCode [, fg [, bg]]`
 ```basic
 10 MODE 2
-20 CLSCHAR charCode [, fg [, bg]]
-30 CLSCHAR 32, GREEN, BLACK    ' Fill entire screen with spaces
+20 CLSCHAR 32, GREEN, BLACK    ' Fill entire screen with spaces
 ```
 
 ### Tile Grid Read Functions (MODE 2)
 These functions let you read back what is currently on the tile grid — useful for collision detection, puzzle logic, or any time your program needs to know what character or color occupies a given cell.
 ```basic
 10 MODE 2
-20 C = TILECHAR(col, row)      ' Get character code at position
-30 CLR = TILECOLOR(col, row)   ' Get foreground color value at position
-40 N$ = TILENAME$(CLR)         ' Convert color value to name string (e.g., "GREEN")
+20 PRINTAT 5, 3, "HI", RED, BLACK
+30 C = TILECHAR(5, 3)          ' Returns the char code at col 5, row 3
+40 CLR = TILECOLOR(5, 3)       ' Returns the foreground color value
+50 N$ = TILENAME$(CLR)         ' Converts color value to name, e.g. "RED"
+60 PRINT "Char="; C; " Color="; N$
 ```
 
 Legacy aliases (still work):
 ```basic
 10 MODE 2
-20 C = mode1_get_char(col, row)
-30 CLR = mode1_get_color(col, row)
+20 C = mode1_get_char(5, 3)
+30 CLR = mode1_get_color(5, 3)
 40 N$ = mode1_color_name(CLR)
 ```
 
@@ -579,53 +577,51 @@ Custom tiles are editable bitmap masks assigned to specific tile codes. When a c
 MODE 3 renders to a full-screen pixel surface. Text overlay `PRINT` is available at the same time. Coordinates are in **pixels** from the top-left corner.
 
 ### PSET (MODE 3)
-`PSET` draws a single pixel at the given x, y coordinate. Color defaults to white if omitted. `PLOT` is an alias for the same command.
+`PSET` draws a single pixel at the given x, y coordinate. Color defaults to white if omitted. `PLOT` is an alias for the same command. Syntax: `PSET x, y [, color]`
 ```basic
 10 MODE 3
-20 PSET x, y [, color]       ' Draw a single pixel
-30 PSET 100, 80, RED         ' Red pixel at (100,80)
-40 PSET 200, 150             ' White pixel (default)
+20 PSET 100, 80, RED         ' Red pixel at (100, 80)
+30 PSET 200, 150             ' White pixel (default color)
 ```
 
 ### PLOT (MODE 3)
+`PLOT` is an alias for `PSET` in MODE 3. Syntax: `PLOT x, y [, color]`
 ```basic
 10 MODE 3
-20 PLOT x, y [, color]       ' Alias for PSET in MODE 3
-30 PLOT 320, 240, GREEN
+20 PLOT 320, 240, GREEN
 ```
 
 ### CIRCLE (MODE 3 only)
-`CIRCLE` draws a circle centered at (x, y) with the given radius. Pass a fill flag of 1 and a fill color to draw a solid circle.
+`CIRCLE` draws a circle centered at (x, y) with the given radius. Pass a fill flag of 1 and a fill color to draw a solid circle. Syntax: `CIRCLE x, y, radius [, lineColor [, fillFlag [, fillColor]]]`
 ```basic
 10 MODE 3
-20 CIRCLE x, y, radius [, lineColor [, fillFlag [, fillColor]]]
-30 CIRCLE 320, 240, 50, WHITE                    ' Outline circle
-40 CIRCLE 320, 240, 50, YELLOW, 1, BLUE          ' Filled circle (fillFlag=1)
+20 CIRCLE 320, 240, 50, WHITE                    ' Outline circle
+30 CIRCLE 320, 240, 50, YELLOW, 1, BLUE          ' Filled circle (fillFlag=1)
 ```
 
 ### LINE (MODE 3 only)
-`LINE` draws a straight line between two pixel coordinates. Thickness defaults to 1 if omitted.
+`LINE` draws a straight line between two pixel coordinates. Thickness defaults to 1 if omitted. Syntax: `LINE x1, y1, x2, y2 [, color [, thickness]]`
 ```basic
 10 MODE 3
-20 LINE x1, y1, x2, y2 [, color [, thickness]]
-30 LINE 0, 0, 640, 480, GREEN                    ' Green diagonal line
-40 LINE 100, 200, 300, 200, CYAN, 4              ' Thick cyan horizontal line
+20 LINE 0, 0, 640, 480, GREEN                    ' Green diagonal line
+30 LINE 100, 200, 300, 200, CYAN, 4              ' Thick cyan horizontal line
 ```
 
 ### BOX (MODE 3)
-In MODE 3, `BOX` draws a pixel-coordinate rectangle outline or filled box.
+In MODE 3, `BOX` draws a pixel-coordinate rectangle outline or filled box. Syntax: `BOX x1, y1, x2, y2 [, lineColor [, fillFlag [, fillColor [, thickness]]]]`
 ```basic
 10 MODE 3
-20 BOX x1, y1, x2, y2 [, lineColor [, fillFlag [, fillColor [, thickness]]]]
-30 BOX 100, 100, 300, 200, WHITE                    ' Outline only
-40 BOX 100, 100, 300, 200, MAGENTA, 1, DKGRAY, 4   ' Filled, thick border
+20 BOX 100, 100, 300, 200, WHITE                    ' Outline only
+30 BOX 100, 100, 300, 200, MAGENTA, 1, DKGRAY, 4   ' Filled, thick border
 ```
 
 ### POINT (MODE 3)
-`POINT` reads back the color of a pixel at the given coordinates. Returns -1 if the pixel surface is not available.
+`POINT` reads back the color of a pixel at the given coordinates. Returns -1 if the pixel surface is not available. Syntax: `POINT(x, y)`
 ```basic
 10 MODE 3
-20 C = POINT(x, y)   ' Returns the pixel color at (x, y), or -1 if surface not available
+20 PSET 100, 80, RED
+30 C = POINT(100, 80)        ' Returns the color value at (100, 80)
+40 PRINT "Color at (100,80):"; C
 ```
 
 ### CLS (MODE 3)
