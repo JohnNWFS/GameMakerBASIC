@@ -564,18 +564,31 @@ Custom tiles are editable bitmap masks assigned to specific tile codes. When a c
 
 ```basic
 10 MODE 2, 16
-20 TILEDEF 200, 16, 16         ' Create/clear custom tile at code 200 (16x16 bitmap)
-30 FOR I = 0 TO 15
-40   TILEPX 200, I, I, 1       ' Set pixel on (diagonal line)
-50   TILEPX 200, 15-I, I, 1   ' Set pixel on (other diagonal)
-60 NEXT I
-70 TILE 2, 4, 200, CYAN, BLACK ' Draw custom tile at (col 2, row 4)
-80 PRINTAT 4, 4, "TEXT", WHITE, BLACK  ' Normal text beside it
-90 TILESAVE "mytiles"          ' Save to mytiles.nwtile
-100 TILECLEAR 200              ' Erase all pixels in tile 200 (keeps the definition)
-110 TILELOAD "mytiles"         ' Reload from file
-120 TILERESTORE 200            ' Remove custom override; tile 200 reverts to font glyph
-130 PRINT TILEBIT(200, 0, 0)   ' Read a pixel: returns 1 or 0
+20 CLSCHAR 32, WHITE, BLACK
+30 TILEDEF 200, 16, 16
+40 FOR I = 0 TO 15
+50   TILEPX 200, I, I, 1       ' Draw diagonal top-left to bottom-right
+60   TILEPX 200, 15-I, I, 1   ' Draw diagonal top-right to bottom-left
+70 NEXT I
+80 PRINTAT 0, 0, "Custom X tile drawn.", WHITE, BLACK
+90 TILE 5, 2, 200, CYAN, BLACK
+100 PRINTAT 7, 2, "< that is tile 200", WHITE, BLACK
+110 PRINTAT 0, 4, "Pixel at (0,0) = " + STR$(TILEBIT(200, 0, 0)), WHITE, BLACK
+120 PAUSE
+130 TILESAVE "mytiles"
+140 PRINTAT 0, 6, "Saved to mytiles.nwtile.", WHITE, BLACK
+150 PAUSE
+160 TILECLEAR 200
+170 TILE 5, 8, 200, CYAN, BLACK
+180 PRINTAT 7, 8, "< tile 200 cleared", WHITE, BLACK
+190 PAUSE
+200 TILELOAD "mytiles"
+210 TILE 5, 10, 200, CYAN, BLACK
+220 PRINTAT 7, 10, "< reloaded from file", WHITE, BLACK
+230 PAUSE
+240 TILERESTORE 200
+250 TILE 5, 12, 200, CYAN, BLACK
+260 PRINTAT 7, 12, "< reverted to font glyph", WHITE, BLACK
 ```
 
 **Custom tile commands:**
