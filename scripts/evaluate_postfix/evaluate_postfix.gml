@@ -734,6 +734,12 @@ case "OR": {
 		if (looks_ident) {
 		    var key = string_upper(ident);
 		    if (!ds_map_exists(global.basic_variables, key)) {
+		        // Check color name constants before creating as 0
+		        if (variable_global_exists("colors") && ds_map_exists(global.colors, key)) {
+		            array_push(stack, global.colors[? key]);
+		            dbg_log(DBG_PARSE, "POSTFIX: Color constant '" + key + "' = " + string(global.colors[? key]));
+		            continue;
+		        }
 		        // create as numeric 0 (QBASIC style)
 		        global.basic_variables[? key] = 0;
 		        dbg_log(DBG_PARSE, "POSTFIX: Implicit numeric var created '" + key + "' = 0");
