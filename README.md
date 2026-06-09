@@ -57,6 +57,7 @@ A custom-built BASIC interpreter and code editor created using **GameMaker Studi
 ## Program Structure
 
 ### Line Numbers
+Every statement in NW-BASIC begins with a line number. Lines run in numerical order from lowest to highest unless a command redirects execution. Comments can be added with `REM` or an apostrophe `'` — anything after them on the line is ignored.
 ```basic
 10 PRINT "Hello World"
 20 END
@@ -66,10 +67,10 @@ A custom-built BASIC interpreter and code editor created using **GameMaker Studi
 - Comments: `REM` or `'` (apostrophe)
 
 ### Multiple Statements
+You can put more than one command on a single line by separating them with a colon. Each runs in order, left to right.
 ```basic
 10 PRINT "A" : PRINT "B" : PRINT "C"
 ```
-Use colons (`:`) to separate multiple statements on one line.
 
 ---
 
@@ -90,6 +91,8 @@ Use colons (`:`) to separate multiple statements on one line.
 ---
 
 ## Arrays
+
+An array is a named list of values, all accessed by the same variable name using an index number in parentheses. Use `DIM` to declare an array before using it. Arrays can hold numbers or strings, be one-dimensional (a list) or two-dimensional (a grid), and are zero-based by default.
 
 ```basic
 10 DIM A(10)           ' 1-D array with indices 0-10 (11 elements)
@@ -116,6 +119,7 @@ Use colons (`:`) to separate multiple statements on one line.
 ## Input/Output Commands
 
 ### PRINT
+`PRINT` outputs text and values to the screen. Items are separated by semicolons (no space) or commas (tab-stop spacing). A trailing semicolon keeps the cursor on the same line so the next PRINT continues there.
 ```basic
 10 PRINT "Hello World"
 20 PRINT X                  ' Print variable
@@ -159,6 +163,7 @@ In 10 years you will be 35.
 - String variables (`N$`, `A$`, ...) accept any text; numeric variables accept numbers.
 
 ### CLS
+`CLS` clears the screen. What it clears depends on the current mode.
 ```basic
 10 CLS   ' Clear screen
          ' MODE 1 (text): clears text output
@@ -167,11 +172,13 @@ In 10 years you will be 35.
 ```
 
 ### PAUSE
+`PAUSE` halts program execution and waits for the user to press Enter before continuing. Useful for letting the user read output before the program moves on.
 ```basic
 10 PAUSE   ' Pause execution until the user presses Enter
 ```
 
 ### LOCATE (MODE 2 only)
+`LOCATE` moves the tile-mode text cursor to a specific row and column so the next `PRINT` appears at that position.
 ```basic
 10 MODE 2
 20 LOCATE 5, 10      ' Move cursor to row 5, column 10
@@ -182,6 +189,7 @@ In 10 years you will be 35.
 LOCATE has no effect in MODE 1 text mode.
 
 ### SCROLL (MODE 2 only)
+`SCROLL` shifts the entire tile grid one or more positions in a given direction. Content that moves off one edge does not wrap — those cells are cleared to spaces. The example below uses a variable `S` to track where the tile content currently starts, adjusting it after each scroll so the prompt always appears just below the content.
 ```basic
 10 MODE 2
 15 LET S = 10
@@ -266,8 +274,10 @@ BEEP <spec> [<spec> ...]
 ## Program Control
 
 ### Conditional Statements
+An `IF` statement tests a condition and runs code only when that condition is true. NW-BASIC supports a single-line form and a multi-line block form.
 
 #### Inline IF
+A single-line IF fits the test and its action on one line. An optional `ELSE` clause runs when the condition is false.
 ```basic
 10 PRINT "X has never been set, so it defaults to 0."
 20 PRINT "Testing IF X = 5 — this will be false, so nothing prints:"
@@ -285,6 +295,7 @@ BEEP <spec> [<spec> ...]
 ```
 
 #### Block IF (Multi-line)
+When you need multiple lines of code under a condition, use the block form. `IF` opens the block, `ELSEIF` adds additional tests, `ELSE` catches everything that didn't match, and `ENDIF` closes it.
 ```basic
 10 LET X = 7
 20 PRINT "X = 7. Block IF checks it step by step:"
@@ -299,6 +310,7 @@ BEEP <spec> [<spec> ...]
 ```
 
 #### Logical Operators
+`AND` requires both conditions to be true. `OR` requires at least one to be true.
 ```basic
 10 LET X = 8 : LET Y = 7
 20 IF X > 5 AND Y < 10 THEN PRINT "Both conditions true — X > 5 and Y < 10."
@@ -309,6 +321,7 @@ BEEP <spec> [<spec> ...]
 ### Loops
 
 #### FOR/NEXT
+`FOR` repeats a block of code a set number of times, stepping a counter variable from a start value to an end value. `NEXT` marks the end of the loop and increments the counter. Use `STEP` to count by something other than 1.
 ```basic
 10 PRINT "Counting up from 1 to 5:"
 20 FOR I = 1 TO 5
@@ -321,6 +334,7 @@ BEEP <spec> [<spec> ...]
 ```
 
 #### WHILE/WEND
+`WHILE` checks a condition and, as long as it is true, repeats all the statements between it and its matching `WEND`. When the condition becomes false, execution jumps past `WEND`. If the condition is false before the loop even starts, the body never runs.
 ```basic
 10 PRINT "Printing X while it is <= 5:"
 20 X = 1
@@ -331,6 +345,7 @@ BEEP <spec> [<spec> ...]
 ```
 
 ### Subroutines
+`GOSUB` jumps to a numbered line and runs the code there until a `RETURN` statement sends execution back to the line after the original `GOSUB`. This lets you write a block of code once and call it from multiple places. Always place `END` before subroutine code so the program doesn't accidentally fall into it.
 ```basic
 10 PRINT "Calling the subroutine at line 100:"
 20 GOSUB 100
@@ -341,6 +356,7 @@ BEEP <spec> [<spec> ...]
 ```
 
 ### ON GOTO / ON GOSUB
+`ON N GOTO` (or `GOSUB`) uses the value of `N` to choose which line to jump to from a list of targets. If `N` is 1 it goes to the first target, 2 to the second, and so on — handy for building menus or dispatching to different routines based on a number.
 ```basic
 10 LET N = 2
 20 PRINT "N = 2, so ON GOTO jumps to the second target:"
@@ -353,6 +369,7 @@ BEEP <spec> [<spec> ...]
 If `N` is out of range (less than 1 or greater than the number of targets), execution falls through to the next line.
 
 ### Program Flow
+`GOTO` jumps unconditionally to any line number. `END` stops the program immediately. `STOP` is an alias for `END`.
 ```basic
 10 GOTO 50          ' Jump unconditionally to line 50
 20 END              ' End program
@@ -360,6 +377,7 @@ If `N` is out of range (less than 1 or greater than the number of targets), exec
 ```
 
 ### RANDOMIZE
+`RANDOMIZE` seeds the random number generator so that `RND` produces a different sequence each run. Without it, the same seed is used every time and you get the same "random" numbers. Pass a specific number to get a repeatable sequence — useful for testing.
 ```basic
 10 RANDOMIZE        ' Seed RNG from system time
 20 RANDOMIZE 42     ' Seed RNG with a specific value
@@ -409,6 +427,7 @@ In MODE 2, `PRINT` writes text to the tile grid at the current cursor position. 
 ```
 
 ### PRINTAT / DRAWSTR
+`PRINTAT` writes a string directly to a specific column and row on the tile grid, with optional foreground and background colors. It does not move the cursor. `DRAWSTR` is an alias for the same command.
 ```basic
 10 MODE 2
 20 PRINTAT col, row, "text" [, fg [, bg]]
@@ -417,14 +436,15 @@ In MODE 2, `PRINT` writes text to the tile grid at the current cursor position. 
 ```
 
 ### PSET (MODE 2)
+`PSET` places a single character at a tile grid position using an ASCII character code. All five arguments (column, row, character code, foreground, background) are required in MODE 2.
 ```basic
 10 MODE 2
 20 PSET col, row, charCode, fg, bg
 30 PSET 10, 5, 65, WHITE, BLACK   ' Place 'A' (ASCII 65) at column 10, row 5
 ```
-All five arguments are required in MODE 2.
 
 ### CHARAT / TILE / PLOT (MODE 2)
+`CHARAT` places a single character by ASCII code at a tile position, optionally setting colors. If colors are omitted, existing cell colors are preserved. `TILE` and `PLOT` are aliases for the same command.
 ```basic
 10 MODE 2
 20 CHARAT col, row, charCode [, fg [, bg]]
@@ -455,6 +475,7 @@ Fills a rectangular region with the given character.
 ```
 
 ### HLINE / VLINE (MODE 2)
+`HLINE` draws a horizontal line of a single character across a row between two columns. `VLINE` draws a vertical line down a column between two rows. Both accept optional colors.
 ```basic
 10 MODE 2
 20 HLINE x1, x2, row, charCode [, fg [, bg]]
@@ -465,6 +486,7 @@ Fills a rectangular region with the given character.
 ```
 
 ### CLSCHAR
+`CLSCHAR` fills the entire tile grid with a single character, foreground color, and background color. Use character code 32 (space) to effectively clear the screen to a solid color.
 ```basic
 10 MODE 2
 20 CLSCHAR charCode [, fg [, bg]]
@@ -472,6 +494,7 @@ Fills a rectangular region with the given character.
 ```
 
 ### Tile Grid Read Functions (MODE 2)
+These functions let you read back what is currently on the tile grid — useful for collision detection, puzzle logic, or any time your program needs to know what character or color occupies a given cell.
 ```basic
 10 MODE 2
 20 C = TILECHAR(col, row)      ' Get character code at position
@@ -488,6 +511,7 @@ Legacy aliases (still work):
 ```
 
 ### Font Control (MODE 2)
+`FONT` switches the tile font sheet, which changes how every character on the grid is drawn. `FONTSET` works the same way but locks the choice so it survives subsequent `MODE 2` calls. Three sizes are available: 8×8, 16×16, and 32×32 pixels per tile.
 ```basic
 10 MODE 2
 20 FONT "DEFAULT_16"    ' Switch to 16x16 font
@@ -539,6 +563,7 @@ Custom tiles are editable bitmap masks assigned to specific tile codes. When a c
 MODE 3 renders to a full-screen pixel surface. Text overlay `PRINT` is available at the same time. Coordinates are in **pixels** from the top-left corner.
 
 ### PSET (MODE 3)
+`PSET` draws a single pixel at the given x, y coordinate. Color defaults to white if omitted. `PLOT` is an alias for the same command.
 ```basic
 10 MODE 3
 20 PSET x, y [, color]       ' Draw a single pixel
@@ -554,6 +579,7 @@ MODE 3 renders to a full-screen pixel surface. Text overlay `PRINT` is available
 ```
 
 ### CIRCLE (MODE 3 only)
+`CIRCLE` draws a circle centered at (x, y) with the given radius. Pass a fill flag of 1 and a fill color to draw a solid circle.
 ```basic
 10 MODE 3
 20 CIRCLE x, y, radius [, lineColor [, fillFlag [, fillColor]]]
@@ -562,6 +588,7 @@ MODE 3 renders to a full-screen pixel surface. Text overlay `PRINT` is available
 ```
 
 ### LINE (MODE 3 only)
+`LINE` draws a straight line between two pixel coordinates. Thickness defaults to 1 if omitted.
 ```basic
 10 MODE 3
 20 LINE x1, y1, x2, y2 [, color [, thickness]]
@@ -579,12 +606,14 @@ In MODE 3, `BOX` draws a pixel-coordinate rectangle outline or filled box.
 ```
 
 ### POINT (MODE 3)
+`POINT` reads back the color of a pixel at the given coordinates. Returns -1 if the pixel surface is not available.
 ```basic
 10 MODE 3
 20 C = POINT(x, y)   ' Returns the pixel color at (x, y), or -1 if surface not available
 ```
 
 ### CLS (MODE 3)
+`CLS` in MODE 3 clears the entire pixel surface to black.
 ```basic
 10 MODE 3
 20 CLS   ' Clears the pixel surface to black
@@ -632,6 +661,8 @@ NW-BASIC supports reading and writing text files using numbered channels (1 and 
 
 ## Math Functions
 
+NW-BASIC includes a standard set of math functions. Each takes a numeric argument and returns a result you can use in any expression or print directly.
+
 ```basic
 10 PRINT ABS(-5)       ' Absolute value: 5
 20 PRINT INT(3.7)      ' Floor (integer part): 3
@@ -643,6 +674,7 @@ NW-BASIC supports reading and writing text files using numbered channels (1 and 
 ```
 
 ### Trigonometric Functions (radians)
+All trig functions work in radians. To convert degrees to radians, multiply by π/180 (approximately 0.01745).
 ```basic
 10 PRINT SIN(1.5708)   ' Sine: ~1
 20 PRINT COS(0)        ' Cosine: 1
@@ -651,6 +683,7 @@ NW-BASIC supports reading and writing text files using numbered channels (1 and 
 ```
 
 ### Random Numbers
+`RND` generates random numbers. Pass one argument for a random integer from 1 to N, two arguments for a range, or `RND(1)` for a floating-point value between 0 and 1. Always call `RANDOMIZE` first if you want a different sequence each run.
 ```basic
 10 PRINT RND(6)        ' Random integer 1-6
 20 PRINT RND(1, 10)    ' Random integer between 1 and 10 (inclusive)
@@ -662,6 +695,8 @@ Use `RANDOMIZE` to seed the random number generator before calling `RND`.
 ---
 
 ## String Functions
+
+String functions let you inspect and manipulate text. String variable names end with `$`. These functions can be combined — for example, `LEFT$(UCASE$(A$), 3)` uppercases a string and then takes the first three characters.
 
 ```basic
 10 A$ = "HELLO WORLD"
@@ -677,6 +712,7 @@ Use `RANDOMIZE` to seed the random number generator before calling `RND`.
 ```
 
 ### Repeat and Fill
+These functions build strings by repeating a character or filling to a length — handy for drawing borders, padding output, or creating separators.
 ```basic
 10 PRINT REPEAT$("#", 10)     ' "##########"
 20 PRINT STRING$(65, 5)       ' "AAAAA" (ASCII 65 = 'A', repeated 5 times)
@@ -685,6 +721,7 @@ Use `RANDOMIZE` to seed the random number generator before calling `RND`.
 ```
 
 ### Conversion Functions
+These functions convert between numbers and strings, and between characters and their ASCII codes.
 ```basic
 10 N$ = STR$(123)      ' Number to string: "123"
 20 N = VAL("3.14")     ' String to number: 3.14
@@ -706,10 +743,11 @@ Use `RANDOMIZE` to seed the random number generator before calling `RND`.
 - Arrow keys and other extended keys arrive as two-character sequences.
 
 ### Mobile/Touch Support (Android)
-- The screen is divided into directional regions that inject `INKEY$` values:
-  - Top-center touch → `"W"`, Bottom-center → `"S"`, Left-center → `"A"`, Right-center → `"D"`
+On Android, the screen is divided into touch regions that inject keystrokes as if the user pressed a key — so `INKEY$`-based programs work on touch devices without modification.
+- Top-center touch → `"W"`, Bottom-center → `"S"`, Left-center → `"A"`, Right-center → `"D"`
 
 ### Time and Date
+These functions return the current system time and date as strings, and a running timer in seconds since the program started — useful for measuring elapsed time or timestamping saved data.
 ```basic
 10 PRINT TIME$         ' Current time: "HH:MM:SS"
 20 PRINT DATE$         ' Current date: "YYYY-MM-DD"
@@ -721,6 +759,7 @@ Use `RANDOMIZE` to seed the random number generator before calling `RND`.
 ## Data Handling
 
 ### DATA / READ / RESTORE
+`DATA` stores a list of literal values inside the program itself. `READ` pulls the next value from that list into a variable. `RESTORE` resets the read pointer back to the beginning so the data can be read again. This is useful for tables, level data, or any fixed set of values you want to embed in the program.
 ```basic
 10 DATA 1, 2, 3, "HELLO", 5.5
 20 READ X, Y, Z, MSG$, F
@@ -730,6 +769,7 @@ Use `RANDOMIZE` to seed the random number generator before calling `RND`.
 ```
 
 ### Named Data Streams
+Named streams let you group related `DATA` values under a label so they can be read and restored independently. Prefix the label with `@` in both the `DATA` and `READ` statements.
 ```basic
 10 DATA @numbers: 1, 2, 3, 4, 5
 20 DATA @names: "ALICE", "BOB", "CHARLIE"
@@ -743,6 +783,7 @@ Use `RANDOMIZE` to seed the random number generator before calling `RND`.
 ## Color Control
 
 ### COLOR and BGCOLOR
+`COLOR` sets the foreground (text) color for subsequent `PRINT` output. Optionally pass a second argument for the background color at the same time. `BGCOLOR` sets only the background. Colors can be named constants or custom RGB values.
 ```basic
 10 COLOR RED                ' Set foreground text color
 20 COLOR GREEN, BLACK       ' Set foreground and background
@@ -764,6 +805,7 @@ ORANGE   LIME     NAVY     LIGHTGRAY
 ## Operators
 
 ### Arithmetic
+The standard math operators. `\` is integer division (drops the remainder), `^` is exponentiation (power), and `MOD` or `%` gives the remainder after division.
 ```basic
 10 PRINT 5 + 3         ' Addition: 8
 20 PRINT 10 - 4        ' Subtraction: 6
@@ -776,6 +818,7 @@ ORANGE   LIME     NAVY     LIGHTGRAY
 ```
 
 ### Comparison
+Comparison operators test the relationship between two values and return true or false, which is what `IF` acts on.
 ```basic
 10 LET X = 5 : LET Y = 5 : LET A = 3 : LET B = 7
 20 IF X = Y THEN PRINT "X = Y — equal."
@@ -787,6 +830,7 @@ ORANGE   LIME     NAVY     LIGHTGRAY
 ```
 
 ### Logical
+`AND` and `OR` combine multiple conditions inside an `IF`. Use `AND` when all conditions must be true; use `OR` when any one of them is enough.
 ```basic
 10 LET X = 8 : LET Y = 7
 20 IF X > 5 AND Y < 10 THEN PRINT "Both conditions true."
@@ -795,6 +839,7 @@ ORANGE   LIME     NAVY     LIGHTGRAY
 ```
 
 ### String Concatenation
+Use `+` to join two strings into one.
 ```basic
 10 FULL$ = "Hello" + " " + "World"   ' "Hello World"
 ```
