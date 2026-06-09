@@ -120,6 +120,15 @@ function evaluate_postfix(postfix) {
 		// Operators
 		// -------------------------------------------------------
 		if (is_operator(token_upper)) {
+		    // NOT is unary — pops one operand only
+		    if (token_upper == "NOT") {
+		        if (array_length(stack) < 1) { dbg_log(DBG_PARSE, "? POSTFIX ERROR: NOT with empty stack"); array_push(stack, 0); continue; }
+		        var _operand = array_pop(stack);
+		        var _truthy  = is_real(_operand) ? (_operand != 0) : (string_length(string(_operand)) > 0);
+		        array_push(stack, _truthy ? 0 : 1);
+		        dbg_log(DBG_PARSE, "POSTFIX: NOT " + string(_operand) + " → " + string(_truthy ? 0 : 1));
+		        continue;
+		    }
 		    if (array_length(stack) < 2) {
 		        dbg_log(DBG_PARSE, "? POSTFIX ERROR: Not enough operands for operator " + token_upper);
 		        return 0;
