@@ -5,7 +5,7 @@ function basic_cmd_clschar(arg) {
     dbg_log(DBG_FLOW, "=== CLSCHAR DEBUG START ===");
     dbg_log(DBG_FLOW, "Raw arg: '" + string(arg) + "'");
 
-    var args = string_split(arg, ",");
+    var args = basic_parse_csv_args(arg);
     dbg_log(DBG_FLOW, "Split args count: " + string(array_length(args)));
     for (var i = 0; i < array_length(args); i++) {
         show_debug_message("Arg[" + string(i) + "]: '" + string(args[i]) + "'");
@@ -15,10 +15,12 @@ function basic_cmd_clschar(arg) {
     var fg_color   = c_white;
     var bg_color   = c_black;
 
-    if (array_length(args) >= 1) {
-        char_index = floor(real(string_trim(args[0])));
-        dbg_log(DBG_FLOW, "Parsed char_index: " + string(char_index));
-    }
+    if (!basic_require_arg_count(args, "CLSCHAR", 1, 3, "charIndex[,fg[,bg]]")) return;
+
+    var ch_arg = basic_eval_int_arg(args[0], "CLSCHAR", "charIndex");
+    if (!ch_arg.ok) return;
+    char_index = ch_arg.value;
+    dbg_log(DBG_FLOW, "Parsed char_index: " + string(char_index));
 
     if (array_length(args) >= 2) {
         var fg_str = string_upper(string_trim(args[1]));

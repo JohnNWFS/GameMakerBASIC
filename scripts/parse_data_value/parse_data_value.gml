@@ -14,22 +14,11 @@ function parse_data_value(raw) {
         return inner;
     }
 
-    // Try numeric
-    var n = real(s);
-    if (string(n) == s || is_real(n)) {
-        // Note: GML will give us 0 for non-numeric too; we try a tighter check:
-        // If s contains any alpha (not e/E for exponent), treat as string.
-        var _has_alpha = false;
-        for (var i = 1; i <= L; i++) {
-            var ch = string_char_at(s, i);
-            if ( (ch >= "A" && ch <= "Z") || (ch >= "a" && ch <= "z") ) {
-                if (ch != "E" && ch != "e") { _has_alpha = true; break; }
-            }
-        }
-        if (!_has_alpha) {
-            dbg_log(DBG_FLOW, "parse_data_value: NUMBER → " + string(n) + " from " + s);
-            return n;
-        }
+    // Try numeric only after a safe textual scan. Non-numeric DATA remains a string.
+    if (is_numeric_string(s)) {
+        var n = real(s);
+        dbg_log(DBG_FLOW, "parse_data_value: NUMBER → " + string(n) + " from " + s);
+        return n;
     }
 
     // Fallback: keep as literal string (lets users store symbolic tokens)

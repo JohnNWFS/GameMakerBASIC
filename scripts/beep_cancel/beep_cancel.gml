@@ -10,6 +10,7 @@ function beep_cancel(_end_program)
         }
         global.beep_instance = -1;
     }
+    _beep_release_generated_sound();
 
     // Clear any queued notes
     if (variable_global_exists("beep_seq_queue") && ds_exists(global.beep_seq_queue, ds_type_queue)) {

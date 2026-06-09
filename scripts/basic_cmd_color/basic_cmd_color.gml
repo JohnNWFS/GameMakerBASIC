@@ -29,6 +29,7 @@ function basic_cmd_color(arg) {
 		}
 	
 	///
+    if (!basic_require_arg_count(parts, "COLOR", 1, 2, "fg[,bg]")) return;
     var fgStr = string_upper(string_trim(parts[0]));
     var bgStr = (array_length(parts) > 1)
                 ? string_upper(string_trim(parts[1]))
@@ -43,6 +44,9 @@ function basic_cmd_color(arg) {
             var inner = string_copy(colSpec, 5, string_length(colSpec) - 5);
             var comps = string_split(inner, ",");
             if (array_length(comps) == 3) {
+                if (!is_numeric_string(string_trim(comps[0])) || !is_numeric_string(string_trim(comps[1])) || !is_numeric_string(string_trim(comps[2]))) {
+                    return -1;
+                }
                 var r = clamp(real(string_trim(comps[0])), 0, 255);
                 var g = clamp(real(string_trim(comps[1])), 0, 255);
                 var b = clamp(real(string_trim(comps[2])), 0, 255);

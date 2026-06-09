@@ -26,6 +26,7 @@ See `objects/obj_basic_interpreter/Create_0.gml` lines 23–30.
 
 - Core editor/immediate commands: `RUN`, `NEW`, `SAVE`, `LOAD`, `DIR`, `HELP`, `:PASTE`, `:LOADURL`, `QUIT`, `SCREENEDIT`/`SE`, `LIST`, `LIST range`, `GO`/`G`.
 - Core BASIC commands: `PRINT`, `LET`, implicit assignment, `GOTO`, `INPUT`, `COLOR`, `CLS`, `END`, `REM`, `PAUSE`, `BEEP`.
+- `BEEP` now uses generated mono audio-buffer tones with A4 = 440 Hz equal-tempered targets instead of pitch-shifted C samples.
 - Structured flow: inline `IF`, block `IF`, `ELSEIF`, `ELSE`, `ENDIF`, `FOR`, `NEXT`, `WHILE`, `WEND`, `GOSUB`, `RETURN`.
 - Data and arrays: `DATA`, `READ`, `RESTORE`, `DIM`, 1-D and multi-dimensional array assignment/access (`DIM A(M,N)`, `A(I,J) = V`, `V = A(I,J)`).
 - Mode and display commands: `MODE`, `BGCOLOR`, `CLSCHAR`, `PSET` (MODE 2 tile form and MODE 3 pixel form), `CHARAT`, `PRINTAT`, `PLOT`, `TILE`, `DRAWSTR`, `BOX`, `FILL`, `HLINE`, `VLINE`, `TILEDEF`, `TILEPX`, `TILECLEAR`, `TILERESTORE`, `TILESAVE`, `TILELOAD`, `FONT`, `FONTSET`, `LOCATE`, `SCROLL`.

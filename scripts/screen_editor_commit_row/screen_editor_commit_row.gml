@@ -25,9 +25,10 @@ function screen_editor_commit_row(editor_inst, _row) {
             line_num_str = line_text;
         }
         
-        // Check if it's a valid line number
-        var line_num = real(line_num_str);
-        if (line_num_str != "" && is_real(line_num) && line_num > 0) {
+        // Check if it's a valid line number before converting. Rows that begin
+        // with command text are ignored instead of crashing the screen editor.
+        if (line_num_str != "" && is_line_number(line_num_str)) {
+            var line_num = real(line_num_str);
             if (code == "") {
                 // Delete line
                 delete_program_line(line_num);
@@ -37,6 +38,8 @@ function screen_editor_commit_row(editor_inst, _row) {
                 add_or_update_program_line(line_num, code);
                dbg_log(DBG_FLOW, "SCREEN_EDITOR: Added/updated line " + string(line_num) + ": " + code);
             }
+        } else {
+            basic_show_message("Line must start with a number");
         }
     }
 }

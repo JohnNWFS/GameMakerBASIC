@@ -18,7 +18,9 @@ function basic_cmd_print_file(arg) {
 
     var _chan_str  = string_trim(string_copy(_s, 1, _comma - 1));
     var _content   = string_trim(string_copy(_s, _comma + 1, string_length(_s)));
-    var _chan      = floor(real(basic_evaluate_expression_v2(_chan_str)));
+    var _chan_arg  = basic_eval_int_arg(_chan_str, "PRINT#", "channel");
+    if (!_chan_arg.ok) return;
+    var _chan      = _chan_arg.value;
 
     if (!ds_map_exists(global.basic_file_handles, _chan)) {
         basic_syntax_error("PRINT#: channel " + string(_chan) + " not open", global.current_line_number, 0, "PRINT_FILE_CHAN");

@@ -58,18 +58,27 @@ A custom-built BASIC interpreter and code editor created using **GameMaker Studi
 
 ### Line Numbers
 Every statement in NW-BASIC begins with a line number. Lines run in numerical order from lowest to highest unless a command redirects execution. Comments can be added with `REM` or an apostrophe `'` — anything after them on the line is ignored.
+
 ```basic
-10 PRINT "Hello World"
-20 END
+10 PRINT "This program starts at line 10."
+20 PRINT "Line 20 runs next."
+30 PRINT "Line numbers control program order."
+40 PAUSE
+50 END
 ```
+
 - Line numbers: 1-65535
 - Lines executed in order unless redirected by GOTO/GOSUB
 - Comments: `REM` or `'` (apostrophe)
 
 ### Multiple Statements
 You can put more than one command on a single line by separating them with a colon. Each runs in order, left to right.
+
 ```basic
-10 PRINT "A" : PRINT "B" : PRINT "C"
+10 PRINT "This line prints three separate messages:"
+20 PRINT "A" : PRINT "B" : PRINT "C"
+30 PAUSE
+40 END
 ```
 
 ---
@@ -77,11 +86,15 @@ You can put more than one command on a single line by separating them with a col
 ## Variables and Data Types
 
 ### Variable Assignment
+Use assignment to store values for later. `LET` is accepted but optional, so `LET X = 5` and `X = 5` both assign a value to `X`.
+
 ```basic
 10 LET X = 5
 20 A$ = "HELLO"
 30 Y = X + 10       ' LET is optional
 40 PRINT "X ="; X; "  A$ ="; A$; "  Y ="; Y
+50 PAUSE
+60 END
 ```
 
 - Numeric variables default to 0 if read before being set.
@@ -102,6 +115,8 @@ An array is a named list of values, all accessed by the same variable name using
 50 PRINT A(3)          ' Read element
 60 M(1, 2) = 99        ' Set 2-D element
 70 PRINT M(1, 2)       ' Read 2-D element
+80 PAUSE
+90 END
 ```
 
 - Arrays are **0-based** by default (index 0 through N).
@@ -110,8 +125,14 @@ An array is a named list of values, all accessed by the same variable name using
 - `ERASE name` removes an array from memory.
 
 ```basic
-10 OPTION BASE 1        ' Arrays use indices 1..N
-20 DIM A(10)            ' A(1) through A(10)
+10 PRINT "Switching arrays to OPTION BASE 1."
+20 OPTION BASE 1        ' Arrays use indices 1..N
+30 DIM A(10)            ' A(1) through A(10)
+40 A(1) = 100
+50 A(10) = 1000
+60 PRINT "A(1)="; A(1); "  A(10)="; A(10)
+70 PAUSE
+80 END
 ```
 
 ---
@@ -120,14 +141,20 @@ An array is a named list of values, all accessed by the same variable name using
 
 ### PRINT
 `PRINT` outputs text and values to the screen. Items are separated by semicolons (no space) or commas (tab-stop spacing). A trailing semicolon keeps the cursor on the same line so the next PRINT continues there.
+
 ```basic
-10 PRINT "Hello World"
-20 PRINT X                  ' Print variable
-30 PRINT "X="; X            ' Semicolon: no space between items
-40 PRINT A, B, C            ' Comma: tab-stop spacing
-50 PRINT "Hi ";             ' Trailing semicolon suppresses newline
-60 PRINT TAB(10); "here"    ' TAB(n) moves to column n
-70 PRINT SPC(5); "spaced"   ' SPC(n) inserts n spaces
+10 X = 42
+20 A = 1 : B = 2 : C = 3
+30 PRINT "Hello World"
+40 PRINT X                  ' Print variable
+50 PRINT "X="; X            ' Semicolon: no space between items
+60 PRINT A, B, C            ' Comma: tab-stop spacing
+70 PRINT "Hi ";             ' Trailing semicolon suppresses newline
+80 PRINT "there"
+90 PRINT TAB(10); "here"    ' TAB(n) moves to column n
+100 PRINT SPC(5); "spaced"  ' SPC(n) inserts n spaces
+110 PAUSE
+120 END
 ```
 
 **Special print behavior:**
@@ -148,15 +175,12 @@ With no prompt, a `?` is shown automatically.
 20 INPUT "Your age: ", AGE
 30 PRINT "Hello, "; N$; "!"
 40 PRINT "In 10 years you will be "; AGE + 10; "."
+50 PAUSE
+60 END
 ```
 
 *Sample run:*
-```
-Your name: John
-Your age: 25
-Hello, John!
-In 10 years you will be 35.
-```
+The program prompts for a name and age, then echoes both values back in complete sentences.
 
 - `,` and `;` both work as the separator between the prompt and the variable.
 - With no prompt (`INPUT X`), a `?` is displayed automatically.
@@ -164,27 +188,41 @@ In 10 years you will be 35.
 
 ### CLS
 `CLS` clears the screen. What it clears depends on the current mode.
+
 ```basic
-10 CLS   ' Clear screen
-         ' MODE 1 (text): clears text output
-         ' MODE 2 (tile): clears the tile grid and resets cursor
-         ' MODE 3 (pixel): clears pixel surface
+10 PRINT "This text appears before CLS."
+20 PAUSE
+30 CLS
+40 PRINT "CLS cleared the text screen."
+50 PRINT "In MODE 2 it clears tiles; in MODE 3 it clears pixels."
+60 PAUSE
+70 END
 ```
 
 ### PAUSE
 `PAUSE` halts program execution and waits for the user to press Enter before continuing. Useful for letting the user read output before the program moves on.
+
 ```basic
-10 PAUSE   ' Pause execution until the user presses Enter
+10 PRINT "Read this line, then press ENTER."
+20 PAUSE
+30 PRINT "The program continued after PAUSE."
+40 PAUSE
+50 END
 ```
 
 ### LOCATE (MODE 2 only)
 `LOCATE` moves the tile-mode text cursor to a specific row and column so the next `PRINT` appears at that position.
 ```basic
 10 MODE 2
-20 LOCATE 5, 10      ' Move cursor to row 5, column 10
-30 PRINT "Hello!"    ' Printed at that position
-40 LOCATE 10, 1
-50 PRINT "Done."
+20 PRINTAT 0, 0, "LOCATE moves the PRINT cursor.", YELLOW, BLACK
+30 PAUSE
+40 CLS
+50 LOCATE 5, 10      ' Move cursor to row 5, column 10
+60 PRINT "Hello!"    ' Printed at that position
+70 LOCATE 10, 1
+80 PRINT "Done."
+90 PAUSE
+100 END
 ```
 LOCATE has no effect in MODE 1 text mode.
 
@@ -225,7 +263,9 @@ LOCATE has no effect in MODE 1 text mode.
 
 ## Sound Commands
 
-### BEEP - Musical Note Sequences
+### BEEP — Musical Note Sequences
+`BEEP` plays one or more musical note specifications and waits until the sequence finishes. Use it for simple effects, melodies, and audible feedback in text or graphics programs.
+
 ```basic
 10 PRINT "A single note: middle C, one beat."
 20 BEEP C1
@@ -239,12 +279,12 @@ LOCATE has no effect in MODE 1 text mode.
 100 BEEP O2 C1 D1
 110 PRINT "Octave changes mid-sequence: A low, G higher."
 120 BEEP O-1 A4 O1 G2
+130 PAUSE
+140 END
 ```
 
 #### BEEP Syntax
-```
-BEEP <spec> [<spec> ...]
-```
+Syntax: `BEEP spec [spec ...]`
 
 **Note Specifications:**
 - **Note**: `A`, `B`, `C`, `D`, `E`, `F`, `G` or `R` (rest)
@@ -262,10 +302,16 @@ BEEP <spec> [<spec> ...]
 60 BEEP O-1 C2 O0 C2 O1 C2
 70 PRINT "Sharps and flats - C, C#, D, Eb, E."
 80 BEEP C1 C#1 D1 Eb1 E1
+90 PAUSE
+100 END
 ```
 
 #### BEEP Technical Details
 - Default tempo: 120 BPM (adjustable via `global.beep_tempo`)
+- Pitch targets use standard equal temperament with A4 = 440 Hz.
+- BEEP tones are generated directly as mono audio buffers rather than pitch-shifted samples, so octaves and chromatic steps stay mathematically consistent.
+- Playback amplitude is controlled through `global.beep_volume`, with a small low-note boost so lower octaves are easier to hear on small speakers.
+- Generated tones use a short attack/release envelope to reduce clicks at note boundaries.
 - BEEP **blocks** program execution until the entire sequence completes
 - Duration `0` is treated as `0.25` (sixteenth note)
 
@@ -282,7 +328,7 @@ A single-line IF fits the test and its action on one line. An optional `ELSE` cl
 10 PRINT "X has never been set, so it defaults to 0."
 20 PRINT "Testing IF X = 5 — this will be false, so nothing prints:"
 30 IF X = 5 THEN PRINT "Five"
-40 PRINT "(Correct - nothing printed above.)"
+40 PRINT "(Correct — nothing printed above.)"
 50 LET X = 5
 60 PRINT "Now X = 5. Testing again — this time it prints:"
 70 IF X = 5 THEN PRINT "Five"
@@ -292,6 +338,8 @@ A single-line IF fits the test and its action on one line. An optional `ELSE` cl
 110 PRINT "IF can run multiple statements — setting Y and Z:"
 120 IF X = 5 THEN Y = 2 : Z = 3
 130 PRINT "Y = " + STR$(Y) + ", Z = " + STR$(Z)
+140 PAUSE
+150 END
 ```
 
 #### Block IF (Multi-line)
@@ -307,6 +355,8 @@ When you need multiple lines of code under a condition, use the block form. `IF`
 80 ELSE
 90   PRINT "X is small"
 100 ENDIF
+110 PAUSE
+120 END
 ```
 
 #### Logical Operators
@@ -316,6 +366,8 @@ When you need multiple lines of code under a condition, use the block form. `IF`
 20 IF X > 5 AND Y < 10 THEN PRINT "Both conditions true — X > 5 and Y < 10."
 30 LET A = 1 : LET B = 9
 40 IF A = 1 OR B = 2 THEN PRINT "One condition true — A = 1 matches."
+50 PAUSE
+60 END
 ```
 
 ### Loops
@@ -331,6 +383,8 @@ When you need multiple lines of code under a condition, use the block form. `IF`
 60 FOR J = 10 TO 2 STEP -2
 70   PRINT J
 80 NEXT J
+90 PAUSE
+100 END
 ```
 
 #### WHILE/WEND
@@ -342,6 +396,9 @@ When you need multiple lines of code under a condition, use the block form. `IF`
 40   PRINT X
 50   X = X + 1
 60 WEND
+70 PRINT "The loop stopped when X became "; X
+80 PAUSE
+90 END
 ```
 
 ### Subroutines
@@ -350,7 +407,8 @@ When you need multiple lines of code under a condition, use the block form. `IF`
 10 PRINT "Calling the subroutine at line 100:"
 20 GOSUB 100
 30 PRINT "Back in the main program."
-40 END
+40 PAUSE
+50 END
 100 PRINT "Inside the subroutine."
 110 RETURN
 ```
@@ -362,9 +420,15 @@ When you need multiple lines of code under a condition, use the block form. `IF`
 20 PRINT "N = 2, so ON GOTO jumps to the second target:"
 30 ON N GOTO 100, 200, 300
 40 END
-100 PRINT "Branch 1 — N was 1." : END
-200 PRINT "Branch 2 — N was 2." : END
-300 PRINT "Branch 3 — N was 3." : END
+100 PRINT "Branch 1 — N was 1."
+110 PAUSE
+120 END
+200 PRINT "Branch 2 — N was 2."
+210 PAUSE
+220 END
+300 PRINT "Branch 3 — N was 3."
+310 PAUSE
+320 END
 ```
 If `N` is out of range (less than 1 or greater than the number of targets), execution falls through to the next line.
 
@@ -376,14 +440,21 @@ If `N` is out of range (less than 1 or greater than the number of targets), exec
 30 PRINT "Line 30 is skipped."
 40 PRINT "Line 40 is skipped."
 50 PRINT "Line 50 runs — GOTO jumped here."
-60 END
+60 PAUSE
+70 END
 ```
 
 ### RANDOMIZE
 `RANDOMIZE` seeds the random number generator so that `RND` produces a different sequence each run. Without it, the same seed is used every time and you get the same "random" numbers. Pass a specific number to get a repeatable sequence — useful for testing.
 ```basic
-10 RANDOMIZE        ' Seed RNG from system time
-20 RANDOMIZE 42     ' Seed RNG with a specific value
+10 PRINT "RANDOMIZE without a number uses system time."
+20 RANDOMIZE
+30 PRINT "A fresh random die roll:"; RND(6)
+40 PRINT "RANDOMIZE 42 gives a repeatable sequence."
+50 RANDOMIZE 42
+60 PRINT "First repeatable roll:"; RND(6)
+70 PAUSE
+80 END
 ```
 
 ---
@@ -429,6 +500,8 @@ Switching modes clears the screen and resets the display. MODE 2 accepts an opti
 250 M = GETMODE()
 260 PRINT "Back to MODE 1. GETMODE() = "; M
 270 PRINT "SCREEN() is an alias for GETMODE()."
+280 PAUSE
+290 END
 ```
 
 ---
@@ -437,13 +510,18 @@ Switching modes clears the screen and resets the display. MODE 2 accepts an opti
 
 MODE 2 uses a grid of character-sized cells. Each cell has a character code, a foreground color, and a background color. Coordinates are always **column, row** (x, y), 0-based from the top-left.
 
+MODE 2 uses tile-font glyphs, so its built-in font is ASCII-oriented. Common pasted Unicode punctuation is converted to readable ASCII fallbacks before rendering: em/en dashes become `-`, smart quotes become straight quotes, ellipsis becomes `...`, bullets become `*`, and non-breaking spaces become normal spaces.
+
 ### PRINT (MODE 2)
 In MODE 2, `PRINT` writes text to the tile grid at the current cursor position. Use `LOCATE` to position the cursor first.
 
 ```basic
 10 MODE 2, 16
-20 LOCATE 3, 5       ' Row 3, column 5
-30 PRINT "Hello"     ' Prints at that position
+20 PRINTAT 0, 0, "PRINT uses the tile cursor.", YELLOW, BLACK
+30 LOCATE 3, 5       ' Row 3, column 5
+40 PRINT "Hello"     ' Prints at that position
+50 PAUSE
+60 END
 ```
 
 ### PRINTAT / DRAWSTR
@@ -451,8 +529,11 @@ In MODE 2, `PRINT` writes text to the tile grid at the current cursor position. 
 Syntax: `PRINTAT col, row, "text" [, fg [, bg]]`
 ```basic
 10 MODE 2
-20 PRINTAT 5, 10, "HELLO", WHITE, BLACK
-30 DRAWSTR 0, 0, "TEST", BLUE, YELLOW    ' DRAWSTR is an alias for PRINTAT
+20 PRINTAT 0, 0, "PRINTAT writes at exact tile coordinates.", YELLOW, BLACK
+30 PRINTAT 5, 10, "HELLO", WHITE, BLACK
+40 DRAWSTR 0, 2, "DRAWSTR is an alias.", BLUE, YELLOW
+50 PAUSE
+60 END
 ```
 
 ### PSET (MODE 2)
@@ -460,7 +541,11 @@ Syntax: `PRINTAT col, row, "text" [, fg [, bg]]`
 Syntax: `PSET col, row, charCode, fg, bg`
 ```basic
 10 MODE 2
-20 PSET 10, 5, 65, WHITE, BLACK   ' Place 'A' (ASCII 65) at column 10, row 5
+20 PRINTAT 0, 0, "PSET places one character tile.", YELLOW, BLACK
+30 PSET 10, 5, 65, WHITE, BLACK   ' Place 'A' (ASCII 65) at column 10, row 5
+40 PRINTAT 0, 7, "ASCII 65 is A.", WHITE, BLACK
+50 PAUSE
+60 END
 ```
 
 ### CHARAT / TILE / PLOT (MODE 2)
@@ -468,24 +553,35 @@ Syntax: `PSET col, row, charCode, fg, bg`
 Syntax: `CHARAT col, row, charCode [, fg [, bg]]`
 ```basic
 10 MODE 2
-20 CHARAT 0, 0, 72               ' Place 'H' at top-left, preserve existing colors
-30 CHARAT 5, 3, 65, RED, BLACK   ' Place 'A' with colors
-40 TILE 5, 5, 42, RED            ' TILE is an alias for CHARAT, 42 is an asterisk
-50 PLOT 6, 5, 42, CYAN, BLACK    ' PLOT is an alias for CHARAT in MODE 2
+20 PRINTAT 0, 0, "CHARAT, TILE, and PLOT place character tiles.", YELLOW, BLACK
+30 CHARAT 0, 2, 72               ' Place 'H', preserve existing colors
+40 CHARAT 5, 3, 65, RED, BLACK   ' Place 'A' with colors
+50 TILE 5, 5, 42, RED            ' TILE is an alias for CHARAT, 42 is an asterisk
+60 PLOT 6, 5, 42, CYAN, BLACK    ' PLOT is an alias for CHARAT in MODE 2
+70 PAUSE
+80 END
 ```
 
 ### BOX (MODE 2)
-Draws a rectangle border using the given character code. Syntax: `BOX x1, y1, x2, y2, charCode [, fg [, bg]]`
+`BOX` draws a rectangle border using the given character code. Use it for windows, frames, and tile-based maps. Syntax: `BOX x1, y1, x2, y2, charCode [, fg [, bg]]`
+
 ```basic
 10 MODE 2
-20 BOX 0, 0, 10, 4, 35, YELLOW, BLACK   ' '#' border rectangle
+20 PRINTAT 0, 0, "BOX draws a tile border.", YELLOW, BLACK
+30 BOX 0, 2, 10, 6, 35, YELLOW, BLACK   ' '#' border rectangle
+40 PAUSE
+50 END
 ```
 
 ### FILL (MODE 2)
-Fills a rectangular region with the given character. Syntax: `FILL x1, y1, x2, y2, charCode [, fg [, bg]]`
+`FILL` fills a rectangular region with the given character. It is useful for backgrounds, panels, and clearing a smaller region without clearing the whole screen. Syntax: `FILL x1, y1, x2, y2, charCode [, fg [, bg]]`
+
 ```basic
 10 MODE 2
-20 FILL 1, 1, 9, 3, 46, BLUE, BLACK    ' '.' fill
+20 PRINTAT 0, 0, "FILL paints a rectangular tile region.", YELLOW, BLACK
+30 FILL 1, 2, 9, 5, 46, BLUE, BLACK    ' '.' fill
+40 PAUSE
+50 END
 ```
 
 ### HLINE / VLINE (MODE 2)
@@ -494,17 +590,25 @@ Fills a rectangular region with the given character. Syntax: `FILL x1, y1, x2, y
 Syntax: `HLINE x1, x2, row, charCode [, fg [, bg]]` / `VLINE col, y1, y2, charCode [, fg [, bg]]`
 ```basic
 10 MODE 2
-20 HLINE 0, 10, 6, 45, CYAN, BLACK     ' '-' horizontal line at row 6
-30 VLINE 12, 0, 6, 124, MAGENTA, BLACK ' '|' vertical line at col 12
+20 PRINTAT 0, 0, "HLINE and VLINE draw tile lines.", YELLOW, BLACK
+30 HLINE 0, 10, 6, 45, CYAN, BLACK     ' '-' horizontal line at row 6
+40 VLINE 12, 0, 6, 124, MAGENTA, BLACK ' '|' vertical line at col 12
+50 PAUSE
+60 END
 ```
 
 ### CLSCHAR
 `CLSCHAR` fills the entire tile grid with a single character, foreground color, and background color. Use character code 32 (space) to effectively clear the screen to a solid color. Syntax: `CLSCHAR charCode [, fg [, bg]]`
 ```basic
 10 MODE 2
-20 CLSCHAR 64, WHITE, BLUE     ' Fill screen with '@' on blue
-25 PAUSE
-30 CLSCHAR 32, GREEN, BLACK    ' Fill screen with spaces on black
+20 PRINTAT 0, 0, "CLSCHAR fills the whole tile grid.", YELLOW, BLACK
+30 PAUSE
+40 CLSCHAR 64, WHITE, BLUE     ' Fill screen with '@' on blue
+50 PAUSE
+60 CLSCHAR 32, GREEN, BLACK    ' Fill screen with spaces on black
+70 PRINTAT 0, 0, "Back to blank spaces on black.", GREEN, BLACK
+80 PAUSE
+90 END
 ```
 
 ### Tile Grid Read Functions (MODE 2)
@@ -515,15 +619,21 @@ These functions let you read back what is currently on the tile grid — useful 
 30 C = TILECHAR(5, 3)          ' Returns the char code at col 5, row 3
 40 CLR = TILECOLOR(5, 3)       ' Returns the foreground color value
 50 N$ = TILENAME$(CLR)         ' Converts color value to name, e.g. "RED"
-60 PRINT "Char="; C; " Color="; N$
+60 PRINTAT 0, 5, "Char=" + STR$(C) + " Color=" + N$, WHITE, BLACK
+70 PAUSE
+80 END
 ```
 
 Legacy aliases (still work):
 ```basic
 10 MODE 2
-20 C = mode1_get_char(5, 3)
-30 CLR = mode1_get_color(5, 3)
-40 N$ = mode1_color_name(CLR)
+20 PRINTAT 5, 3, "HI", RED, BLACK
+30 C = mode1_get_char(5, 3)
+40 CLR = mode1_get_color(5, 3)
+50 N$ = mode1_color_name(CLR)
+60 PRINTAT 0, 5, "Legacy alias color=" + N$, WHITE, BLACK
+70 PAUSE
+80 END
 ```
 
 ### Font Control (MODE 2)
@@ -554,6 +664,8 @@ Available font keys: `DEFAULT_8`, `DEFAULT_16`, `DEFAULT_32`.
 210 CLSCHAR 32, WHITE, BLACK
 220 PRINTAT 0, 0, "FONTSET locked 8x8.", WHITE, BLACK
 230 PRINTAT 0, 1, "MODE 2 reset kept it.", WHITE, BLACK
+240 PAUSE
+250 END
 ```
 
 ---
@@ -591,6 +703,8 @@ Custom tiles are editable bitmap masks assigned to specific tile codes. When a c
 240 TILERESTORE 200
 250 TILE 5, 12, 200, CYAN, BLACK
 260 PRINTAT 7, 12, "< reverted to font glyph", WHITE, BLACK
+270 PAUSE
+280 END
 ```
 
 **Custom tile commands:**
@@ -613,41 +727,63 @@ MODE 3 renders to a full-screen pixel surface. Text overlay `PRINT` is available
 
 ### PSET (MODE 3)
 `PSET` draws a single pixel at the given x, y coordinate. Color defaults to white if omitted. `PLOT` is an alias for the same command. Syntax: `PSET x, y [, color]`
+
 ```basic
 10 MODE 3
-20 PSET 100, 80, RED         ' Red pixel at (100, 80)
-30 PSET 200, 150             ' White pixel (default color)
+20 PRINT "PSET draws individual pixels."
+30 PSET 100, 180, RED         ' Red pixel at (100, 180)
+40 PSET 200, 220              ' White pixel (default color)
+50 PRINT "Look below the text for two pixels."
+60 PAUSE
+70 END
 ```
 
 ### PLOT (MODE 3)
 `PLOT` is an alias for `PSET` in MODE 3. Syntax: `PLOT x, y [, color]`
+
 ```basic
 10 MODE 3
-20 PLOT 320, 240, GREEN
+20 PRINT "PLOT is the MODE 3 alias for PSET."
+30 PLOT 320, 240, GREEN
+40 PRINT "A green pixel was plotted near the center."
+50 PAUSE
+60 END
 ```
 
 ### CIRCLE (MODE 3 only)
 `CIRCLE` draws a circle centered at (x, y) with the given radius. Pass a fill flag of 1 and a fill color to draw a solid circle. Syntax: `CIRCLE x, y, radius [, lineColor [, fillFlag [, fillColor]]]`
 ```basic
 10 MODE 3
-20 CIRCLE 320, 240, 50, WHITE                    ' Outline circle
-30 CIRCLE 320, 240, 50, YELLOW, 1, BLUE          ' Filled circle (fillFlag=1)
+20 PRINT "CIRCLE can draw outlines and filled circles."
+30 CIRCLE 240, 260, 50, WHITE                    ' Outline circle
+40 CIRCLE 420, 260, 50, YELLOW, 1, BLUE          ' Filled circle (fillFlag=1)
+50 PRINT "Left is outline. Right is filled blue with yellow edge."
+60 PAUSE
+70 END
 ```
 
 ### LINE (MODE 3 only)
 `LINE` draws a straight line between two pixel coordinates. Thickness defaults to 1 if omitted. Syntax: `LINE x1, y1, x2, y2 [, color [, thickness]]`
 ```basic
 10 MODE 3
-20 LINE 0, 0, 640, 480, GREEN                    ' Green diagonal line
-30 LINE 100, 200, 300, 200, CYAN, 4              ' Thick cyan horizontal line
+20 PRINT "LINE draws accelerated pixel lines."
+30 LINE 100, 220, 500, 360, GREEN                ' Green diagonal line
+40 LINE 100, 260, 500, 260, CYAN, 4              ' Thick cyan horizontal line
+50 PRINT "The horizontal line uses thickness 4."
+60 PAUSE
+70 END
 ```
 
 ### BOX (MODE 3)
 In MODE 3, `BOX` draws a pixel-coordinate rectangle outline or filled box. Syntax: `BOX x1, y1, x2, y2 [, lineColor [, fillFlag [, fillColor [, thickness]]]]`
 ```basic
 10 MODE 3
-20 BOX 100, 100, 300, 200, WHITE                    ' Outline only
-30 BOX 100, 100, 300, 200, MAGENTA, 1, DKGRAY, 4   ' Filled, thick border
+20 PRINT "BOX draws rectangles in pixel coordinates."
+30 BOX 100, 220, 300, 320, WHITE                    ' Outline only
+40 BOX 360, 220, 560, 320, MAGENTA, 1, DKGRAY, 4    ' Filled, thick border
+50 PRINT "Left is outline. Right is filled."
+60 PAUSE
+70 END
 ```
 
 ### POINT (MODE 3)
@@ -657,17 +793,26 @@ Color names are stored as integers in BGR (blue-green-red) byte order, which is 
 
 ```basic
 10 MODE 3
-20 PSET 100, 80, RED
-30 C = POINT(100, 80)
-40 PRINT "Color value:"; C
-50 IF C = RED THEN PRINT "Confirmed: pixel is RED" ELSE PRINT "Color mismatch"
+20 PRINT "POINT reads back a pixel color."
+30 PSET 100, 180, RED
+40 C = POINT(100, 180)
+50 PRINT "Color value:"; C
+60 IF C = RED THEN PRINT "Confirmed: pixel is RED" ELSE PRINT "Color mismatch"
+70 PAUSE
+80 END
 ```
 
 ### CLS (MODE 3)
 `CLS` in MODE 3 clears the entire pixel surface to black.
 ```basic
 10 MODE 3
-20 CLS   ' Clears the pixel surface to black
+20 PRINT "CLS clears the MODE 3 pixel surface."
+30 BOX 100,220,260,320, MAGENTA
+40 PAUSE
+50 CLS   ' Clears the screen surface to black
+60 PRINT "The box is gone after CLS."
+70 PAUSE
+80 END
 ```
 
 ---
@@ -692,13 +837,22 @@ NW-BASIC supports reading and writing text files using numbered channels (1 and 
 110 OPEN "log.txt" FOR APPEND AS #2    ' Append to existing file
 120 PRINT #2, "New entry"
 130 CLOSE #2
+140 PRINT "File write, read, and append demo complete."
+150 PAUSE
+160 END
 ```
 
 **LINE INPUT #n** reads a whole line as a string, without any type conversion:
 ```basic
-10 OPEN "notes.txt" FOR INPUT AS #1
-20 LINE INPUT #1, L$    ' Reads entire line into L$ as-is
+10 OPEN "notes.txt" FOR OUTPUT AS #1
+20 PRINT #1, "This whole line will be read back."
 30 CLOSE #1
+40 OPEN "notes.txt" FOR INPUT AS #1
+50 LINE INPUT #1, L$    ' Reads entire line into L$ as-is
+60 CLOSE #1
+70 PRINT "LINE INPUT read: "; L$
+80 PAUSE
+90 END
 ```
 
 **Notes:**
@@ -722,6 +876,8 @@ NW-BASIC includes a standard set of math functions. Each takes a numeric argumen
 50 PRINT EXP(1)        ' e^1 ≈ 2.718...
 60 PRINT LOG(100)      ' Base-10 logarithm: 2  (note: both LOG and LOG10 use base 10)
 70 PRINT LOG10(1000)   ' Base-10 logarithm: 3
+80 PAUSE
+90 END
 ```
 
 ### Trigonometric Functions (radians)
@@ -731,14 +887,20 @@ All trig functions work in radians. To convert degrees to radians, multiply by �
 20 PRINT COS(0)        ' Cosine: 1
 30 PRINT TAN(0.7854)   ' Tangent: ~1
 40 PRINT ATN(1) * 4    ' Pi: ~3.14159 (ATN = arctangent)
+50 PAUSE
+60 END
 ```
 
 ### Random Numbers
 `RND` generates random numbers. Pass one argument for a random integer from 1 to N, two arguments for a range, or `RND(1)` for a floating-point value between 0 and 1. Always call `RANDOMIZE` first if you want a different sequence each run.
 ```basic
-10 PRINT RND(6)        ' Random integer 1-6
-20 PRINT RND(1, 10)    ' Random integer between 1 and 10 (inclusive)
-30 X = RND(1)          ' Random float 0.0 to 0.999...
+10 RANDOMIZE
+20 PRINT "Random die roll:"; RND(6)
+30 PRINT "Random 1 to 10:"; RND(1, 10)
+40 X = RND(1)
+50 PRINT "Random fraction:"; X
+60 PAUSE
+70 END
 ```
 
 Use `RANDOMIZE` to seed the random number generator before calling `RND`.
@@ -751,33 +913,47 @@ String functions let you inspect and manipulate text. String variable names end 
 
 ```basic
 10 A$ = "HELLO WORLD"
-20 PRINT LEFT$(A$, 5)      ' "HELLO"
-30 PRINT RIGHT$(A$, 5)     ' "WORLD"
-40 PRINT MID$(A$, 7, 5)    ' "WORLD" (start position, length)
-50 L = LEN(A$)             ' String length: 11
-60 PRINT UCASE$("hello")   ' "HELLO"
-70 PRINT LCASE$("WORLD")   ' "world"
-80 PRINT LTRIM$("  hi")    ' "hi"
-90 PRINT RTRIM$("hi  ")    ' "hi"
-100 P = INSTR(A$, "WORLD") ' Position of "WORLD" in A$: 7 (0 if not found)
+20 PRINT "Working with: " + A$
+30 PRINT LEFT$(A$, 5)      ' "HELLO"
+40 PRINT RIGHT$(A$, 5)     ' "WORLD"
+50 PRINT MID$(A$, 7, 5)    ' "WORLD" (start position, length)
+60 L = LEN(A$)             ' String length: 11
+70 PRINT "Length is "; L
+80 PRINT UCASE$("hello")   ' "HELLO"
+90 PRINT LCASE$("WORLD")   ' "world"
+100 PRINT LTRIM$("  hi")   ' "hi"
+110 PRINT RTRIM$("hi  ")   ' "hi"
+120 P = INSTR(A$, "WORLD") ' Position of "WORLD" in A$: 7 (0 if not found)
+130 PRINT "WORLD starts at "; P
+140 PAUSE
+150 END
 ```
 
 ### Repeat and Fill
 These functions build strings by repeating a character or filling to a length — handy for drawing borders, padding output, or creating separators.
 ```basic
-10 PRINT REPEAT$("#", 10)     ' "##########"
-20 PRINT STRING$(65, 5)       ' "AAAAA" (ASCII 65 = 'A', repeated 5 times)
-21 PRINT STRING$("*", 5)      ' "*****" (character repeated 5 times)
-30 PRINT SPACE$(8)            ' "        " (8 spaces)
+10 PRINT "Drawing text separators with string builders."
+20 PRINT REPEAT$("#", 10)     ' "##########"
+30 PRINT STRING$(65, 5)       ' "AAAAA" (ASCII 65 = 'A', repeated 5 times)
+40 PRINT STRING$("*", 5)      ' "*****" (character repeated 5 times)
+50 PRINT "A" + SPACE$(8) + "B"
+60 PAUSE
+70 END
 ```
 
 ### Conversion Functions
 These functions convert between numbers and strings, and between characters and their ASCII codes.
 ```basic
-10 N$ = STR$(123)      ' Number to string: "123"
-20 N = VAL("3.14")     ' String to number: 3.14
-30 PRINT CHR$(65)      ' ASCII code to character: "A"
-40 C = ASC("A")        ' Character to ASCII code: 65
+10 PRINT "Converting between numbers and strings."
+20 N$ = STR$(123)      ' Number to string: "123"
+30 N = VAL("3.14")     ' String to number: 3.14
+40 PRINT "STR$(123)=" + N$
+50 PRINT "VAL(""3.14"")="; N
+60 PRINT CHR$(65)      ' ASCII code to character: "A"
+70 C = ASC("A")        ' Character to ASCII code: 65
+80 PRINT "ASC(""A"")="; C
+90 PAUSE
+100 END
 ```
 
 ---
@@ -785,9 +961,19 @@ These functions convert between numbers and strings, and between characters and 
 ## System Functions
 
 ### INKEY$ - Non-Blocking Keyboard Input
+`INKEY$` checks for a queued keypress without stopping the program. It is best used in a loop where an empty string means “no key yet.”
+
 ```basic
-10 K$ = INKEY$            ' Read one keypress (returns "" if none queued)
-20 IF K$ <> "" THEN PRINT "Pressed: "; K$
+10 PRINT "Press A to finish this INKEY$ demo."
+20 K$ = INKEY$
+30 IF K$ = "" THEN GOTO 20
+40 IF K$ <> "A" AND K$ <> "a" THEN
+50 PRINT "Ignoring "; K$
+60 GOTO 20
+70 ENDIF
+80 PRINT "You pressed A."
+90 PAUSE
+100 END
 ```
 - `INKEY$` is non-blocking: it reads from a key queue and returns `""` if no key is waiting.
 - Use it in a loop to create responsive interactive programs.
@@ -800,9 +986,13 @@ On Android, the screen is divided into touch regions that inject keystrokes as i
 ### Time and Date
 These functions return the current system time and date as strings, and a running timer in seconds since the program started — useful for measuring elapsed time or timestamping saved data.
 ```basic
-10 PRINT TIME$         ' Current time: "HH:MM:SS"
-20 PRINT DATE$         ' Current date: "YYYY-MM-DD"
-30 T = TIMER           ' Seconds since game start (integer)
+10 PRINT "Time and date functions:"
+20 PRINT TIME$         ' Current time: "HH:MM:SS"
+30 PRINT DATE$         ' Current date: "YYYY-MM-DD"
+40 T = TIMER           ' Seconds since game start (integer)
+50 PRINT "Timer seconds:"; T
+60 PAUSE
+70 END
 ```
 
 ---
@@ -817,16 +1007,43 @@ These functions return the current system time and date as strings, and a runnin
 30 PRINT X, Y, Z, MSG$, F
 40 RESTORE             ' Reset data pointer to the beginning
 50 READ FIRST          ' Read 1 again
+60 PRINT "After RESTORE, first value is "; FIRST
+70 PAUSE
+80 END
 ```
 
 ### Named Data Streams
-Named streams let you group related `DATA` values under a label so they can be read and restored independently. Prefix the label with `@` in both the `DATA` and `READ` statements.
+Named streams let you group related `DATA` values under a label so they can be read and restored independently. Prefix the label with `@` in the `DATA`, `READ`, and `RESTORE` statements. This is useful when one program has several embedded tables, such as names, scores, map rows, or menu text.
+
+Syntax: `DATA @name: value1, value2, ...`
+
+Syntax: `READ @name, var1 [, var2 ...]`
+
+Syntax: `RESTORE @name`
+
+The example below creates two independent streams. It reads two numbers from `@numbers`, reads one name from `@names`, restores only `@numbers`, then proves that `@names` kept its own position by reading `BOB` next.
+
 ```basic
-10 DATA @numbers: 1, 2, 3, 4, 5
-20 DATA @names: "ALICE", "BOB", "CHARLIE"
-30 READ @numbers, X, Y
-40 READ @names, N$
-50 RESTORE @numbers    ' Reset only the @numbers stream
+10 PRINT "NAMED DATA STREAMS"
+20 PRINT "Create @numbers and @names as separate DATA streams."
+30 DATA @numbers: 1, 2, 3, 4, 5
+40 DATA @names: "ALICE", "BOB", "CHARLIE"
+50 PRINT "Read two values from @numbers into X and Y."
+60 READ @numbers, X, Y
+70 PRINT "X="; X; " Y="; Y
+80 PRINT "Read one value from @names into N$."
+90 READ @names, N$
+100 PRINT "N$=["; N$; "]"
+110 PRINT "Restore only @numbers."
+120 RESTORE @numbers
+130 READ @numbers, A
+140 PRINT "After RESTORE @numbers, A="; A
+150 PRINT "@names was not restored, so the next name is BOB."
+160 READ @names, B$
+170 PRINT "B$=["; B$; "]"
+180 IF X=1 AND Y=2 AND N$="ALICE" AND A=1 AND B$="BOB" THEN PRINT "PASS NAMED DATA STREAMS" ELSE PRINT "FAIL NAMED DATA STREAMS"
+190 PAUSE
+200 END
 ```
 
 ---
@@ -836,18 +1053,22 @@ Named streams let you group related `DATA` values under a label so they can be r
 ### COLOR and BGCOLOR
 `COLOR` sets the foreground (text) color for subsequent `PRINT` output. Optionally pass a second argument for the background color at the same time. `BGCOLOR` sets only the background. Colors can be named constants or custom RGB values.
 ```basic
-10 COLOR RED                ' Set foreground text color
-20 COLOR GREEN, BLACK       ' Set foreground and background
-30 BGCOLOR BLUE             ' Set background color only
-40 COLOR RGB(255, 128, 0)   ' Custom color using RGB values (0-255 each)
+10 PRINT "COLOR changes following PRINT output."
+20 COLOR RED
+30 PRINT "This line is red."
+40 COLOR GREEN, BLACK
+50 PRINT "This line is green on black."
+55 PAUSE:CLS
+60 BGCOLOR BLUE
+70 COLOR WHITE: PRINT "The background is now blue."
+80 COLOR RGB(255, 128, 0)
+90 PRINT "This uses a custom RGB color."
+100 PAUSE
+110 END
 ```
 
 ### Available Named Colors
-```
-BLACK    WHITE    RED      GREEN    BLUE
-CYAN     MAGENTA  YELLOW   GRAY     DKGRAY
-ORANGE   LIME     NAVY     LIGHTGRAY
-```
+Named colors include `BLACK`, `WHITE`, `RED`, `GREEN`, `BLUE`, `CYAN`, `MAGENTA`, `YELLOW`, `GRAY`, `DKGRAY`, `ORANGE`, `LIME`, `NAVY`, and `LIGHTGRAY`.
 
 **Note:** `COLOR` and `BGCOLOR` apply to subsequent `PRINT` output. Individual tile commands (`PRINTAT`, `CHARAT`, `PSET`, etc.) take their own fg/bg color arguments and do not use these globals.
 
@@ -866,6 +1087,8 @@ The standard math operators. `\` is integer division (drops the remainder), `^` 
 60 PRINT 2 ^ 3         ' Exponentiation: 8
 70 PRINT 17 MOD 5      ' Modulo: 2
 80 PRINT 17 % 5        ' Modulo (alternate): 2
+90 PAUSE
+100 END
 ```
 
 ### Comparison
@@ -878,6 +1101,8 @@ Comparison operators test the relationship between two values and return true or
 50 IF B > 5 THEN PRINT "B > 5 — greater than."
 60 IF X <= 100 THEN PRINT "X <= 100 — less than or equal."
 70 IF B >= 5 THEN PRINT "B >= 5 — greater than or equal."
+80 PAUSE
+90 END
 ```
 
 ### Logical
@@ -887,12 +1112,19 @@ Comparison operators test the relationship between two values and return true or
 20 IF X > 5 AND Y < 10 THEN PRINT "Both conditions true."
 30 LET A = 1 : LET B = 9
 40 IF A = 1 OR B = 2 THEN PRINT "At least one condition true — A = 1 matches."
+50 PAUSE
+60 END
 ```
 
 ### String Concatenation
 Use `+` to join two strings into one.
 ```basic
-10 FULL$ = "Hello" + " " + "World"   ' "Hello World"
+10 FIRST$ = "Hello"
+20 SECOND$ = "World"
+30 FULL$ = FIRST$ + " " + SECOND$
+40 PRINT FULL$
+50 PAUSE
+60 END
 ```
 
 ---
@@ -953,8 +1185,9 @@ These commands are typed at the prompt without a line number (immediate mode). T
 - **Runtime errors** include hints to help diagnose the problem.
 - Pre-execution validation checks for mismatched `IF`/`ENDIF`, `FOR`/`NEXT`, `WHILE`/`WEND`, and `GOSUB`/`RETURN`.
 - `INKEY$` usage is validated (must appear in an assignment or expression context).
+- Command arguments are validated before they reach GameMaker runtime calls. Malformed numeric arguments such as `BOX x1,y1,80,80` should produce a clean NW-BASIC syntax error instead of a GameMaker fatal error.
 - Program state is preserved after errors so you can inspect variables.
-
+- NW-BASIC should handle ordinary syntax and runtime errors itself. If you still find a GameMaker fatal error, please report the error text and, if possible, the NW-BASIC code that triggered it.
 ---
 
 ## Programming Tips
@@ -1070,3 +1303,9 @@ These features are on the roadmap but not yet available:
 ---
 
 This manual covers all implemented features of NW-BASIC. The language supports traditional line-by-line BASIC programming, structured block `IF` statements, subroutines, file I/O, tile graphics, and pixel graphics. The `BEEP` command adds musical capabilities, making it possible to create programs that combine computation, graphics, and sound.
+
+---
+
+## Contact
+
+Questions, feedback, bug reports, and retro BASIC ideas are welcome. You can write to John at **JohnNWFSDeveloper@gmail.com**, contact him on X/Twitter at **@JohnNWFS**, or reach out through Instagram @john__h__.

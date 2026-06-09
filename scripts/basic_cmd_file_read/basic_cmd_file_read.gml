@@ -16,7 +16,9 @@ function basic_cmd_input_file(arg) {
 
     var _chan_str = string_trim(string_copy(_s, 1, _comma - 1));
     var _var_name = string_upper(string_trim(string_copy(_s, _comma + 1, string_length(_s))));
-    var _chan     = floor(real(basic_evaluate_expression_v2(_chan_str)));
+    var _chan_arg = basic_eval_int_arg(_chan_str, "INPUT#", "channel");
+    if (!_chan_arg.ok) return;
+    var _chan = _chan_arg.value;
 
     if (!ds_map_exists(global.basic_file_handles, _chan)) {
         basic_syntax_error("INPUT#: channel " + string(_chan) + " not open", global.current_line_number, 0, "INPUT_FILE_CHAN");
@@ -51,7 +53,9 @@ function basic_cmd_line_input_file(arg) {
 
     var _chan_str = string_trim(string_copy(_s, 1, _comma - 1));
     var _var_name = string_upper(string_trim(string_copy(_s, _comma + 1, string_length(_s))));
-    var _chan     = floor(real(basic_evaluate_expression_v2(_chan_str)));
+    var _chan_arg = basic_eval_int_arg(_chan_str, "LINE INPUT#", "channel");
+    if (!_chan_arg.ok) return;
+    var _chan = _chan_arg.value;
 
     if (!ds_map_exists(global.basic_file_handles, _chan)) {
         basic_syntax_error("LINE INPUT#: channel " + string(_chan) + " not open", global.current_line_number, 0, "LINE_INPUT_FILE_CHAN");

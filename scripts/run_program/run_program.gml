@@ -92,6 +92,10 @@ for (var i = 0; i < ds_list_size(global.line_list); i++) {
         var v0  = (sp > 0) ? string_upper(string_copy(stmt, 1, sp - 1)) : string_upper(stmt);
         var r0  = (sp > 0) ? string_trim(string_copy(stmt, sp + 1, string_length(stmt))) : "";
 
+        if (v0 == "DATA") {
+            break;
+        }
+
         if (v0 == "GOSUB") {
             // consider only first token after GOSUB for pre-scan (numeric labels)
             var tok = r0;

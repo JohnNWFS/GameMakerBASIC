@@ -9,16 +9,22 @@ function basic_cmd_circle(arg) {
     }
 
     var args = basic_parse_csv_args(arg);
-    if (array_length(args) < 3) {
-        basic_syntax_error("CIRCLE requires x,y,r[,lineColor[,fillFlag[,fillColor]]]", global.current_line_number, 0, "CIRCLE_ARGS");
-        return;
-    }
+    if (!basic_require_arg_count(args, "CIRCLE", 3, 6, "x,y,r[,lineColor[,fillFlag[,fillColor]]]")) return;
 
-    var cx = real(basic_evaluate_expression_v2(string_trim(args[0])));
-    var cy = real(basic_evaluate_expression_v2(string_trim(args[1])));
-    var radius = abs(real(basic_evaluate_expression_v2(string_trim(args[2]))));
+    var cx_arg = basic_eval_number_arg(args[0], "CIRCLE", "x");
+    var cy_arg = basic_eval_number_arg(args[1], "CIRCLE", "y");
+    var radius_arg = basic_eval_number_arg(args[2], "CIRCLE", "r");
+    if (!cx_arg.ok || !cy_arg.ok || !radius_arg.ok) return;
+    var cx = cx_arg.value;
+    var cy = cy_arg.value;
+    var radius = abs(radius_arg.value);
     var line_color = (array_length(args) >= 4) ? basic_parse_color(string_trim(args[3])) : c_white;
-    var fill_enabled = (array_length(args) >= 5) ? (real(basic_evaluate_expression_v2(string_trim(args[4]))) != 0) : false;
+    var fill_enabled = false;
+    if (array_length(args) >= 5) {
+        var fill_arg = basic_eval_bool_arg(args[4], "CIRCLE", "fillFlag");
+        if (!fill_arg.ok) return;
+        fill_enabled = fill_arg.value;
+    }
     var fill_color = (array_length(args) >= 6) ? basic_parse_color(string_trim(args[5])) : line_color;
 
     if (!variable_global_exists("mode2_surface") || !surface_exists(global.mode2_surface)) {
@@ -52,17 +58,24 @@ function basic_cmd_line(arg) {
     }
 
     var args = basic_parse_csv_args(arg);
-    if (array_length(args) < 4) {
-        basic_syntax_error("LINE requires x1,y1,x2,y2[,color[,thickness]]", global.current_line_number, 0, "LINE_ARGS");
-        return;
-    }
+    if (!basic_require_arg_count(args, "LINE", 4, 6, "x1,y1,x2,y2[,color[,thickness]]")) return;
 
-    var x1 = real(basic_evaluate_expression_v2(string_trim(args[0])));
-    var y1 = real(basic_evaluate_expression_v2(string_trim(args[1])));
-    var x2 = real(basic_evaluate_expression_v2(string_trim(args[2])));
-    var y2 = real(basic_evaluate_expression_v2(string_trim(args[3])));
+    var x1_arg = basic_eval_number_arg(args[0], "LINE", "x1");
+    var y1_arg = basic_eval_number_arg(args[1], "LINE", "y1");
+    var x2_arg = basic_eval_number_arg(args[2], "LINE", "x2");
+    var y2_arg = basic_eval_number_arg(args[3], "LINE", "y2");
+    if (!x1_arg.ok || !y1_arg.ok || !x2_arg.ok || !y2_arg.ok) return;
+    var x1 = x1_arg.value;
+    var y1 = y1_arg.value;
+    var x2 = x2_arg.value;
+    var y2 = y2_arg.value;
     var line_color = (array_length(args) >= 5) ? basic_parse_color(string_trim(args[4])) : c_white;
-    var thickness = (array_length(args) >= 6) ? max(1, real(basic_evaluate_expression_v2(string_trim(args[5])))) : 1;
+    var thickness = 1;
+    if (array_length(args) >= 6) {
+        var thick_arg = basic_eval_number_arg(args[5], "LINE", "thickness");
+        if (!thick_arg.ok) return;
+        thickness = max(1, thick_arg.value);
+    }
 
     if (!variable_global_exists("mode2_surface") || !surface_exists(global.mode2_surface)) {
         mode2_surface_recreate();
@@ -88,19 +101,31 @@ function basic_cmd_box(arg) {
     }
 
     var args = basic_parse_csv_args(arg);
-    if (array_length(args) < 4) {
-        basic_syntax_error("BOX requires x1,y1,x2,y2[,lineColor[,fillFlag[,fillColor[,thickness]]]]", global.current_line_number, 0, "BOX_ARGS");
-        return;
-    }
+    if (!basic_require_arg_count(args, "BOX", 4, 8, "x1,y1,x2,y2[,lineColor[,fillFlag[,fillColor[,thickness]]]]")) return;
 
-    var x1 = real(basic_evaluate_expression_v2(string_trim(args[0])));
-    var y1 = real(basic_evaluate_expression_v2(string_trim(args[1])));
-    var x2 = real(basic_evaluate_expression_v2(string_trim(args[2])));
-    var y2 = real(basic_evaluate_expression_v2(string_trim(args[3])));
+    var x1_arg = basic_eval_number_arg(args[0], "BOX", "x1");
+    var y1_arg = basic_eval_number_arg(args[1], "BOX", "y1");
+    var x2_arg = basic_eval_number_arg(args[2], "BOX", "x2");
+    var y2_arg = basic_eval_number_arg(args[3], "BOX", "y2");
+    if (!x1_arg.ok || !y1_arg.ok || !x2_arg.ok || !y2_arg.ok) return;
+    var x1 = x1_arg.value;
+    var y1 = y1_arg.value;
+    var x2 = x2_arg.value;
+    var y2 = y2_arg.value;
     var line_color = (array_length(args) >= 5) ? basic_parse_color(string_trim(args[4])) : c_white;
-    var fill_enabled = (array_length(args) >= 6) ? (real(basic_evaluate_expression_v2(string_trim(args[5]))) != 0) : false;
+    var fill_enabled = false;
+    if (array_length(args) >= 6) {
+        var fill_arg = basic_eval_bool_arg(args[5], "BOX", "fillFlag");
+        if (!fill_arg.ok) return;
+        fill_enabled = fill_arg.value;
+    }
     var fill_color = (array_length(args) >= 7) ? basic_parse_color(string_trim(args[6])) : line_color;
-    var thickness = (array_length(args) >= 8) ? max(1, real(basic_evaluate_expression_v2(string_trim(args[7])))) : 1;
+    var thickness = 1;
+    if (array_length(args) >= 8) {
+        var thick_arg = basic_eval_number_arg(args[7], "BOX", "thickness");
+        if (!thick_arg.ok) return;
+        thickness = max(1, thick_arg.value);
+    }
 
     var left = min(x1, x2);
     var right = max(x1, x2);

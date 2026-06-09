@@ -3,6 +3,10 @@
 function handle_program_line(input_text) {
     var space_pos = string_pos(" ", input_text);
     var line_num_str = (space_pos > 0) ? string_copy(input_text, 1, space_pos - 1) : input_text;
+    if (!is_line_number(line_num_str)) {
+        show_error_message("INVALID LINE NUMBER");
+        return;
+    }
     var line_num = real(line_num_str);
     var code_content = (space_pos > 0) ? string_copy(input_text, space_pos + 1, string_length(input_text)) : "";
 

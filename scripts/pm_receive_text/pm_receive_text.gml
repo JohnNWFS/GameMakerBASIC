@@ -27,7 +27,7 @@ function pm_receive_text(_text) {
         var sp   = string_pos(" ", raw);
         var head = (sp > 0) ? string_copy(raw, 1, sp - 1) : raw;
 
-        if (string_length(head) > 0 && is_real(real(head))) {
+        if (is_line_number(head)) {
             var num  = real(head);
             var code = (sp > 0) ? string_trim(string_copy(raw, sp + 1, string_length(raw))) : "";
             if (function_exists(paste_line)) paste_line(num, code);

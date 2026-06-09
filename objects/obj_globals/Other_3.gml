@@ -96,3 +96,16 @@ global.editor_spawned = false;
 if (variable_global_exists("__inkey_queue") && ds_exists(global.__inkey_queue, ds_type_queue)) {
     ds_queue_destroy(global.__inkey_queue);
 }
+
+if (variable_global_exists("beep_instance") && is_real(global.beep_instance) && global.beep_instance >= 0) {
+    audio_stop_sound(global.beep_instance);
+    global.beep_instance = -1;
+}
+if (variable_global_exists("beep_generated_sound") && !is_undefined(global.beep_generated_sound) && global.beep_generated_sound != -1) {
+    audio_free_buffer_sound(global.beep_generated_sound);
+    global.beep_generated_sound = -1;
+}
+if (variable_global_exists("beep_generated_buffer") && !is_undefined(global.beep_generated_buffer) && global.beep_generated_buffer != -1) {
+    buffer_delete(global.beep_generated_buffer);
+    global.beep_generated_buffer = -1;
+}

@@ -3,15 +3,16 @@
 /// @desc CHARAT x, y, charIndex [, fg [, bg]]
 function basic_cmd_charat(arg) {
     var args = basic_parse_csv_args(arg);
-    if (array_length(args) < 3) {
-        dbg_log(DBG_FLOW, "CHARAT requires 3 arguments: x, y, char");
-        return;
-    }
+    if (!basic_require_arg_count(args, "CHARAT", 3, 5, "x,y,char[,fg[,bg]]")) return;
 
     // Evaluate coordinates (identifiers allowed)
-    var _x = floor(real(basic_evaluate_expression_v2(string_trim(args[0]))));
-    var _y = floor(real(basic_evaluate_expression_v2(string_trim(args[1]))));
-    var char_index = floor(real(basic_evaluate_expression_v2(string_trim(args[2]))));
+    var x_arg = basic_eval_int_arg(args[0], "CHARAT", "x");
+    var y_arg = basic_eval_int_arg(args[1], "CHARAT", "y");
+    var ch_arg = basic_eval_int_arg(args[2], "CHARAT", "char");
+    if (!x_arg.ok || !y_arg.ok || !ch_arg.ok) return;
+    var _x = x_arg.value;
+    var _y = y_arg.value;
+    var char_index = ch_arg.value;
 
     // Optional colors (undefined => preserve existing cell colors)
     var fg = (array_length(args) > 3) ? basic_parse_color(string_trim(args[3])) : undefined;

@@ -218,7 +218,9 @@ function handle_basic_command(cmd, arg) {
                 // OPTION BASE 0 or OPTION BASE 1
                 var _opt = string_upper(string_trim(_rest));
                 if (string_copy(_opt, 1, 5) == "BASE ") {
-                    var _b = floor(real(string_trim(string_copy(_opt, 6, string_length(_opt) - 5))));
+                    var _b_arg = basic_eval_int_arg(string_copy(_opt, 6, string_length(_opt) - 5), "OPTION BASE", "base");
+                    if (!_b_arg.ok) return;
+                    var _b = _b_arg.value;
                     if (_b == 0 || _b == 1) {
                         global.option_base = _b;
                     } else {
@@ -239,11 +241,15 @@ function handle_basic_command(cmd, arg) {
                 if (_kw_pos > 0) {
                     var _expr_src = string_trim(string_copy(_rest, 1, _kw_pos - 1));
                     var _lines_src = string_trim(string_copy(_rest, _kw_pos + _kw_len, string_length(_rest)));
-                    var _n = floor(real(basic_evaluate_expression_v2(_expr_src)));
+                    var _n_arg = basic_eval_int_arg(_expr_src, "ON", "selector");
+                    if (!_n_arg.ok) return;
+                    var _n = _n_arg.value;
                     // split comma-separated line numbers
                     var _targets = string_split(_lines_src, ",");
                     if (_n >= 1 && _n <= array_length(_targets)) {
-                        var _target_line = real(string_trim(_targets[_n - 1]));
+                        var _target_arg = basic_eval_number_arg(_targets[_n - 1], "ON", "target line");
+                        if (!_target_arg.ok) return;
+                        var _target_line = _target_arg.value;
                         if (_is_gosub) {
                             basic_cmd_gosub(string(_target_line));
                         } else {
@@ -342,7 +348,9 @@ function handle_basic_command(cmd, arg) {
                 if (_seed == "") {
                     randomize();
                 } else {
-                    random_set_seed(floor(real(basic_evaluate_expression_v2(_seed))));
+                    var _seed_arg = basic_eval_int_arg(_seed, "RANDOMIZE", "seed");
+                    if (!_seed_arg.ok) return;
+                    random_set_seed(_seed_arg.value);
                 }
                 break;
             }

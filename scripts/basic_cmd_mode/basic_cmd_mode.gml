@@ -9,10 +9,19 @@ function basic_cmd_mode(arg) {
     var s = string_trim(arg);
     if (string_pos(",", s) > 0) {
         var parts = basic_parse_csv_args(s);
-        mode = real(string_trim(parts[0]));
-        if (array_length(parts) >= 2) size_px = real(string_trim(parts[1]));
+        if (!basic_require_arg_count(parts, "MODE", 1, 2, "mode[,tileSize]")) return;
+        var mode_arg = basic_eval_number_arg(parts[0], "MODE", "mode");
+        if (!mode_arg.ok) return;
+        mode = mode_arg.value;
+        if (array_length(parts) >= 2) {
+            var size_arg = basic_eval_number_arg(parts[1], "MODE", "tileSize");
+            if (!size_arg.ok) return;
+            size_px = size_arg.value;
+        }
     } else {
-        mode = real(s);
+        var mode_only_arg = basic_eval_number_arg(s, "MODE", "mode");
+        if (!mode_only_arg.ok) return;
+        mode = mode_only_arg.value;
     }
     // --- Validate mode key in registry ---
     if (!ds_map_exists(global.mode_rooms, mode)) {

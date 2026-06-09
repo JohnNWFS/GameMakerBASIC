@@ -73,7 +73,9 @@ function basic_cmd_print_mode1(arg) {
         var _pu = string_upper(part);
         if (string_copy(_pu, 1, 4) == "TAB(" && string_char_at(part, string_length(part)) == ")") {
             var _tab_expr = string_copy(part, 5, string_length(part) - 5);
-            var _tab_col  = max(0, round(real(evaluate_postfix(infix_to_postfix(basic_tokenize_expression_v2(_tab_expr))))));
+            var _tab_arg = basic_eval_number_arg(_tab_expr, "PRINT TAB", "column");
+            if (!_tab_arg.ok) return;
+            var _tab_col  = max(0, round(_tab_arg.value));
             if (_tab_col > col) {
                 output_text += string_repeat(" ", _tab_col - col);
                 col = _tab_col;
@@ -84,7 +86,9 @@ function basic_cmd_print_mode1(arg) {
         // SPC(n) — insert n spaces
         if (string_copy(_pu, 1, 4) == "SPC(" && string_char_at(part, string_length(part)) == ")") {
             var _spc_expr = string_copy(part, 5, string_length(part) - 5);
-            var _spc_n    = max(0, round(real(evaluate_postfix(infix_to_postfix(basic_tokenize_expression_v2(_spc_expr))))));
+            var _spc_arg = basic_eval_number_arg(_spc_expr, "PRINT SPC", "count");
+            if (!_spc_arg.ok) return;
+            var _spc_n    = max(0, round(_spc_arg.value));
             output_text += string_repeat(" ", _spc_n);
             col += _spc_n;
             continue;
@@ -122,6 +126,7 @@ function basic_cmd_print_mode1(arg) {
         }
     }
 
+    output_text = mode1_ascii_fallback_text(output_text);
     dbg_log(DBG_FLOW, "PRINT MODE1: assembled output '" + output_text + "'");
     
     dbg_log(DBG_FLOW, "PRINT MODE1: Starting at cursor (" + string(global.mode1_cursor_x) + "," + string(global.mode1_cursor_y) + ")");
@@ -142,9 +147,24 @@ function basic_cmd_print_mode1(arg) {
     
     // Print each character at cursor position using mode1_grid_set
     for (var i = 0; i < string_length(output_text); i++) {
-        var ch = ord(string_char_at(output_text, i + 1));
+        var ch_text = string_char_at(output_text, i + 1);
+        var ch = ord(ch_text);
+
+        if (ch == 13) {
+            continue;
+        }
+
+        if (ch == 10) {
+            for (var nx = global.mode1_cursor_x; nx < cols; nx++) {
+                mode1_grid_set(nx, global.mode1_cursor_y, 32, undefined, undefined);
+            }
+            global.mode1_cursor_x = 0;
+            global.mode1_cursor_y = min(rows - 1, global.mode1_cursor_y + 1);
+            dbg_log(DBG_FLOW, "PRINT MODE1: CHR$(10) newline, cursor now at (" + string(global.mode1_cursor_x) + "," + string(global.mode1_cursor_y) + ")");
+            continue;
+        }
         
-        dbg_log(DBG_FLOW, "PRINT MODE1: Setting char '" + string_char_at(output_text, i + 1) + "' (code " + string(ch) + ") at (" + string(global.mode1_cursor_x) + "," + string(global.mode1_cursor_y) + ")");
+        dbg_log(DBG_FLOW, "PRINT MODE1: Setting char '" + ch_text + "' (code " + string(ch) + ") at (" + string(global.mode1_cursor_x) + "," + string(global.mode1_cursor_y) + ")");
         
         // Preserve existing cell colors unless explicitly changed elsewhere: pass undefined for fg/bg
         mode1_grid_set(global.mode1_cursor_x, global.mode1_cursor_y, ch, undefined, undefined);

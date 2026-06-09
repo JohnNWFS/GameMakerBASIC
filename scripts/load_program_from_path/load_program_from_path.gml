@@ -19,10 +19,11 @@ function load_program_from_path(file_path, filename) {
                 var space_pos = string_pos(" ", line);
                 if (space_pos > 0) {
                     var line_num_str = string_copy(line, 1, space_pos - 1);
-					                    var line_num = real(line_num_str);
                     var code_content = string_copy(line, space_pos + 1, string_length(line));
                     
-                    if (is_line_number(line_num_str) && is_valid_line_number(line_num)) {
+                    if (is_line_number(line_num_str)) {
+                        var line_num = real(line_num_str);
+                        if (!is_valid_line_number(line_num)) continue;
                         ds_map_set(global.program_lines, line_num, code_content);
                         insert_line_number_ordered(line_num);
                     }

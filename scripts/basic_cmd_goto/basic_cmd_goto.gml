@@ -4,7 +4,9 @@ function basic_cmd_goto(arg) {
     dbg_log(DBG_FLOW, "GOTO START — Raw arg: '" + arg + "'");
 
     var trimmed_arg = string_trim(arg);
-    var target_line = real(trimmed_arg);
+    var target_arg = basic_eval_number_arg(trimmed_arg, "GOTO", "line");
+    if (!target_arg.ok) return;
+    var target_line = target_arg.value;
 
     dbg_log(DBG_FLOW, "GOTO: Parsed target line number: " + string(target_line));
 

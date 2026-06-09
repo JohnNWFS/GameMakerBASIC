@@ -33,7 +33,9 @@ function basic_cmd_open(arg) {
         _chan_str = string_copy(_chan_str, 2, string_length(_chan_str) - 1);
     }
 
-    var _chan  = floor(real(basic_evaluate_expression_v2(string_trim(_chan_str))));
+    var _chan_arg = basic_eval_int_arg(_chan_str, "OPEN", "channel");
+    if (!_chan_arg.ok) return;
+    var _chan = _chan_arg.value;
     var _fname = string(basic_evaluate_expression_v2(_fname_expr));
     var _fpath = get_save_directory() + _fname;
 

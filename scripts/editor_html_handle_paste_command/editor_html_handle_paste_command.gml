@@ -59,7 +59,7 @@ function editor_html_handle_paste_command() {
                     code_str = string_copy(code_str, 1, string_length(code_str) - 1);
                 }
 
-                if (string_digits(line_num_str) == line_num_str) {
+                if (is_line_number(line_num_str)) {
                     var line_num = real(line_num_str);
 
                     if (line_num > 0 && string_length(code_str) > 0) {

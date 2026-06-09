@@ -90,7 +90,9 @@ function basic_cmd_if_inline(arg) {
         var arg = (sp2 > 0) ? string_trim(string_copy(seg, sp2 + 1, string_length(seg))) : "";
 
         if (cmd == "GOTO") {
-            var line_target = real(arg);
+            var line_arg = basic_eval_number_arg(arg, "GOTO", "line");
+            if (!line_arg.ok) return;
+            var line_target = line_arg.value;
             var idx = ds_list_find_index(global.line_list, line_target);
             if (idx >= 0) {
                 global.interpreter_next_line = idx;

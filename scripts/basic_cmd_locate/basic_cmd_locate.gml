@@ -10,13 +10,13 @@ function basic_cmd_locate(arg) {
     }
     
     var args = basic_parse_csv_args(arg);
-    if (array_length(args) < 2) {
-        dbg_log(DBG_FLOW, "LOCATE requires 2 arguments: row, col");
-        return;
-    }
+    if (!basic_require_arg_count(args, "LOCATE", 2, 2, "row,col")) return;
     
-    var row = real(basic_evaluate_expression_v2(string_trim(args[0])));
-    var col = real(basic_evaluate_expression_v2(string_trim(args[1])));
+    var row_arg = basic_eval_number_arg(args[0], "LOCATE", "row");
+    var col_arg = basic_eval_number_arg(args[1], "LOCATE", "col");
+    if (!row_arg.ok || !col_arg.ok) return;
+    var row = row_arg.value;
+    var col = col_arg.value;
     
     // BASIC typically uses 1-based coordinates, convert to 0-based
     row = max(0, min(24, row - 1));

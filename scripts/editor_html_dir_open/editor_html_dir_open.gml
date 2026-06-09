@@ -13,7 +13,7 @@ function editor_html_dir_open(which) {
     var w = string_trim(which), W = string_upper(w);
 
     // numeric index (1-based)
-    if (string_digits(w) == w) {
+    if (is_line_number(w)) {
         var k = real(w);
         if (k >= 1 && k <= n) idx = k - 1;
     }
@@ -50,7 +50,7 @@ function editor_html_dir_open(which) {
                 code = string_copy(code, 1, string_length(code) - 1);
             }
 
-            if (string_digits(ln_str) == ln_str) {
+            if (is_line_number(ln_str)) {
                 var _ln = real(ln_str);
                 if (_ln > 0 && string_length(code) > 0) {
                     ds_map_set(global.program_lines, _ln, code);

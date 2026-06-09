@@ -16,8 +16,8 @@ function editor_import_text_to_program(_text) {
                 var sp = string_pos(" ", line);
                 var ln_str = (sp > 0) ? string_copy(line, 1, sp - 1) : line;
                 var code   = (sp > 0) ? string_trim(string_copy(line, sp + 1, string_length(line))) : "";
-                var _ln = real(ln_str);
-                if (ln_str != "" && is_real(_ln) && _ln > 0) {
+                if (is_line_number(ln_str)) {
+                    var _ln = real(ln_str);
                     if (code == "") {
                         // delete empty-numbered line
                         if (function_exists("delete_program_line")) delete_program_line(_ln);

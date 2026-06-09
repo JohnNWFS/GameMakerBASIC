@@ -5,13 +5,13 @@ function basic_cmd_pset(arg) {
     var args = basic_parse_csv_args(arg);
 
     if (global.current_mode == 3) {
-        if (array_length(args) < 2) {
-            dbg_log(DBG_FLOW, "PSET MODE3 requires at least x,y");
-            return;
-        }
+        if (!basic_require_arg_count(args, "PSET", 2, 3, "x,y[,color]")) return;
 
-        var px = floor(real(basic_evaluate_expression_v2(string_trim(args[0]))));
-        var py = floor(real(basic_evaluate_expression_v2(string_trim(args[1]))));
+        var px_arg = basic_eval_int_arg(args[0], "PSET", "x");
+        var py_arg = basic_eval_int_arg(args[1], "PSET", "y");
+        if (!px_arg.ok || !py_arg.ok) return;
+        var px = px_arg.value;
+        var py = py_arg.value;
         var col = c_white;
 
         if (array_length(args) >= 3) {
@@ -32,15 +32,16 @@ function basic_cmd_pset(arg) {
         return;
     }
 
-    if (array_length(args) < 5) {
-        dbg_log(DBG_FLOW, "PSET requires 5 arguments: x, y, char, fg, bg");
-        return;
-    }
+    if (!basic_require_arg_count(args, "PSET", 5, 5, "x,y,char,fg,bg")) return;
 
     // Evaluate expressions for x, y, and char
-    var x_val      = floor(real(basic_evaluate_expression_v2(string_trim(args[0]))));
-    var y_val      = floor(real(basic_evaluate_expression_v2(string_trim(args[1]))));
-    var char_index = floor(real(basic_evaluate_expression_v2(string_trim(args[2]))));
+    var x_arg = basic_eval_int_arg(args[0], "PSET", "x");
+    var y_arg = basic_eval_int_arg(args[1], "PSET", "y");
+    var ch_arg = basic_eval_int_arg(args[2], "PSET", "char");
+    if (!x_arg.ok || !y_arg.ok || !ch_arg.ok) return;
+    var x_val      = x_arg.value;
+    var y_val      = y_arg.value;
+    var char_index = ch_arg.value;
 
     // Colors
     var fg_str   = string_upper(string_trim(args[3]));

@@ -27,8 +27,8 @@ function screen_editor_commit_row_extended(editor_inst, _row, line_text) {
             line_num_str = trimmed_text;
         }
         
-        var line_num = real(line_num_str);
-        if (line_num_str != "" && is_real(line_num) && line_num > 0) {
+        if (line_num_str != "" && is_line_number(line_num_str)) {
+            var line_num = real(line_num_str);
             if (code == "") {
                 delete_program_line(line_num);
                dbg_log(DBG_FLOW, "SCREEN_EDITOR: Deleted line " + string(line_num));
@@ -36,6 +36,8 @@ function screen_editor_commit_row_extended(editor_inst, _row, line_text) {
                 add_or_update_program_line(line_num, code);
                dbg_log(DBG_FLOW, "SCREEN_EDITOR: Added/updated line " + string(line_num) + ": " + code);
             }
+        } else {
+            basic_show_message("Line must start with a number");
         }
     }
 }

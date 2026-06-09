@@ -3,7 +3,9 @@ function basic_cmd_gosub(arg) {
     var raw = string_trim(arg);
     var colonPos = string_pos(":", raw);
     if (colonPos > 0) raw = string_trim(string_copy(raw, 1, colonPos - 1));
-    var target = real(raw);
+    var target_arg = basic_eval_number_arg(raw, "GOSUB", "line");
+    if (!target_arg.ok) return;
+    var target = target_arg.value;
 
     // Ensure gosub stack exists
     if (!ds_exists(global.gosub_stack, ds_type_stack)) {

@@ -23,7 +23,8 @@ function __custom_tile_eval_filename(expr) {
 
 function custom_tile_get_def(tile_code) {
     __custom_tile_ensure_map();
-    var key = string(floor(real(tile_code)));
+    if (!is_real(tile_code) && !is_numeric_string(string_trim(string(tile_code)))) return undefined;
+    var key = string(floor(is_real(tile_code) ? tile_code : real(string_trim(string(tile_code)))));
     if (!ds_map_exists(global.custom_tile_defs, key)) return undefined;
     return global.custom_tile_defs[? key];
 }
@@ -32,8 +33,10 @@ function custom_tile_get_bit(tile_code, bit_x, bit_y) {
     var def = custom_tile_get_def(tile_code);
     if (is_undefined(def)) return 0;
 
-    var tile_x = floor(real(bit_x));
-    var tile_y = floor(real(bit_y));
+    if (!is_real(bit_x) && !is_numeric_string(string_trim(string(bit_x)))) return 0;
+    if (!is_real(bit_y) && !is_numeric_string(string_trim(string(bit_y)))) return 0;
+    var tile_x = floor(is_real(bit_x) ? bit_x : real(string_trim(string(bit_x))));
+    var tile_y = floor(is_real(bit_y) ? bit_y : real(string_trim(string(bit_y))));
     if (tile_x < 0 || tile_y < 0 || tile_x >= def.w || tile_y >= def.h) return 0;
 
     var idx = tile_x + tile_y * def.w + 1;
@@ -67,15 +70,24 @@ function custom_tile_draw(tile_code, draw_x, draw_y, cell_w, cell_h, draw_color)
 
 function basic_cmd_tiledef(arg) {
     var args = basic_parse_csv_args(arg);
-    if (array_length(args) < 1) {
-        basic_syntax_error("TILEDEF requires tile code", global.current_line_number, 0, "TILEDEF_ARGS");
-        return;
-    }
+    if (!basic_require_arg_count(args, "TILEDEF", 1, 3, "code[,w[,h]]")) return;
 
     __custom_tile_ensure_map();
-    var tile_code = floor(real(basic_evaluate_expression_v2(string_trim(args[0]))));
-    var tile_w = (array_length(args) > 1) ? floor(real(basic_evaluate_expression_v2(string_trim(args[1])))) : global.mode1_cell_px;
-    var tile_h = (array_length(args) > 2) ? floor(real(basic_evaluate_expression_v2(string_trim(args[2])))) : tile_w;
+    var code_arg = basic_eval_int_arg(args[0], "TILEDEF", "code");
+    if (!code_arg.ok) return;
+    var tile_code = code_arg.value;
+    var tile_w = global.mode1_cell_px;
+    if (array_length(args) > 1) {
+        var w_arg = basic_eval_int_arg(args[1], "TILEDEF", "w");
+        if (!w_arg.ok) return;
+        tile_w = w_arg.value;
+    }
+    var tile_h = tile_w;
+    if (array_length(args) > 2) {
+        var h_arg = basic_eval_int_arg(args[2], "TILEDEF", "h");
+        if (!h_arg.ok) return;
+        tile_h = h_arg.value;
+    }
 
     tile_w = clamp(tile_w, 1, 64);
     tile_h = clamp(tile_h, 1, 64);
@@ -91,16 +103,22 @@ function basic_cmd_tiledef(arg) {
 
 function basic_cmd_tilepx(arg) {
     var args = basic_parse_csv_args(arg);
-    if (array_length(args) < 3) {
-        basic_syntax_error("TILEPX requires code,x,y[,on]", global.current_line_number, 0, "TILEPX_ARGS");
-        return;
-    }
+    if (!basic_require_arg_count(args, "TILEPX", 3, 4, "code,x,y[,on]")) return;
 
     __custom_tile_ensure_map();
-    var tile_code = floor(real(basic_evaluate_expression_v2(string_trim(args[0]))));
-    var tile_x = floor(real(basic_evaluate_expression_v2(string_trim(args[1]))));
-    var tile_y = floor(real(basic_evaluate_expression_v2(string_trim(args[2]))));
-    var on = (array_length(args) > 3) ? (real(basic_evaluate_expression_v2(string_trim(args[3]))) != 0) : true;
+    var code_arg = basic_eval_int_arg(args[0], "TILEPX", "code");
+    var x_arg = basic_eval_int_arg(args[1], "TILEPX", "x");
+    var y_arg = basic_eval_int_arg(args[2], "TILEPX", "y");
+    if (!code_arg.ok || !x_arg.ok || !y_arg.ok) return;
+    var tile_code = code_arg.value;
+    var tile_x = x_arg.value;
+    var tile_y = y_arg.value;
+    var on = true;
+    if (array_length(args) > 3) {
+        var on_arg = basic_eval_bool_arg(args[3], "TILEPX", "on");
+        if (!on_arg.ok) return;
+        on = on_arg.value;
+    }
 
     var key = string(tile_code);
     if (!ds_map_exists(global.custom_tile_defs, key)) {
@@ -123,13 +141,12 @@ function basic_cmd_tilepx(arg) {
 
 function basic_cmd_tileclear(arg) {
     var args = basic_parse_csv_args(arg);
-    if (array_length(args) < 1) {
-        basic_syntax_error("TILECLEAR requires tile code", global.current_line_number, 0, "TILECLEAR_ARGS");
-        return;
-    }
+    if (!basic_require_arg_count(args, "TILECLEAR", 1, 1, "code")) return;
 
     __custom_tile_ensure_map();
-    var tile_code = floor(real(basic_evaluate_expression_v2(string_trim(args[0]))));
+    var code_arg = basic_eval_int_arg(args[0], "TILECLEAR", "code");
+    if (!code_arg.ok) return;
+    var tile_code = code_arg.value;
     var key = string(tile_code);
     if (!ds_map_exists(global.custom_tile_defs, key)) return;
 
@@ -140,13 +157,12 @@ function basic_cmd_tileclear(arg) {
 
 function basic_cmd_tilerestore(arg) {
     var args = basic_parse_csv_args(arg);
-    if (array_length(args) < 1) {
-        basic_syntax_error("TILERESTORE requires tile code", global.current_line_number, 0, "TILERESTORE_ARGS");
-        return;
-    }
+    if (!basic_require_arg_count(args, "TILERESTORE", 1, 1, "code")) return;
 
     __custom_tile_ensure_map();
-    var tile_code = floor(real(basic_evaluate_expression_v2(string_trim(args[0]))));
+    var code_arg = basic_eval_int_arg(args[0], "TILERESTORE", "code");
+    if (!code_arg.ok) return;
+    var tile_code = code_arg.value;
     var key = string(tile_code);
     if (ds_map_exists(global.custom_tile_defs, key)) {
         ds_map_delete(global.custom_tile_defs, key);
@@ -202,8 +218,9 @@ function basic_cmd_tileload(arg) {
         var parts = string_split(line, ",");
         if (array_length(parts) >= 5 && string_upper(parts[0]) == "TILE") {
             var key = string_trim(parts[1]);
-            var tile_w = clamp(floor(real(parts[2])), 1, 64);
-            var tile_h = clamp(floor(real(parts[3])), 1, 64);
+            if (!is_numeric_string(string_trim(parts[2])) || !is_numeric_string(string_trim(parts[3]))) continue;
+            var tile_w = clamp(floor(real(string_trim(parts[2]))), 1, 64);
+            var tile_h = clamp(floor(real(string_trim(parts[3]))), 1, 64);
             var bits = string_trim(parts[4]);
             var expected = tile_w * tile_h;
             while (string_length(bits) < expected) bits += "0";

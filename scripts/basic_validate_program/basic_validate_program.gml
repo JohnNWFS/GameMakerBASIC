@@ -85,6 +85,7 @@ if (badpos > 0) {
             var sp  = string_pos(" ", stmt_raw);
             var verb = (sp > 0) ? string_upper(string_copy(stmt_raw, 1, sp - 1)) : string_upper(stmt_raw);
             if (verb == "REM" || string_char_at(stmt_raw, 1) == "'") break;
+            if (verb == "DATA") break;
 
             var stmt = strip_basic_remark(stmt_raw);
             var up   = string_upper(stmt);

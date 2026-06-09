@@ -53,10 +53,11 @@ function load_program_from(filename)
 
         var line_num_str = string_copy(line, 1, sp - 1);
         var code_content = string_copy(line, sp + 1, string_length(line) - sp);
-        var line_num = real(line_num_str);
 
         // Use your existing validation helpers
-        if (is_line_number(line_num_str) && is_valid_line_number(line_num)) {
+        if (is_line_number(line_num_str)) {
+            var line_num = real(line_num_str);
+            if (!is_valid_line_number(line_num)) continue;
             // Store into your canonical container and order list
             ds_map_set(global.program_lines, line_num, code_content);
             insert_line_number_ordered(line_num);

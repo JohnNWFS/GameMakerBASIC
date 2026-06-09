@@ -261,6 +261,7 @@ if (variable_global_exists("beep_waiting") && global.beep_waiting) {
             }
             global.beep_instance = -1;
         }
+        _beep_release_generated_sound();
 
         global.beep_waiting = false;
 
@@ -382,6 +383,14 @@ if (line_index < ds_list_size(global.line_list)) {
         sp2  = string_pos(" ", stmt);
         cmd2 = (sp2 > 0) ? string_upper(string_copy(stmt, 1, sp2 - 1)) : string_upper(stmt);
         arg2 = (sp2 > 0) ? string_trim(string_copy(stmt, sp2 + 1, string_length(stmt))) : "";
+
+        // DATA is pre-scanned before execution. It may contain a colon after
+        // a stream name (DATA @name: ...), so stop this physical line here
+        // instead of executing the post-colon values as commands.
+        if (cmd2 == "DATA") {
+            dbg_log(DBG_FLOW, "DATA runtime no-op: consume rest of line " + string(line_number));
+            break;
+        }
 
         global.interpreter_current_stmt_index = p;
 

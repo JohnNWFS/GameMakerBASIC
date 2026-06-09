@@ -32,7 +32,10 @@ function basic_cmd_scroll(arg) {
             } else {
                 var v = basic_evaluate_expression_v2(a0);
                 if (is_real(v)) {
-                    amount = max(1, floor(real(v)));
+                    amount = max(1, floor(v));
+                    treat_as_amount = true;
+                } else if (is_numeric_string(string_trim(string(v)))) {
+                    amount = max(1, floor(real(string_trim(string(v)))));
                     treat_as_amount = true;
                 }
             }
@@ -59,7 +62,9 @@ function basic_cmd_scroll(arg) {
                     _direction = string_upper(_direction);
                 }
             }
-            amount = max(1, floor(real(basic_evaluate_expression_v2(string_trim(args[1])))));
+            var amount_arg = basic_eval_number_arg(args[1], "SCROLL", "amount");
+            if (!amount_arg.ok) return;
+            amount = max(1, floor(amount_arg.value));
         }
     }
 

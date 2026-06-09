@@ -54,7 +54,6 @@ if (variable_global_exists("beep_current_oct") && is_real(global.beep_current_oc
         ds_queue_clear(global.beep_seq_queue);
     }
 
-    var cur_oct = 0; // relative to C4
     var added   = 0;
 
     // Parse each token: either O<oct> or <NOTE><DUR>

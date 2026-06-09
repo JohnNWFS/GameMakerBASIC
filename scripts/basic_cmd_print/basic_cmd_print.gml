@@ -84,7 +84,9 @@ function basic_cmd_print(arg, line_number) {
         var _pu = string_upper(part);
         if (string_copy(_pu, 1, 4) == "TAB(" && string_char_at(part, string_length(part)) == ")") {
             var _tab_expr = string_copy(part, 5, string_length(part) - 5);
-            var _tab_col  = max(0, round(real(evaluate_postfix(infix_to_postfix(basic_tokenize_expression_v2(_tab_expr))))));
+            var _tab_arg = basic_eval_number_arg(_tab_expr, "PRINT TAB", "column");
+            if (!_tab_arg.ok) return;
+            var _tab_col  = max(0, round(_tab_arg.value));
             if (_tab_col > col) {
                 line_accum += string_repeat(" ", _tab_col - col);
                 col = _tab_col;
@@ -95,7 +97,9 @@ function basic_cmd_print(arg, line_number) {
         // SPC(n) — insert n spaces
         if (string_copy(_pu, 1, 4) == "SPC(" && string_char_at(part, string_length(part)) == ")") {
             var _spc_expr = string_copy(part, 5, string_length(part) - 5);
-            var _spc_n    = max(0, round(real(evaluate_postfix(infix_to_postfix(basic_tokenize_expression_v2(_spc_expr))))));
+            var _spc_arg = basic_eval_number_arg(_spc_expr, "PRINT SPC", "count");
+            if (!_spc_arg.ok) return;
+            var _spc_n    = max(0, round(_spc_arg.value));
             line_accum += string_repeat(" ", _spc_n);
             col += _spc_n;
             continue;
