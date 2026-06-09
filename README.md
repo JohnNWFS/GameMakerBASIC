@@ -369,11 +369,14 @@ When you need multiple lines of code under a condition, use the block form. `IF`
 If `N` is out of range (less than 1 or greater than the number of targets), execution falls through to the next line.
 
 ### Program Flow
-`GOTO` jumps unconditionally to any line number. `END` stops the program immediately. `STOP` is an alias for `END`.
+`GOTO` jumps unconditionally to any line number, skipping everything in between. `END` stops the program immediately. `STOP` is an alias for `END`.
 ```basic
-10 GOTO 50          ' Jump unconditionally to line 50
-20 END              ' End program
-30 STOP             ' End program (alias for END)
+10 PRINT "Line 10 runs."
+20 GOTO 50
+30 PRINT "Line 30 is skipped."
+40 PRINT "Line 40 is skipped."
+50 PRINT "Line 50 runs — GOTO jumped here."
+60 END
 ```
 
 ### RANDOMIZE
