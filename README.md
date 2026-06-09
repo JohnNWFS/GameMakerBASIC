@@ -651,12 +651,16 @@ In MODE 3, `BOX` draws a pixel-coordinate rectangle outline or filled box. Synta
 ```
 
 ### POINT (MODE 3)
-`POINT` reads back the color of a pixel at the given coordinates. Returns -1 if the pixel surface is not available. Syntax: `POINT(x, y)`
+`POINT` reads back the color of a pixel at the given coordinates and returns it as a numeric color value — the same kind of number that color names like `RED` or `BLUE` represent internally. Returns -1 if the pixel surface is not available. Syntax: `POINT(x, y)`
+
+Color names are stored as integers in BGR (blue-green-red) byte order, which is GameMaker's native format. `RED` = 255 (full red channel, zero blue and green), so seeing `255` when you read back a red pixel is correct, not an error. You can compare the result directly to a named color:
+
 ```basic
 10 MODE 3
 20 PSET 100, 80, RED
-30 C = POINT(100, 80)        ' Returns the color value at (100, 80)
-40 PRINT "Color at (100,80):"; C
+30 C = POINT(100, 80)
+40 PRINT "Color value:"; C
+50 IF C = RED THEN PRINT "Confirmed: pixel is RED" ELSE PRINT "Color mismatch"
 ```
 
 ### CLS (MODE 3)
