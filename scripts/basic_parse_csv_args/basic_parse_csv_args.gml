@@ -3,6 +3,7 @@ function basic_parse_csv_args(str) {
     var args = [];
     var current = "";
     var in_quotes = false;
+    var paren_depth = 0;
     var i = 1;
     var len = string_length(str);
 
@@ -13,7 +14,15 @@ function basic_parse_csv_args(str) {
             in_quotes = !in_quotes;
             current += c; // Preserve quote so later commands can detect strings
         }
-        else if (c == "," && !in_quotes) {
+        else if (!in_quotes && c == "(") {
+            paren_depth += 1;
+            current += c;
+        }
+        else if (!in_quotes && c == ")") {
+            paren_depth -= 1;
+            current += c;
+        }
+        else if (c == "," && !in_quotes && paren_depth == 0) {
             array_push(args, string_trim(current));
             current = "";
         }

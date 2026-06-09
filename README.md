@@ -573,8 +573,7 @@ Custom tiles are editable bitmap masks assigned to specific tile codes. When a c
 80 PRINTAT 0, 0, "Custom X tile drawn.", WHITE, BLACK
 90 TILE 5, 2, 200, CYAN, BLACK
 100 PRINTAT 7, 2, "< that is tile 200", WHITE, BLACK
-110 LET MSG$ = "Pixel at (0,0) = " + STR$(TILEBIT(200, 0, 0))
-115 PRINTAT 0, 4, MSG$, WHITE, BLACK
+110 PRINTAT 0, 4, "Pixel at (0,0) = " + STR$(TILEBIT(200, 0, 0)), WHITE, BLACK
 120 PAUSE
 130 TILESAVE "mytiles"
 140 PRINTAT 0, 6, "Saved to mytiles.nwtile.", WHITE, BLACK
