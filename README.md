@@ -562,6 +562,8 @@ Available font keys: `DEFAULT_8`, `DEFAULT_16`, `DEFAULT_32`.
 
 Custom tiles are editable bitmap masks assigned to specific tile codes. When a cell uses a custom code, NW-BASIC draws the custom mask tinted with that cell's foreground color. All other codes continue to use the active font sheet, so normal text remains available alongside custom graphics.
 
+**Important:** a tile definition is a shared glyph, not a per-cell image. Every cell on screen that displays the same tile code shows the same bitmap. If you edit tile 200's pixels, every cell currently showing tile 200 updates instantly — there is no way to have two cells show different versions of the same code. To display distinct shapes, use distinct codes (e.g. 200, 201, 202…).
+
 ```basic
 10 MODE 2, 16
 20 CLSCHAR 32, WHITE, BLACK
