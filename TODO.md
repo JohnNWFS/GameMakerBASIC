@@ -3,6 +3,7 @@
 ## Open
 
 - [ ] **BEEP tone accuracy** — revisit note frequencies; some tones may be off. Verify all notes in the chromatic scale against standard 440 Hz tuning and check octave multipliers.
+- [ ] **README examples: audit for syntax-template lines mixed into runnable code** — several sections had placeholder lines like `20 PSET col, row, charCode, fg, bg` inside code blocks, which execute as real BASIC and produce garbage output (e.g. NUL character at 0,0). Fixed in PSET/PRINTAT/CHARAT; do a full pass to confirm no others remain.
 - [ ] **Screen editor (SE) crashes on lines starting with a command word** — `screen_editor_commit_row` calls `real()` on the line number token but gets the command name instead (e.g. "PRINTAT"), crashing with "unable to convert string to number". Likely a parsing issue when a line has no leading line number or the tokenizer splits incorrectly. Reproduce by editing any line in SE that begins with a BASIC command.
 - [ ] **PRINTAT string parsing** — in some cases PRINTAT appears to include the opening `"` as a visible character in the output (observed in MODE 2, 32 demo). Audit string-literal stripping in the PRINTAT argument parser.
 - [ ] **Non-ASCII characters in MODE 2 tile font** — the tile font only covers ASCII; non-ASCII characters (e.g. em dash `—`, smart quotes) render as wrong or garbage glyphs. Either restrict MODE 2 strings to ASCII or map common Unicode characters to safe fallbacks.

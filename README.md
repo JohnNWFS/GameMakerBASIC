@@ -448,34 +448,30 @@ In MODE 2, `PRINT` writes text to the tile grid at the current cursor position. 
 
 ### PRINTAT / DRAWSTR
 `PRINTAT` writes a string directly to a specific column and row on the tile grid, with optional foreground and background colors. It does not move the cursor. `DRAWSTR` is an alias for the same command.
+Syntax: `PRINTAT col, row, "text" [, fg [, bg]]`
 ```basic
 10 MODE 2
-20 PRINTAT col, row, "text" [, fg [, bg]]
-30 PRINTAT 5, 10, "HELLO", WHITE, BLACK
-40 DRAWSTR 0, 0, "TEST", BLUE, YELLOW    ' DRAWSTR is an alias for PRINTAT
+20 PRINTAT 5, 10, "HELLO", WHITE, BLACK
+30 DRAWSTR 0, 0, "TEST", BLUE, YELLOW    ' DRAWSTR is an alias for PRINTAT
 ```
 
 ### PSET (MODE 2)
 `PSET` places a single character at a tile grid position using an ASCII character code. All five arguments (column, row, character code, foreground, background) are required in MODE 2.
+Syntax: `PSET col, row, charCode, fg, bg`
 ```basic
 10 MODE 2
-20 PSET col, row, charCode, fg, bg
-30 PSET 10, 5, 65, WHITE, BLACK   ' Place 'A' (ASCII 65) at column 10, row 5
+20 PSET 10, 5, 65, WHITE, BLACK   ' Place 'A' (ASCII 65) at column 10, row 5
 ```
 
 ### CHARAT / TILE / PLOT (MODE 2)
 `CHARAT` places a single character by ASCII code at a tile position, optionally setting colors. If colors are omitted, existing cell colors are preserved. `TILE` and `PLOT` are aliases for the same command.
+Syntax: `CHARAT col, row, charCode [, fg [, bg]]`
 ```basic
 10 MODE 2
-20 CHARAT col, row, charCode [, fg [, bg]]
-30 CHARAT 0, 0, 72               ' Place 'H' at top-left, preserve existing colors
-40 CHARAT 5, 3, 65, RED, BLACK   ' Place 'A' with colors
-
-50 TILE col, row, charCode [, fg [, bg]]   ' TILE is an alias for CHARAT
-60 TILE 5, 5, 42, RED
-
-70 PLOT col, row, charCode [, fg [, bg]]   ' PLOT is an alias for CHARAT in MODE 2
-80 PLOT 6, 5, 42, CYAN, BLACK
+20 CHARAT 0, 0, 72               ' Place 'H' at top-left, preserve existing colors
+30 CHARAT 5, 3, 65, RED, BLACK   ' Place 'A' with colors
+40 TILE 5, 5, 42, RED            ' TILE is an alias for CHARAT
+50 PLOT 6, 5, 42, CYAN, BLACK    ' PLOT is an alias for CHARAT in MODE 2
 ```
 
 ### BOX (MODE 2)
