@@ -399,19 +399,18 @@ NW-BASIC has three public modes:
 | `MODE 2` | Tile/character graphics |
 | `MODE 3` | Pixel/surface graphics |
 
-```basic
-10 MODE 1           ' Text mode
-20 MODE 2           ' Tile graphics, default 32x32 pixel tiles
-30 MODE 2, 8        ' Tile mode with 8x8 pixel tiles
-40 MODE 2, 16       ' Tile mode with 16x16 pixel tiles
-50 MODE 2, 32       ' Tile mode with 32x32 pixel tiles
-60 MODE 3           ' Pixel graphics mode
-```
+Switching modes clears the screen and resets the display. MODE 2 accepts an optional tile size in pixels — smaller tiles fit more characters on screen, larger tiles are easier to read. If no size is given, 32×32 is used. `GETMODE` (or its alias `SCREEN`) returns the current mode number so your program can behave differently depending on which mode is active.
 
-Query the current mode:
 ```basic
-10 M = GETMODE()    ' Returns 1, 2, or 3
-20 M = SCREEN()     ' Alias for GETMODE()
+10 MODE 1           ' Text mode — scrolling PRINT output, default at startup
+20 MODE 2           ' Tile graphics, 32x32 pixels per tile (default size)
+30 MODE 2, 8        ' Tile graphics, 8x8 pixels per tile (most tiles on screen)
+40 MODE 2, 16       ' Tile graphics, 16x16 pixels per tile
+50 MODE 2, 32       ' Tile graphics, 32x32 pixels per tile (largest, fewest tiles)
+60 MODE 3           ' Pixel graphics — draw lines, circles, and individual pixels
+70 M = GETMODE()    ' Read the current mode number (returns 1, 2, or 3)
+80 M = SCREEN()     ' SCREEN() is an alias for GETMODE()
+90 PRINT "Current mode: "; M
 ```
 
 ---
