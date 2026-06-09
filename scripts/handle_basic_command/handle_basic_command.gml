@@ -28,6 +28,14 @@ function handle_basic_command(cmd, arg) {
             _rest = "";
         }
 
+        // DATA is a runtime no-op (pre-scanned at load time). Skip this colon-segment
+        // AND all remaining segments on this line, since DATA @name: v1, v2 contains
+        // a colon that the generic splitter treats as a statement separator.
+        if (_verb == "DATA") {
+            dbg_log(DBG_FLOW, "DATA (runtime): no-op, consuming rest of colon-parts");
+            break;
+        }
+
         // Skip INKEY$ as command (handled as function in evaluate_postfix)
         if (_verb == "INKEY$") {
             dbg_log(DBG_FLOW, "INKEY$: Ignored as command, treated as function");
