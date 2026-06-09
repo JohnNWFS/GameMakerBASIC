@@ -528,15 +528,33 @@ Legacy aliases (still work):
 
 ### Font Control (MODE 2)
 `FONT` switches the tile font sheet, which changes how every character on the grid is drawn. `FONTSET` works the same way but locks the choice so it survives subsequent `MODE 2` calls. Three sizes are available: 8×8, 16×16, and 32×32 pixels per tile.
-```basic
-10 MODE 2
-20 FONT "DEFAULT_16"    ' Switch to 16x16 font
-30 FONT "DEFAULT_8"     ' Switch to 8x8 font
-40 FONT "DEFAULT_32"    ' Switch to 32x32 font
-50 FONTSET "DEFAULT_8"  ' Lock font to 8x8 (survives MODE switches)
-```
 
-Available font keys: `DEFAULT_8`, `DEFAULT_16`, `DEFAULT_32`. `FONTSET` locks the choice so that subsequent `MODE 2` switches do not override it.
+Available font keys: `DEFAULT_8`, `DEFAULT_16`, `DEFAULT_32`.
+```basic
+10 MODE 2, 32
+20 FONT "DEFAULT_32"
+30 CLSCHAR 32, WHITE, BLACK
+40 PRINTAT 0, 0, "32x32 font.", WHITE, BLACK
+50 PRINTAT 0, 1, "Big tiles, few columns.", WHITE, BLACK
+60 PAUSE
+70 MODE 2, 16
+80 FONT "DEFAULT_16"
+90 CLSCHAR 32, WHITE, BLACK
+100 PRINTAT 0, 0, "16x16 font.", WHITE, BLACK
+110 PRINTAT 0, 1, "Medium tiles, more columns.", WHITE, BLACK
+120 PAUSE
+130 MODE 2, 8
+140 FONT "DEFAULT_8"
+150 CLSCHAR 32, WHITE, BLACK
+160 PRINTAT 0, 0, "8x8 font.", WHITE, BLACK
+170 PRINTAT 0, 1, "Tiny tiles, most columns.", WHITE, BLACK
+180 PAUSE
+190 FONTSET "DEFAULT_8"
+200 MODE 2
+210 CLSCHAR 32, WHITE, BLACK
+220 PRINTAT 0, 0, "FONTSET locked 8x8.", WHITE, BLACK
+230 PRINTAT 0, 1, "MODE 2 reset kept it.", WHITE, BLACK
+```
 
 ---
 
