@@ -143,6 +143,14 @@ for (var i = 0; i < ds_list_size(global.line_list); i++) {
     global.pause_mode           = false;
     global.input_expected       = false;
 
+    // Reset BEEP/PLAY state so octave, tempo, and volume don't leak between runs
+    global.beep_current_oct = 0;
+    global.beep_tempo       = 120;
+    global.beep_volume      = 0.35;
+    global.beep_note_gate   = 0.875;
+    global.beep_waiting     = false;
+    global.beep_seq_active  = false;
+
     global.inkey_mode           = false;
     global.inkey_waiting        = false;
     global.inkey_captured       = "";
