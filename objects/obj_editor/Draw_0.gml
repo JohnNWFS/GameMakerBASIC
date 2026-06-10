@@ -163,7 +163,7 @@ if (total_lines == 0 && os_browser != browser_not_a_browser) {
     var _y = 32;
     var _lh = actual_font_height;
     draw_set_color(c_lime);
-    draw_text(16, _y,          "NW-BASIC  --  New World's From Scratch");
+    draw_text(16, _y,          "NW-BASIC  --  New Worlds From Scratch");
     draw_text(16, _y + _lh,    "--------------------------------------");
     draw_set_color(c_white);
     draw_text(16, _y + _lh*3,  "HELP      list all commands");
