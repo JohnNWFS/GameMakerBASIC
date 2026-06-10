@@ -317,14 +317,16 @@ Syntax: `BEEP spec [spec ...]`
 - **Duration**: Number of beats — `1` = quarter, `2` = half, `4` = whole, `0.5` = eighth, `0.25` = sixteenth
 - **Octave**: `O<number>` sets octave; changes persist until the next `O` token
 
+> **Heads up:** In BEEP syntax the number after a note is always the **duration**, never the octave. `C1` and `C2` are both middle C — one held for one beat, the other for two. To move to a different octave use `O`: `O1 C1` is C one octave above middle C.
+
 #### BEEP Examples
 ```basic
-10 PRINT "C major scale - 8 notes ascending."
-20 BEEP C1 D1 E1 F1 G1 A1 B1 C2
+10 PRINT "C major scale - 8 notes ascending (last C is one octave up)."
+20 BEEP C1 D1 E1 F1 G1 A1 B1 O1 C1
 30 PRINT "Rhythm with rests - short notes and a pause."
 40 BEEP C0.5 C0.5 G1 R0.5 F0.5 E1
 50 PRINT "Octave shifts - same note, three octaves rising."
-60 BEEP O-1 C2 O0 C2 O1 C2
+60 BEEP O-1 C1 O0 C1 O1 C1
 70 PRINT "Sharps and flats - C, C#, D, Eb, E."
 80 BEEP C1 C#1 D1 Eb1 E1
 90 PAUSE
@@ -1313,7 +1315,7 @@ These commands are typed at the prompt without a line number (immediate mode). T
 10 REM ** Musical Scales **
 20 CLS
 30 PRINT "Playing C Major Scale..."
-40 BEEP C1 D1 E1 F1 G1 A1 B1 C2
+40 BEEP C1 D1 E1 F1 G1 A1 B1 O1 C1
 50 PRINT "Playing Chromatic Scale..."
 60 BEEP C0.5 C#0.5 D0.5 Eb0.5 E0.5 F0.5 F#0.5 G0.5
 70 BEEP G#0.5 A0.5 Bb0.5 B0.5 O1 C1
