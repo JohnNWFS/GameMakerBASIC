@@ -32,3 +32,6 @@ Thumbs.db
 
 #OTHER
 all_gml_files.txt
+
+# Deploy credentials — never commit
+.env
