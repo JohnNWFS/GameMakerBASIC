@@ -2,12 +2,15 @@
 """
 NW-BASIC HTML5 deploy script.
 
-1. Compiles the HTML5 build with gm-cli
-2. Locates the output files
-3. Uploads them to the GoDaddy FTP server
+1. Packages the HTML5/WebAssembly build with gm-cli (operagx target)
+2. Extracts the zip
+3. Injects a .htaccess for WebAssembly MIME type (required by Apache/GoDaddy)
+4. Uploads to the GoDaddy FTP server, replacing existing files
 
 Usage:
-    python scripts/deploy_html5.py [--build-only] [--upload-only <dir>]
+    python scripts/deploy_html5.py              # full build + upload
+    python scripts/deploy_html5.py --build-only # package only, no upload
+    python scripts/deploy_html5.py --upload-only <dir>  # skip build, upload dir
 
 Reads credentials from .env in the project root (never committed to git).
 Copy .env.example to .env and fill in FTP_PASSWORD before first run.
@@ -18,10 +21,19 @@ import sys
 import ftplib
 import pathlib
 import subprocess
-import glob
+import zipfile
+import shutil
 import argparse
 
 PROJECT_ROOT = pathlib.Path(__file__).parent.parent
+BUILD_DIR    = PROJECT_ROOT / ".gmcache" / "html5_deploy"
+ZIP_PATH     = BUILD_DIR / "NW-BASIC.zip"
+EXTRACT_DIR  = BUILD_DIR / "extracted"
+
+HTACCESS = """\
+# Required for WebAssembly (wasm) files — Apache won't serve them correctly otherwise
+AddType application/wasm .wasm
+"""
 
 # ─── Load .env ────────────────────────────────────────────────────────────────
 
@@ -42,38 +54,41 @@ def load_env():
 # ─── Build ────────────────────────────────────────────────────────────────────
 
 def build_html5():
-    print("Building HTML5...")
+    BUILD_DIR.mkdir(parents=True, exist_ok=True)
+    if ZIP_PATH.exists():
+        ZIP_PATH.unlink()
+
     yyp = PROJECT_ROOT / "A_NEW_BASIC_3.yyp"
+    print("Packaging HTML5 build (operagx target)...")
     result = subprocess.run(
         ["pwsh", "-NoProfile", "-Command",
-         f"gm-cli compile '{yyp}' --target html5 --errors-only"],
+         f"gm-cli package '{yyp}' --target operagx -o '{ZIP_PATH}'"],
         cwd=str(PROJECT_ROOT),
     )
-    if result.returncode != 0:
-        print("ERROR: gm-cli compile failed.")
+    if result.returncode != 0 or not ZIP_PATH.exists():
+        print("ERROR: gm-cli package failed.")
         sys.exit(1)
-    print("Build complete.")
+    print(f"Package created: {ZIP_PATH}")
 
-def find_html5_output():
-    """Search common gm-cli output locations for HTML5 build artifacts."""
-    candidates = [
-        PROJECT_ROOT / "__output",
-        PROJECT_ROOT / "build",
-        PROJECT_ROOT / "built",
-    ]
-    # Look for index.html as the marker of a successful HTML5 build
-    for base in candidates:
-        hits = list(base.rglob("index.html")) if base.exists() else []
-        if hits:
-            # Return the directory containing index.html
-            return hits[0].parent
-    # Also check the GameMaker default temp output path
-    gm_output = pathlib.Path(os.environ.get("LOCALAPPDATA", "")) / "GameMakerStudio2" / "GMS2TEMP"
-    if gm_output.exists():
-        hits = list(gm_output.rglob("index.html"))
-        if hits:
-            return hits[0].parent
-    return None
+def extract_build():
+    if EXTRACT_DIR.exists():
+        shutil.rmtree(EXTRACT_DIR)
+    EXTRACT_DIR.mkdir(parents=True)
+
+    print("Extracting...")
+    with zipfile.ZipFile(ZIP_PATH) as zf:
+        zf.extractall(EXTRACT_DIR)
+
+    # Inject .htaccess for WebAssembly MIME type (Apache/GoDaddy requirement)
+    (EXTRACT_DIR / ".htaccess").write_text(HTACCESS, encoding="utf-8")
+
+    files = list(EXTRACT_DIR.iterdir())
+    print(f"Extracted {len(files)} files:")
+    for f in sorted(files):
+        size_kb = f.stat().st_size // 1024
+        print(f"  {f.name:30s}  {size_kb:>6} KB")
+
+    return EXTRACT_DIR
 
 # ─── Upload ───────────────────────────────────────────────────────────────────
 
@@ -82,31 +97,51 @@ def ftp_upload(local_dir: pathlib.Path, env: dict):
     user        = env.get("FTP_USER", "")
     password    = env.get("FTP_PASSWORD", "")
     port        = int(env.get("FTP_PORT", 21))
-    remote_path = env.get("FTP_REMOTE_PATH", "/public_html/basic")
+    remote_path = env.get("FTP_REMOTE_PATH", "/httpdocs/NW-BASIC")
 
     if not password:
         print("ERROR: FTP_PASSWORD is empty in .env. Fill it in and retry.")
         sys.exit(1)
 
-    print(f"Connecting to {host}:{port} as {user} ...")
+    print(f"\nConnecting to {host}:{port} as {user} ...")
     try:
         ftp = ftplib.FTP_TLS()
         ftp.connect(host, port, timeout=30)
         ftp.auth()
         ftp.login(user, password)
-        ftp.prot_p()  # secure data channel
+        ftp.prot_p()  # encrypted data channel
     except Exception as e:
         print(f"ERROR: FTP connection failed: {e}")
         sys.exit(1)
-
-    print(f"Connected. Uploading to {remote_path} ...")
+    print("Connected.")
 
     def ensure_dir(path):
-        """Create remote directory if it doesn't exist."""
         try:
             ftp.mkd(path)
         except ftplib.error_perm:
-            pass  # already exists
+            pass
+
+    def delete_tree(remote_root: str):
+        """Delete all files and subdirs under remote_root (leaves the dir itself)."""
+        try:
+            items = list(ftp.mlsd(remote_root))
+        except Exception:
+            return
+        for name, facts in items:
+            if name in (".", ".."):
+                continue
+            full = remote_root.rstrip("/") + "/" + name
+            if facts.get("type") == "dir":
+                delete_tree(full)
+                try:
+                    ftp.rmd(full)
+                except Exception:
+                    pass
+            else:
+                try:
+                    ftp.delete(full)
+                except Exception:
+                    pass
 
     def upload_tree(local_root: pathlib.Path, remote_root: str):
         ensure_dir(remote_root)
@@ -115,20 +150,28 @@ def ftp_upload(local_dir: pathlib.Path, env: dict):
             if item.is_dir():
                 upload_tree(item, remote_item)
             else:
-                print(f"  {item.relative_to(local_dir)}")
+                size_kb = item.stat().st_size // 1024
+                print(f"  uploading  {item.name:30s}  {size_kb:>6} KB")
                 with open(item, "rb") as f:
                     ftp.storbinary(f"STOR {remote_item}", f)
 
+    # Wipe old files first so stale build artifacts don't linger
+    print(f"Clearing {remote_path} ...")
+    delete_tree(remote_path)
+
+    print(f"Uploading to {remote_path} ...")
     upload_tree(local_dir, remote_path)
     ftp.quit()
-    print(f"\nDone. Uploaded {local_dir} -> ftp://{host}{remote_path}")
+    print(f"\nDeploy complete -> {remote_path}")
 
 # ─── Entry point ─────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Build and deploy NW-BASIC HTML5")
-    parser.add_argument("--build-only",   action="store_true", help="Compile but do not upload")
-    parser.add_argument("--upload-only",  metavar="DIR",       help="Skip build; upload DIR instead")
+    parser.add_argument("--build-only",  action="store_true",
+                        help="Package and extract but do not upload")
+    parser.add_argument("--upload-only", metavar="DIR",
+                        help="Skip build; upload this directory instead")
     args = parser.parse_args()
 
     env = load_env()
@@ -140,12 +183,9 @@ if __name__ == "__main__":
             sys.exit(1)
     else:
         build_html5()
-        local_dir = find_html5_output()
-        if not local_dir:
-            print("ERROR: Could not find HTML5 output (index.html not found).")
-            print("Run with --verbose to see build output, or check the GameMaker output folder.")
-            sys.exit(1)
-        print(f"Build output: {local_dir}")
+        local_dir = extract_build()
 
-    if not args.build_only:
+    if args.build_only:
+        print(f"\nBuild-only mode — files ready in: {local_dir}")
+    else:
         ftp_upload(local_dir, env)
