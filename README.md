@@ -122,7 +122,21 @@ An array is a named list of values, all accessed by the same variable name using
 - Arrays are **0-based** by default (index 0 through N).
 - Use `OPTION BASE 1` to switch to 1-based indexing.
 - 1-D and 2-D arrays are supported. Arrays must be declared with `DIM` before use.
-- `ERASE name` removes an array from memory.
+- `ERASE name` removes an array from memory and frees its storage. After erasing, you can `DIM` the same name again with a different size.
+
+```basic
+10 DIM SCORES(5)
+20 FOR I = 0 TO 5
+30   SCORES(I) = (I + 1) * 10
+40 NEXT I
+50 PRINT "Before ERASE: SCORES(3) ="; SCORES(3)
+60 ERASE SCORES
+70 DIM SCORES(10)      ' Re-declare with a bigger size
+80 SCORES(7) = 99
+90 PRINT "After ERASE and re-DIM: SCORES(7) ="; SCORES(7)
+100 PAUSE
+110 END
+```
 
 ```basic
 10 PRINT "Switching arrays to OPTION BASE 1."
@@ -646,38 +660,71 @@ Syntax: `CHARAT col, row, charCode [, fg [, bg]]`
 ```
 
 ### BOX (MODE 2)
-`BOX` draws a rectangle border using the given character code. Use it for windows, frames, and tile-based maps. Syntax: `BOX x1, y1, x2, y2, charCode [, fg [, bg]]`
+`BOX` draws a rectangle border using a single tile character for all four sides and corners. Use it for dialog windows, frames, and menus. Combine with `FILL` to create a window with a solid interior.
+
+Syntax: `BOX x1, y1, x2, y2, charCode [, fg [, bg]]`
 
 ```basic
-10 MODE 2
-20 PRINTAT 0, 0, "BOX draws a tile border.", YELLOW, BLACK
-30 BOX 0, 2, 10, 6, 35, YELLOW, BLACK   ' '#' border rectangle
-40 PAUSE
-50 END
+10 MODE 2, 16
+20 CLSCHAR 32, WHITE, BLACK
+30 REM Draw a window: fill the interior first, then draw the border on top
+40 FILL 3, 4, 21, 12, 32, WHITE, BLUE    ' Solid blue interior
+50 BOX 2, 3, 22, 13, 35, YELLOW, BLUE   ' '#' border — ASCII 35
+60 PRINTAT 7, 5, "DIALOG BOX", YELLOW, BLUE
+61 PRINTAT 4, 7, "Press ENTER to close.", WHITE, BLUE
+70 PAUSE
+80 REM Now clear the window
+90 FILL 2, 3, 22, 13, 32, BLACK, BLACK
+100 PRINTAT 0, 0, "Window closed.", GREEN, BLACK
+110 PAUSE
+120 END
 ```
 
 ### FILL (MODE 2)
-`FILL` fills a rectangular region with the given character. It is useful for backgrounds, panels, and clearing a smaller region without clearing the whole screen. Syntax: `FILL x1, y1, x2, y2, charCode [, fg [, bg]]`
+`FILL` paints a rectangular region of the tile grid with a single character, foreground color, and background color. It is useful for clearing a sub-region, drawing a solid background panel, or highlighting an area of the screen.
+
+Syntax: `FILL x1, y1, x2, y2, charCode [, fg [, bg]]`
 
 ```basic
-10 MODE 2
-20 PRINTAT 0, 0, "FILL paints a rectangular tile region.", YELLOW, BLACK
-30 FILL 1, 2, 9, 5, 46, BLUE, BLACK    ' '.' fill
-40 PAUSE
-50 END
+10 MODE 2, 16
+20 CLSCHAR 32, BLACK, BLACK
+30 PRINTAT 0, 0, "FILL demo", YELLOW, BLACK
+40 REM Fill a blue info panel in the center
+50 FILL 2, 3, 22, 9, 32, WHITE, BLUE    ' Space character = solid color fill
+60 PRINTAT 4, 4, "This panel was drawn", WHITE, BLUE
+70 PRINTAT 4, 5, "using FILL.", WHITE, BLUE
+80 PRINTAT 4, 7, "FILL uses any char code.", YELLOW, BLUE
+90 REM Fill a second region with a pattern character
+100 FILL 2, 12, 22, 15, 176, CYAN, BLACK ' ASCII 176 = light shade block
+110 PRINTAT 6, 13, "Pattern fill", BLACK, CYAN
+120 PAUSE
+130 END
 ```
 
 ### HLINE / VLINE (MODE 2)
-`HLINE` draws a horizontal line of a single character across a row between two columns. `VLINE` draws a vertical line down a column between two rows. Both accept optional colors.
+`HLINE` draws a horizontal line of a single tile character across a row between two columns. `VLINE` draws a vertical line down a column between two rows. Both accept optional foreground and background colors. Together they are useful for drawing dividers, rulers, and the edges of custom window frames.
 
-Syntax: `HLINE x1, x2, row, charCode [, fg [, bg]]` / `VLINE col, y1, y2, charCode [, fg [, bg]]`
+Syntax: `HLINE x1, x2, row, charCode [, fg [, bg]]`
+
+Syntax: `VLINE col, y1, y2, charCode [, fg [, bg]]`
+
 ```basic
-10 MODE 2
-20 PRINTAT 0, 0, "HLINE and VLINE draw tile lines.", YELLOW, BLACK
-30 HLINE 0, 10, 6, 45, CYAN, BLACK     ' '-' horizontal line at row 6
-40 VLINE 12, 0, 6, 124, MAGENTA, BLACK ' '|' vertical line at col 12
-50 PAUSE
-60 END
+10 MODE 2, 16
+20 CLSCHAR 32, WHITE, BLACK
+30 PRINTAT 0, 0, "HLINE/VLINE panel demo", YELLOW, BLACK
+40 REM Draw a horizontal rule under the title
+50 HLINE 0, 25, 1, 196, YELLOW, BLACK   ' ASCII 196 = horizontal bar
+60 REM Draw vertical dividers
+70 VLINE 8, 2, 10, 179, CYAN, BLACK     ' ASCII 179 = vertical bar
+80 VLINE 17, 2, 10, 179, CYAN, BLACK
+90 REM Label the three columns
+100 PRINTAT 1, 3, "COL A", WHITE, BLACK
+110 PRINTAT 10, 3, "COL B", WHITE, BLACK
+120 PRINTAT 19, 3, "COL C", WHITE, BLACK
+130 REM Draw a horizontal rule at the bottom
+140 HLINE 0, 25, 11, 196, YELLOW, BLACK
+150 PAUSE
+160 END
 ```
 
 ### CLSCHAR
@@ -949,16 +996,31 @@ NW-BASIC supports reading and writing text files using numbered channels (1 and 
 
 ## Math Functions
 
-NW-BASIC includes a standard set of math functions. Each takes a numeric argument and returns a result you can use in any expression or print directly.
+NW-BASIC includes a standard set of math functions. Each can be used anywhere an expression is accepted — in PRINT, LET, IF, and FOR statements.
+
+| Function | Returns |
+|----------|---------|
+| `ABS(x)` | Absolute value |
+| `INT(x)` | Floor — rounds down toward negative infinity |
+| `SGN(x)` | Sign: -1, 0, or 1 |
+| `SQR(x)` | Square root |
+| `EXP(x)` | e raised to the power x |
+| `LOG(x)` | Base-10 logarithm |
+| `LOG10(x)` | Base-10 logarithm (alias) |
+| `SIN(x)` | Sine (radians) |
+| `COS(x)` | Cosine (radians) |
+| `TAN(x)` | Tangent (radians) |
+| `ATN(x)` | Arctangent (radians) |
+| `RND(n)` | Random integer 1 to n; `RND(a,b)` = random a to b; `RND(1)` = 0..1 float |
 
 ```basic
-10 PRINT ABS(-5)       ' Absolute value: 5
-20 PRINT INT(3.7)      ' Floor (integer part): 3
-30 PRINT SGN(-10)      ' Sign: -1, 0, or 1
-40 PRINT SQR(16)       ' Square root: 4
-50 PRINT EXP(1)        ' e^1 ≈ 2.718...
-60 PRINT LOG(100)      ' Base-10 logarithm: 2  (note: both LOG and LOG10 use base 10)
-70 PRINT LOG10(1000)   ' Base-10 logarithm: 3
+10 PRINT "Math function sampler:"
+20 PRINT "ABS(-7) ="; ABS(-7)
+30 PRINT "INT(3.9) ="; INT(3.9)
+40 PRINT "SGN(-5) ="; SGN(-5)
+50 PRINT "SQR(25) ="; SQR(25)
+60 PRINT "EXP(1) ="; EXP(1)
+70 PRINT "LOG(100) ="; LOG(100)
 80 PAUSE
 90 END
 ```
@@ -1012,16 +1074,23 @@ String functions let you inspect and manipulate text. String variable names end 
 150 END
 ```
 
-### Repeat and Fill
-These functions build strings by repeating a character or filling to a length — handy for drawing borders, padding output, or creating separators.
+### Repeat, Fill, and Padding
+These functions build strings by repeating a character or inserting spaces — handy for drawing separators, padding columns, and aligning output.
+
+- `REPEAT$(str, n)` — repeats a string n times
+- `STRING$(code, n)` — repeats a character (by ASCII code or single-char string) n times
+- `SPACE$(n)` — returns a string of n spaces (alias: `SPC(n)` inside PRINT)
+
 ```basic
 10 PRINT "Drawing text separators with string builders."
-20 PRINT REPEAT$("#", 10)     ' "##########"
-30 PRINT STRING$(65, 5)       ' "AAAAA" (ASCII 65 = 'A', repeated 5 times)
-40 PRINT STRING$("*", 5)      ' "*****" (character repeated 5 times)
-50 PRINT "A" + SPACE$(8) + "B"
-60 PAUSE
-70 END
+20 PRINT REPEAT$("#", 30)        ' "##############################"
+30 PRINT STRING$(61, 20)         ' "====================" (ASCII 61 = '=')
+40 PRINT STRING$("*", 10)        ' "**********"
+50 PRINT "Name" + SPACE$(16) + "Score"
+60 PRINT "Alice" + SPACE$(15) + "98"
+70 PRINT "Bob" + SPACE$(17) + "74"
+80 PAUSE
+90 END
 ```
 
 ### Conversion Functions
@@ -1205,14 +1274,18 @@ Comparison operators test the relationship between two values and return true or
 ```
 
 ### Logical
-`AND` and `OR` combine multiple conditions inside an `IF`. Use `AND` when all conditions must be true; use `OR` when any one of them is enough.
+`AND` and `OR` combine multiple conditions inside an `IF`. Use `AND` when all conditions must be true; use `OR` when any one of them is enough. `NOT` inverts a condition — `NOT (X = 5)` is true when X is anything other than 5.
 ```basic
 10 LET X = 8 : LET Y = 7
-20 IF X > 5 AND Y < 10 THEN PRINT "Both conditions true."
+20 IF X > 5 AND Y < 10 THEN PRINT "AND: both conditions true."
 30 LET A = 1 : LET B = 9
-40 IF A = 1 OR B = 2 THEN PRINT "At least one condition true — A = 1 matches."
-50 PAUSE
-60 END
+40 IF A = 1 OR B = 2 THEN PRINT "OR: at least one condition true."
+50 LET DONE = 0
+60 IF NOT DONE THEN PRINT "NOT: DONE is 0 (false), so NOT DONE is true."
+70 DONE = 1
+80 IF NOT DONE THEN PRINT "This will NOT print." ELSE PRINT "NOT: DONE is 1, so NOT DONE is false."
+90 PAUSE
+100 END
 ```
 
 ### String Concatenation
@@ -1291,9 +1364,16 @@ These commands are typed at the prompt without a line number (immediate mode). T
 
 ## Programming Tips
 
-1. **Use meaningful names**: `SCORE` instead of `S`
-2. **Comment your code**: `REM` or `'` for notes
-3. **Use subroutines**: Break logic into `GOSUB` routines
+1. **Use meaningful names**: `SCORE` instead of `S` — your future self will thank you.
+2. **Comment your code**: `REM` or `'` explains *why*, not just what.
+3. **Use subroutines**: Put repeated logic in `GOSUB` routines. Always place `END` before the subroutine block so normal flow doesn't fall into it.
+4. **Indent loop bodies**: NW-BASIC ignores leading spaces, so indenting `FOR`/`NEXT` and `WHILE`/`WEND` bodies makes structure obvious at a glance.
+5. **PAUSE after output**: Any time you switch modes or print something important, add `PAUSE` so the user can read it before the screen changes.
+6. **Avoid magic numbers**: `LET MAXROWS = 20` is easier to update than hardcoding `20` in five places.
+7. **GOSUB for menus**: `ON N GOSUB 1000, 2000, 3000` dispatches to a menu branch cleanly from a single line.
+8. **RESTORE for replay**: If you read DATA values in a loop, call `RESTORE` at the top of the loop to re-read them from the start each time.
+9. **Use STR$ and VAL**: Mixing numbers into strings requires `STR$(n)`; reading numbers from file or input requires `VAL(s$)`. Forgetting these is a common source of type errors.
+10. **Test in small pieces**: Write a few lines, run them, check the output. In BASIC, incremental testing is faster than debugging a large program all at once.
 4. **Test incrementally**: Run small sections before building larger programs
 5. **Use MODE commands**: Switch to graphics modes for visual programs
 6. **Leverage INKEY$**: Create responsive, interactive programs without blocking
