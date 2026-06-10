@@ -105,12 +105,12 @@ Use assignment to store values for later. `LET` is accepted but optional, so `LE
 
 ## Arrays
 
-An array is a named list of values, all accessed by the same variable name using an index number in parentheses. Use `DIM` to declare an array before using it. Arrays can hold numbers or strings, be one-dimensional (a list) or two-dimensional (a grid), and are zero-based by default.
+An array is a named list of values, all accessed by the same variable name using an index number in parentheses. Use `DIM` to declare an array before using it. Arrays can hold numbers or strings, be one-dimensional (a list) or two-dimensional (a grid), and are **1-based by default** — `DIM A(10)` gives you `A(1)` through `A(10)`.
 
 ```basic
-10 DIM A(10)           ' 1-D array with indices 0-10 (11 elements)
+10 DIM A(10)           ' 1-D array with indices 1-10 (10 elements)
 20 DIM B(5), C$(20)    ' Multiple declarations in one statement
-30 DIM M(3, 4)         ' 2-D array: valid indices (0..3, 0..4)
+30 DIM M(3, 4)         ' 2-D array: valid indices (1..3, 1..4)
 40 A(3) = 42           ' Set element
 50 PRINT A(3)          ' Read element
 60 M(1, 2) = 99        ' Set 2-D element
@@ -119,15 +119,15 @@ An array is a named list of values, all accessed by the same variable name using
 90 END
 ```
 
-- Arrays are **0-based** by default (index 0 through N).
-- Use `OPTION BASE 1` to switch to 1-based indexing.
+- Arrays are **1-based** by default (index 1 through N).
+- Use `OPTION BASE 0` to switch to 0-based indexing (index 0 through N).
 - 1-D and 2-D arrays are supported. Arrays must be declared with `DIM` before use.
 - `ERASE name` removes an array from memory and frees its storage. After erasing, you can `DIM` the same name again with a different size.
 
 ```basic
 10 DIM SCORES(5)
-20 FOR I = 0 TO 5
-30   SCORES(I) = (I + 1) * 10
+20 FOR I = 1 TO 5
+30   SCORES(I) = I * 10
 40 NEXT I
 50 PRINT "Before ERASE: SCORES(3) ="; SCORES(3)
 60 ERASE SCORES
@@ -139,12 +139,12 @@ An array is a named list of values, all accessed by the same variable name using
 ```
 
 ```basic
-10 PRINT "Switching arrays to OPTION BASE 1."
-20 OPTION BASE 1        ' Arrays use indices 1..N
-30 DIM A(10)            ' A(1) through A(10)
-40 A(1) = 100
+10 PRINT "Switching arrays to OPTION BASE 0."
+20 OPTION BASE 0        ' Arrays use indices 0..N
+30 DIM A(10)            ' A(0) through A(10)
+40 A(0) = 100
 50 A(10) = 1000
-60 PRINT "A(1)="; A(1); "  A(10)="; A(10)
+60 PRINT "A(0)="; A(0); "  A(10)="; A(10)
 70 PAUSE
 80 END
 ```
