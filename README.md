@@ -263,6 +263,31 @@ LOCATE has no effect in MODE 1 text mode.
 
 ## Sound Commands
 
+### TEMPO — Music Speed
+`TEMPO` sets the speed used by `BEEP` and `PLAY`. Use it when a song or sound effect should play faster or slower without rewriting every note length. The value is beats per minute, and the default is `120`.
+
+Syntax: `TEMPO bpm`
+
+The program below plays the same five-note phrase at two different speeds. The note lengths do not change; only the tempo changes.
+
+```basic
+10 PRINT "TEMPO DEMO"
+20 PRINT "The same phrase plays slowly, then quickly."
+30 PAUSE
+40 TEMPO 80
+50 PRINT "TEMPO 80: slow quarter notes."
+60 BEEP O0 C1 D1 E1 F1 G2
+70 TEMPO 150
+80 PRINT "TEMPO 150: the same notes move faster."
+90 BEEP O0 C1 D1 E1 F1 G2
+100 TEMPO 120
+110 PRINT "Tempo restored to 120."
+120 PAUSE
+130 END
+```
+
+`TEMPO` persists until changed again, so a program should set it explicitly before music if the exact speed matters.
+
 ### BEEP — Musical Note Sequences
 `BEEP` plays one or more musical note specifications and waits until the sequence finishes. Use it for simple effects, melodies, and audible feedback in text or graphics programs.
 
@@ -310,10 +335,66 @@ Syntax: `BEEP spec [spec ...]`
 - Default tempo: 120 BPM (adjustable via `global.beep_tempo`)
 - Pitch targets use standard equal temperament with A4 = 440 Hz.
 - BEEP tones are generated directly as mono audio buffers rather than pitch-shifted samples, so octaves and chromatic steps stay mathematically consistent.
-- Playback amplitude is controlled through `global.beep_volume`, with a small low-note boost so lower octaves are easier to hear on small speakers.
+- Playback amplitude is controlled through `global.beep_volume`, which defaults to a conservative music-friendly level. Lower octaves receive a small perceptual boost so they remain audible on small speakers.
+- Generated notes use `global.beep_note_gate` to leave a tiny gap at the end of each note while preserving the rhythmic duration. This makes melodies easier to hear than fully legato beeps.
 - Generated tones use a short attack/release envelope to reduce clicks at note boundaries.
 - BEEP **blocks** program execution until the entire sequence completes
 - Duration `0` is treated as `0.25` (sixteenth note)
+
+### PLAY — Music Macro Language
+`PLAY` accepts a compact Music Macro Language string. Use it when you want classic BASIC-style music listings or when importing short tunes written in MML. `PLAY` uses the same generated sound engine as `BEEP`, so `TEMPO`, generated tone volume, and note gating behave the same way.
+
+Syntax: `PLAY "mml"`
+
+The MML string is parsed character by character. The full command set is:
+
+| Command | Description |
+|---------|-------------|
+| `T`_n_ | Tempo in BPM — e.g. `T120`. Range 20–600. |
+| `O`_n_ | Set octave — `O4` is the octave containing middle C. |
+| `L`_n_ | Default note length — `L4` = quarter, `L8` = eighth, `L16` = sixteenth. |
+| `V`_n_ | Volume — `V0`–`V15` (0 = silent, 15 = full). Persists until changed. |
+| `>` / `<` | Shift octave up / down by one. |
+| `MN` | Music Normal — standard gate (~7/8 note length). |
+| `MS` | Music Staccato — short gate (half note length). |
+| `ML` | Music Legato — full gate (no gap between notes). |
+| `A`–`G` | Play a note. Optionally followed by `#` or `+` (sharp), `-` (flat), a length number, and `.` (dotted — multiply by 1.5, repeatable). |
+| `R` / `P` | Rest for the given length. |
+| `N`_n_ | Absolute note number 0–95, where `N48` = middle C. Optional length after a comma: `N48,8` = middle C eighth note. |
+
+This first example plays a C major scale. `T120` sets tempo, `O4` selects the octave containing middle C, and `L8` makes every note an eighth note by default.
+
+```basic
+10 PRINT "PLAY MML SCALE DEMO"
+20 PRINT "T120 O4 L8: tempo 120, octave 4, default eighth notes."
+30 PAUSE
+40 PLAY "T120 O4 L8 CDEFGAB>C"
+50 PRINT "The final >C shifts up one octave before playing C."
+60 PAUSE
+70 END
+```
+
+This second example tours the rest of the command set — volume, note style, absolute note numbers, and dotted notes. Each feature is announced before it plays.
+
+```basic
+10 PRINT "PLAY MML FULL FEATURE DEMO"
+20 PAUSE
+30 PRINT "Volume: loud (V15) then quiet (V5)."
+40 PLAY "T120 O4 L4 V15 C G V5 C G"
+50 PRINT "Note style: normal, staccato, legato."
+60 PLAY "O4 L4 MN CDEF MS CDEF ML CDEF"
+70 PRINT "Dotted notes: dotted quarter, double-dotted quarter."
+80 PLAY "O4 T100 C4. C4.. R4"
+90 PRINT "Absolute note numbers: N48=C4, N52=E4, N55=G4."
+100 PLAY "T120 N48,4 N52,4 N55,4 N60,2"
+110 PRINT "Rests, sharps, flats, and octave shifts."
+120 PLAY "O4 L8 C R C+ D D- C. <B >C2"
+130 PRINT "DONE."
+140 PAUSE
+150 END
+```
+
+`PLAY` is meant as a compatibility-friendly shortcut. For beginners, `BEEP` is often easier to read because each note is a separate word; for classic BASIC music listings, `PLAY` is usually more compact and importable.
 
 ---
 
