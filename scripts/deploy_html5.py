@@ -30,9 +30,17 @@ BUILD_DIR    = PROJECT_ROOT / ".gmcache" / "html5_deploy"
 ZIP_PATH     = BUILD_DIR / "NW-BASIC.zip"
 EXTRACT_DIR  = BUILD_DIR / "extracted"
 
-HTACCESS = """\
-# Required for WebAssembly (wasm) files — Apache won't serve them correctly otherwise
-AddType application/wasm .wasm
+WEB_CONFIG = """\
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+  <system.webServer>
+    <staticContent>
+      <!-- GameMaker HTML5 build uses .data and .unx — IIS blocks unknown extensions by default -->
+      <mimeMap fileExtension=".data" mimeType="application/octet-stream" />
+      <mimeMap fileExtension=".unx"  mimeType="application/octet-stream" />
+    </staticContent>
+  </system.webServer>
+</configuration>
 """
 
 # ─── Load .env ────────────────────────────────────────────────────────────────
@@ -79,8 +87,8 @@ def extract_build():
     with zipfile.ZipFile(ZIP_PATH) as zf:
         zf.extractall(EXTRACT_DIR)
 
-    # Inject .htaccess for WebAssembly MIME type (Apache/GoDaddy requirement)
-    (EXTRACT_DIR / ".htaccess").write_text(HTACCESS, encoding="utf-8")
+    # Inject web.config for IIS MIME types (.data and .unx are blocked by default)
+    (EXTRACT_DIR / "web.config").write_text(WEB_CONFIG, encoding="utf-8")
 
     files = list(EXTRACT_DIR.iterdir())
     print(f"Extracted {len(files)} files:")
@@ -91,6 +99,29 @@ def extract_build():
     return EXTRACT_DIR
 
 # ─── Upload ───────────────────────────────────────────────────────────────────
+
+class _FTP_TLS_NoReuse(ftplib.FTP_TLS):
+    """FTP_TLS subclass that disables SSL session reuse on the data channel.
+    Required for GoDaddy and other servers that don't support RFC 4507 session tickets."""
+    def ntransfercmd(self, cmd, rest=None):
+        conn, size = ftplib.FTP.ntransfercmd(self, cmd, rest)
+        if self._prot_p:
+            conn = self.context.wrap_socket(conn, server_hostname=self.host,
+                                            session=None)  # no session reuse
+        return conn, size
+
+def _ftp_tls_connect(host, port, user, password, ctx):
+    ftp = _FTP_TLS_NoReuse(context=ctx)
+    ftp.connect(host, port, timeout=30)
+    ftp.login(user, password)
+    ftp.prot_c()  # clear data channel — GoDaddy times out on encrypted data transfers
+    return ftp
+
+def _ftp_plain_connect(host, port, user, password):
+    ftp = ftplib.FTP()
+    ftp.connect(host, port, timeout=30)
+    ftp.login(user, password)
+    return ftp
 
 def ftp_upload(local_dir: pathlib.Path, env: dict):
     host        = env.get("FTP_HOST", "")
@@ -104,16 +135,32 @@ def ftp_upload(local_dir: pathlib.Path, env: dict):
         sys.exit(1)
 
     print(f"\nConnecting to {host}:{port} as {user} ...")
-    try:
-        ftp = ftplib.FTP_TLS()
-        ftp.connect(host, port, timeout=30)
-        ftp.auth()
-        ftp.login(user, password)
-        ftp.prot_p()  # encrypted data channel
-    except Exception as e:
-        print(f"ERROR: FTP connection failed: {e}")
+    ftp = None
+    import ssl
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+
+    attempts = [
+        ("explicit TLS",  lambda: _ftp_tls_connect(host, port, user, password, ctx)),
+        ("plain FTP",     lambda: _ftp_plain_connect(host, port, user, password)),
+        ("TLS lowercase", lambda: _ftp_tls_connect(host, port, user.lower(), password, ctx)),
+        ("plain lowercase", lambda: _ftp_plain_connect(host, port, user.lower(), password)),
+    ]
+    for label, connect_fn in attempts:
+        try:
+            ftp = connect_fn()
+            print(f"Connected ({label}).")
+            break
+        except Exception as e:
+            print(f"  {label} failed: {e}")
+            ftp = None
+
+    if ftp is None:
+        print("ERROR: All connection attempts failed.")
+        print("Check that FTP_USER and FTP_PASSWORD in .env match your GoDaddy FTP credentials.")
+        print("Note: GoDaddy FTP password may differ from your account/cPanel login password.")
         sys.exit(1)
-    print("Connected.")
 
     def ensure_dir(path):
         try:
