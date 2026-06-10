@@ -158,6 +158,23 @@ for (var i = display_start_line; i < total_lines && lines_shown < max_lines; i++
     lines_shown++;
 }
 
+// When the editor is empty in the browser, show a welcome hint
+if (total_lines == 0 && os_browser != browser_not_a_browser) {
+    var _y = 32;
+    var _lh = actual_font_height;
+    draw_set_color(c_lime);
+    draw_text(16, _y,          "NW-BASIC  --  New World's From Scratch");
+    draw_text(16, _y + _lh,    "--------------------------------------");
+    draw_set_color(c_white);
+    draw_text(16, _y + _lh*3,  "HELP      list all commands");
+    draw_text(16, _y + _lh*4,  "NEW       clear the editor");
+    draw_text(16, _y + _lh*5,  "DIR       browse saved programs");
+    draw_text(16, _y + _lh*6,  "RUN       run the current program");
+    draw_set_color(c_gray);
+    draw_text(16, _y + _lh*8,  "Contact:  JohnNWFSDeveloper@gmail.com");
+    draw_text(16, _y + _lh*9,  "Follow:   @JohnNWFS on X");
+}
+
 // Draw input prompt with proper spacing
 draw_text(16, room_height - (actual_font_height * 2), "READY");
 draw_text(16, room_height - actual_font_height, "> " + current_input);

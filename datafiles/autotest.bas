@@ -1,26 +1,22 @@
-10 REM 2D ARRAY TEST
-20 FAILS = 0
-30 DIM A(3,4)
-40 A(1,1) = 10
-50 A(2,3) = 99
-60 A(3,4) = 42
-70 IF A(1,1) = 10 THEN PRINT "PASS: A(1,1)=10" ELSE PRINT "FAIL: A(1,1)": FAILS = FAILS + 1
-80 IF A(2,3) = 99 THEN PRINT "PASS: A(2,3)=99" ELSE PRINT "FAIL: A(2,3)": FAILS = FAILS + 1
-90 IF A(3,4) = 42 THEN PRINT "PASS: A(3,4)=42" ELSE PRINT "FAIL: A(3,4)": FAILS = FAILS + 1
-100 IF A(1,2) = 0 THEN PRINT "PASS: A(1,2)=0" ELSE PRINT "FAIL: A(1,2) not 0": FAILS = FAILS + 1
-110 REM Test loop fill
-120 DIM B(3,3)
-130 FOR I = 1 TO 3
-140 FOR J = 1 TO 3
-150 B(I,J) = I * 10 + J
-160 NEXT J
-170 NEXT I
-180 IF B(2,3) = 23 THEN PRINT "PASS: B(2,3)=23" ELSE PRINT "FAIL: B(2,3)": FAILS = FAILS + 1
-190 IF B(3,1) = 31 THEN PRINT "PASS: B(3,1)=31" ELSE PRINT "FAIL: B(3,1)": FAILS = FAILS + 1
-200 IF B(1,1) = 11 THEN PRINT "PASS: B(1,1)=11" ELSE PRINT "FAIL: B(1,1)": FAILS = FAILS + 1
-210 REM 1D still works
-220 DIM C(5)
-230 C(3) = 77
-240 IF C(3) = 77 THEN PRINT "PASS: C(3)=77" ELSE PRINT "FAIL: C(3)": FAILS = FAILS + 1
-250 PRINT "FAILS=" + STR$(FAILS)
-260 END
+10 REM NW-BASIC Web Edition
+20 PRINT "======================================="
+30 PRINT "  Welcome to NW-BASIC"
+40 PRINT "  New World's From Scratch (NWFS)"
+50 PRINT "======================================="
+60 PRINT ""
+70 PRINT "Getting started:"
+80 PRINT "  HELP   - list all commands"
+90 PRINT "  NEW    - clear the editor"
+100 PRINT "  DIR    - browse saved programs"
+110 PRINT "  RUN    - run current program"
+120 PRINT ""
+130 PRINT "Try typing a program:"
+140 PRINT "  10 PRINT ""Hello, World!"""
+150 PRINT "  RUN"
+160 PRINT ""
+170 PRINT "Contact & follow:"
+180 PRINT "  JohnNWFSDeveloper@gmail.com"
+190 PRINT "  @JohnNWFS on X  (NWFS = New World's"
+200 PRINT "   From Scratch)"
+210 PRINT ""
+220 PRINT "Press ENTER to start coding!"
