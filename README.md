@@ -1078,6 +1078,22 @@ These functions return the current system time and date as strings, and a runnin
 70 END
 ```
 
+### Cursor Position — POS and CSRLIN
+`POS` and `CSRLIN` return the current print cursor column and row. These are useful for aligning output dynamically without hardcoding positions.
+
+- `POS` — returns the current cursor column (0-based)
+- `CSRLIN` — returns the current cursor row (0-based)
+
+```basic
+10 PRINT "Line one"
+20 PRINT "Line two"
+30 R = CSRLIN
+40 PRINT "Cursor is now on row "; R
+50 PRINT "Cursor column before this print: "; POS
+60 PAUSE
+70 END
+```
+
 ---
 
 ## Data Handling
