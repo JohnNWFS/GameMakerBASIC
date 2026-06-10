@@ -29,6 +29,15 @@ function editor_html_dir__open_handler(data, name, type) {
     ds_list_add(global.html_dir_files, rec);
     dbg_log(DBG_FLOW, "[DIR/HTML] added '" + name + "' (" + string(size_est) + " bytes)");
 
+    // Persist to VFS (IndexedDB) so the file survives session reloads
+    var _decoded = editor_html_decode_data_url_to_text(data);
+    if (string_length(_decoded) > 0) {
+        var _vf = file_text_open_write(name);
+        file_text_write_string(_vf, _decoded);
+        file_text_close(_vf);
+        dbg_log(DBG_IO, "[DIR/HTML] persisted '" + name + "' to VFS");
+    }
+
     // After all files are loaded, automatically show the directory overlay
     // Use call_later to ensure all files are processed first
     if (!variable_global_exists("__html_dir_auto_show_scheduled") || !global.__html_dir_auto_show_scheduled) {

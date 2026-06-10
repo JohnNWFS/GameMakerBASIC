@@ -82,29 +82,24 @@ case "DIR":
     if (os_browser != browser_not_a_browser) {
         var p = string_trim(cmd_params);
         var P = string_upper(p);
-        if (P == "" || P == "PROMPT") {
+        if (P == "" || P == "SHOW") {
+            // Show VFS (IndexedDB) saved programs — persists between sessions
+            list_saved_programs();
+        } else if (P == "IMPORT" || P == "PROMPT") {
+            // Open file picker to import a .bas file from the user's disk into VFS
             editor_html_dir_prompt();
-        } else if (P == "SHOW") {
-            editor_html_dir_show();
         } else if (string_copy(P, 1, 4) == "OPEN") {
-            var arg = string_trim(string_delete(p, 1, 4)); // after "OPEN"
+            var arg = string_trim(string_delete(p, 1, 4));
             if (string_length(arg) == 0) {
-                show_message("Usage: DIR OPEN <index|filename>");
+                show_error_message("Usage: DIR OPEN <filename>");
             } else {
                 editor_html_dir_open(arg);
             }
-        } else if (P != "") {  // Only try to open if there's actually a parameter
-            // convenience: if they pass a number or name directly
+        } else if (P != "") {
             editor_html_dir_open(p);
         }
-        // Remove the bare else clause that was causing the double call
     } else {
-        // Windows: your original code path
-        if (cmd_params == "") {
-            list_saved_programs();
-        } else {
-            list_saved_programs(); // preserve your param behavior
-        }
+        list_saved_programs();
     }
     break;
 

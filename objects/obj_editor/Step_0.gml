@@ -40,20 +40,13 @@ if (showing_dir_overlay) {
     // If confirm dialog active: handle Y/N only; block other inputs
     if (dir_confirm_active) {
         if (keyboard_check_pressed(ord("Y"))) {
-            // Delete (desktop only)
-            if (os_type != os_browser) {
-                var _name = dir_listing[dir_confirm_index];
-                var _path = dir_save_dir + _name;
-                if (file_exists(_path)) {
-                    dbg_log(DBG_IO, "[DIR] delete " + _path);
-                    file_delete(_path);
-                }
-                // refresh list
-                list_saved_programs(); // re-enter overlay with fresh state
-            } else {
-                dbg_log(DBG_IO, "[DIR] delete disabled on HTML5");
-                dir_confirm_active = false;
+            var _name = dir_listing[dir_confirm_index];
+            var _path = dir_save_dir + _name;
+            if (file_exists(_path)) {
+                dbg_log(DBG_IO, "[DIR] delete " + _path);
+                file_delete(_path);
             }
+            list_saved_programs(); // refresh overlay
         }
         if (keyboard_check_pressed(ord("N")) || keyboard_check_pressed(vk_escape)) {
             dbg_log(DBG_FLOW, "[DIR] delete cancelled");
@@ -106,14 +99,12 @@ if (keyboard_check_pressed(vk_enter) || keyboard_check_pressed(ord(">"))) {
     }
 }
 
-    // Delete on 'D', 'X', or Delete key (desktop only)
-    if (os_browser != browser_not_a_browser) {
-        if (keyboard_check_pressed(ord("D")) || keyboard_check_pressed(ord("X")) || keyboard_check_pressed(vk_delete)) {
-            if (_count > 0 && dir_listing[dir_sel] != "No .bas files found.") {
-                dir_confirm_active = true;
-                dir_confirm_index  = dir_sel;
-                dbg_log(DBG_FLOW, "[DIR] confirm delete idx=" + string(dir_sel));
-            }
+    // Delete on 'D', 'X', or Delete key
+    if (keyboard_check_pressed(ord("D")) || keyboard_check_pressed(ord("X")) || keyboard_check_pressed(vk_delete)) {
+        if (_count > 0 && dir_listing[dir_sel] != "No .bas files found.") {
+            dir_confirm_active = true;
+            dir_confirm_index  = dir_sel;
+            dbg_log(DBG_FLOW, "[DIR] confirm delete idx=" + string(dir_sel));
         }
     }
 

@@ -34,9 +34,14 @@ function editor_html_save_program_as(filename) {
     }
     buffer_seek(buf, buffer_seek_start, 0);
 
-    // --- Call the YAL wrapper directly (wrapper is present in your build)
+    // --- Trigger browser download (lets user keep a local copy)
     browser_show_save_dialog(buf, filename, "text/plain; charset=utf-8", n);
-
     buffer_delete(buf);
+
+    // --- Also write to VFS (IndexedDB) for cross-session persistence
+    var vf = file_text_open_write(filename);
+    file_text_write_string(vf, text);
+    file_text_close(vf);
+
     return true;
 }
