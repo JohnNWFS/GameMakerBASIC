@@ -1349,6 +1349,34 @@ These commands are typed at the prompt without a line number (immediate mode). T
 100 END
 ```
 
+### Music Demo — Für Elise (Beethoven)
+The opening theme of Beethoven's Für Elise, arranged for `BEEP`. Demonstrates octave switching mid-sequence, rests, and tempo control. `O1` is one octave above middle C; `O0` is middle C.
+
+```basic
+10 PRINT "FUR ELISE - NW-BASIC DEMO"
+20 PRINT "Ludwig van Beethoven"
+30 PRINT "Opening theme excerpt"
+40 PAUSE
+
+50 TEMPO 110
+60 PRINT "PLAYING..."
+
+70 BEEP O1 E0.5 D#0.5 E0.5 D#0.5 E0.5 O0 B0.5 O1 D0.5 C0.5
+80 BEEP O0 A1 R0.5 C0.5 E0.5 A0.5
+90 BEEP O0 B1 R0.5 E0.5 G#0.5 B0.5
+100 BEEP O1 C1 R0.5 O0 E0.5 O1 E0.5 D#0.5
+
+110 BEEP O1 E0.5 D#0.5 E0.5 D#0.5 E0.5 O0 B0.5 O1 D0.5 C0.5
+120 BEEP O0 A1 R0.5 C0.5 E0.5 A0.5
+130 BEEP O0 B1 R0.5 E0.5 O1 C0.5 O0 B0.5
+140 BEEP O0 A2 R1
+
+150 PRINT "DONE."
+160 TEMPO 120
+170 PAUSE
+180 END
+```
+
 ### File I/O Example
 ```basic
 10 REM ** Write and Read a Data File **
@@ -1373,7 +1401,6 @@ These commands are typed at the prompt without a line number (immediate mode). T
 
 These features are on the roadmap but not yet available:
 
-- `NOT` — logical NOT operator (unary prefix); not yet implemented
 - `PEEK` / `POKE` — memory access (no plans to implement directly)
 - `FIX`, `CINT` — additional numeric rounding functions
 - 3-D arrays — planned (1-D and 2-D are implemented)

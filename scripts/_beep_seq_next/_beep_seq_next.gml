@@ -70,7 +70,11 @@ function _beep_seq_next()
 
     _beep_release_generated_sound();
 
-    var tone = _beep_create_generated_tone(target_hz, ms, gain);
+    var gate = (variable_global_exists("beep_note_gate") && is_real(global.beep_note_gate))
+        ? clamp(global.beep_note_gate, 0.50, 1.00)
+        : 0.90;
+    var tone_ms = max(1, round(ms * gate));
+    var tone = _beep_create_generated_tone(target_hz, tone_ms, gain);
     global.beep_generated_sound = tone[0];
     global.beep_generated_buffer = tone[1];
     global.beep_instance = audio_play_sound(global.beep_generated_sound, 0, false);
@@ -79,6 +83,7 @@ function _beep_seq_next()
         show_debug_message("BEEP SEQ: " + n0 + " target=" + string_format(target_hz, 0, 2)
             + "Hz generated"
             + " gain=" + string_format(gain, 0, 2)
+            + " gate=" + string_format(gate, 0, 2)
             + " ms=" + string(ms));
     }
 

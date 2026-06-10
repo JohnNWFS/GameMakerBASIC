@@ -212,7 +212,8 @@ global.print_tab_mode = 1;
 // 0 = zones (BASIC default), 1 = fixed-width tabs
 // === Beep subsystem ===
 global.beep_tempo = 120; // BPM
-global.beep_volume = 1.2; // Generated tone amplitude; low notes get a small perceptual boost.
+global.beep_volume = 0.35; // Generated tone amplitude; low notes get a small perceptual boost.
+global.beep_note_gate = 0.90; // Note sound length as a fraction of its rhythmic duration.
 global.beep_sample_rate = 44100;
 global.beep_waiting = false;
 global.beep_release_time = 0;

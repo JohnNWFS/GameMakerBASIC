@@ -389,7 +389,9 @@ function handle_basic_command(cmd, arg) {
 
             case "FONTSET":   basic_cmd_fontset(_rest); break;
 
-			case "BEEP":     basic_cmd_beep(_rest); break;
+            case "TEMPO":    basic_cmd_tempo(_rest); break;
+            case "BEEP":     basic_cmd_beep(_rest); break;
+            case "PLAY":     basic_cmd_play(_rest); break;
 
             default:
                 // implicit LET?  e.g.  "X = 5"
