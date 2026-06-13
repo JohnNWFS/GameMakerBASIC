@@ -40,6 +40,7 @@ A custom-built BASIC interpreter and code editor created using **GameMaker Studi
 - [Mode Control](#mode-control)
 - [MODE 2 Commands (Tile Graphics)](#mode-2-commands-tile-graphics)
 - [MODE 3 Commands (Pixel Graphics)](#mode-3-commands-pixel-graphics)
+- [Sprite System](#sprite-system)
 - [File I/O](#file-io)
 - [Math Functions](#math-functions)
 - [String Functions](#string-functions)
@@ -948,6 +949,107 @@ Color names are stored as integers in BGR (blue-green-red) byte order, which is 
 
 ---
 
+## Sprite System
+
+NW-BASIC includes a hardware-accelerated sprite system that works in any mode. Sprites are 16×16 pixel bitmaps drawn directly by the GameMaker engine, supporting rotation, scaling, and circular collision detection. Up to 64 sprites (slots 1–64) can be active at once.
+
+Sprites are defined with `SPRITE DEF`, displayed with `SPRITE SHOW`, repositioned with `SPRITE MOVE`, and cleaned up with `SPRITE CLEAR`. Because one line of BASIC executes per game frame, a `WHILE` loop with `SPRITE MOVE` inside it produces smooth per-frame animation automatically.
+
+### Sprite Commands
+
+| Command | Syntax | Description |
+|---------|--------|-------------|
+| `SPRITE DEF` | `SPRITE DEF slot, "hexstr"` | Define a monochrome sprite. 64 hex characters = 256 bits, MSB first, top row to bottom. |
+| `SPRITE FG` | `SPRITE FG slot, color` | Set the on-pixel color using a palette index 1–15. |
+| `SPRITE BG` | `SPRITE BG slot, color` | Set the off-pixel color. 0 = transparent (default). |
+| `SPRITE SHOW` | `SPRITE SHOW slot, x, y [, angle]` | Make a sprite visible at screen coordinates (x, y), optionally rotated. |
+| `SPRITE HIDE` | `SPRITE HIDE slot` | Hide a single sprite. |
+| `SPRITE HIDE ALL` | `SPRITE HIDE ALL` | Hide all active sprites. |
+| `SPRITE MOVE` | `SPRITE MOVE slot, x, y` | Reposition a visible sprite. Use in a loop for animation. |
+| `SPRITE ANGLE` | `SPRITE ANGLE slot, angle` | Set rotation in degrees (0 = pointing right, 90 = up). |
+| `SPRITE SCALE` | `SPRITE SCALE slot, factor` | Game pixels per sprite pixel. Default 4 renders a 16px sprite as 64×64 on screen. |
+| `SPRITE COLOR` | `SPRITE COLOR slot` | Switch slot to colour mode (used with `SPRITE ROW`). |
+| `SPRITE ROW` | `SPRITE ROW slot, row, "hexstr"` | Set one row of a colour-mode sprite. Each nibble = one pixel, palette index 0–15. |
+| `SPRITE CLEAR` | `SPRITE CLEAR` | Destroy all sprite instances and free all sprite assets. |
+
+### Sprite Functions
+
+| Function | Description |
+|----------|-------------|
+| `SPRITEX(n)` | Returns the current X position of sprite n. |
+| `SPRITEY(n)` | Returns the current Y position of sprite n. |
+| `SPRITEHIT(n, m)` | Returns 1 if sprites n and m overlap, 0 if not. Uses circular collision — radius = `scale × 8`. |
+
+### Sprite Palette (Color Indexes 1–15)
+
+| Index | Color | Index | Color |
+|-------|-------|-------|-------|
+| 1 | Black | 9 | Orange |
+| 2 | White | 10 | Pink |
+| 3 | Dark Red | 11 | Dark Grey |
+| 4 | Cyan | 12 | Mid Grey |
+| 5 | Purple | 13 | Light Green |
+| 6 | Green | 14 | Light Blue |
+| 7 | Blue | 15 | Light Grey |
+| 8 | Yellow | | |
+
+### Monochrome Sprite Definition
+
+A 16×16 monochrome sprite is defined by 64 hex characters. Each nibble represents 4 pixels (MSB = leftmost), scanning left to right, top to bottom. A `1` bit lights the pixel in the foreground color; a `0` bit shows the background color (or nothing if BG is transparent).
+
+```basic
+10 REM ** Orbiting Sprite Demo **
+20 SPRITE DEF 1, "003C7EFFFFFFFFFFFFFFFF7E3C00000000000000000000000000000000000000"
+30 SPRITE FG 1, 13
+40 SPRITE SHOW 1, 320, 200, 0
+50 FOR A = 0 TO 360 STEP 5
+60   SPRITE ANGLE 1, A
+70   SPRITE MOVE 1, 320 + COS(A*3.14159/180)*100, 200 + SIN(A*3.14159/180)*100
+80 NEXT A
+90 SPRITE CLEAR
+100 END
+```
+
+The sprite orbits the center of the screen, rotating as it goes. Because each BASIC line runs on a separate game frame, the FOR loop produces 72 smooth animation steps at 60 fps.
+
+### Collision Detection Example
+
+`SPRITEHIT` tests whether two sprites overlap using circular distance — a hit is detected when the centers are closer than the sum of both radii (radius = `scale × 8` pixels). The demo below drives two sprites toward each other and reacts the moment they collide.
+
+```basic
+10 REM ** Two Sprites Collide **
+20 SPRITE DEF 1, "000000003CC37FF7FFFFFFFFFFFFFFFFFFFFFFFFFFFF7FF73CC3000000000000"
+30 SPRITE DEF 2, "000000003CC37FF7FFFFFFFFFFFFFFFFFFFFFFFFFFFF7FF73CC3000000000000"
+40 SPRITE FG 1, 6
+50 SPRITE FG 2, 3
+60 X1 = 80 : X2 = 1200
+70 SPRITE SHOW 1, X1, 400, 0
+80 SPRITE SHOW 2, X2, 400, 180
+90 WHILE SPRITEHIT(1, 2) = 0
+100   X1 = X1 + 10 : X2 = X2 - 10
+110   SPRITE MOVE 1, X1, 400 : SPRITE MOVE 2, X2, 400
+120 WEND
+130 SPRITE ANGLE 1, 35 : SPRITE ANGLE 2, 215
+140 SPRITE FG 1, 9 : SPRITE FG 2, 9
+150 PRINT "*** CRASH! ***"
+160 PRINT "PRESS ANY KEY..."
+170 K$ = INKEY$
+180 SPRITE CLEAR
+190 END
+```
+
+Both sprites move 10 pixels per frame (one line = one frame). At collision the angles are skewed and both sprites turn orange before the program waits for a keypress.
+
+### Notes
+
+- Sprite coordinates are in screen pixels from the top-left corner. At the default 1280×800 resolution, center is approximately (640, 400).
+- Sprites persist after a program ends so you can see the final frame. They are cleared when you type `NEW` or call `SPRITE CLEAR`.
+- All sprite command arguments accept BASIC expressions and variables — `SPRITE MOVE 1, X, Y` and `SPRITE ANGLE 1, A*2` both work inside loops.
+- Up to 64 sprite slots are available, numbered 1–64.
+- `SPRITE SCALE` default is 4 (a 16-pixel sprite renders 64 game pixels wide). Increase it for big, chunky retro sprites.
+
+---
+
 ## File I/O
 
 NW-BASIC supports reading and writing text files using numbered channels (1 and up).
@@ -1380,6 +1482,7 @@ Three demo programs are hosted on the server and ready to load:
 | `https://johnnwfs.net/NW-BASIC/demos/mode1_fizzbuzz.bas` | Mode 1 (text) | FizzBuzz 1–30 using `FOR`, `MOD`, `IF/AND`, and a summary table |
 | `https://johnnwfs.net/NW-BASIC/demos/mode2_mosaic.bas` | Mode 2 (tile) | Checkerboard mosaic with colored border and title box |
 | `https://johnnwfs.net/NW-BASIC/demos/mode3_geometric.bas` | Mode 3 (pixel) | Concentric rainbow circles, starburst, and corner ornaments |
+| `https://johnnwfs.net/NW-BASIC/demos/car_crash.bas` | Sprites | Two sprites drive toward each other and collide with `SPRITEHIT` |
 
 **To run a demo:**
 ```
