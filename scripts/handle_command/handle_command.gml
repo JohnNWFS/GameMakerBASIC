@@ -125,10 +125,51 @@ break;
 
 
 
+	    case ":KB":
+	    case ":KEYBOARD":
+	    {
+	        if (instance_exists(obj_mobile_kb)) {
+	            obj_mobile_kb.kb_visible = !obj_mobile_kb.kb_visible;
+	        }
+	        break;
+	    }
+
 	    case ":LOADURL":
 	        // Expect the rest of the input line to be the URL
 	        import_from_url(string_trim(cmd_params));
 	        break;
+
+	    case ":DEMOS":
+	    {
+	        var _arg = string_trim(cmd_params);
+	        if (!variable_global_exists("http_tags")) global.http_tags = ds_map_create();
+	        if (_arg == "") {
+	            if (!variable_global_exists("demos_manifest") || array_length(global.demos_manifest) == 0) {
+	                basic_show_message("Fetching demos from server...");
+	                var _req = http_get("https://johnnwfs.net/NW-BASIC/demos/manifest.json");
+	                global.http_tags[? _req] = ":DEMOS_MANIFEST";
+	            } else {
+	                demos_show_list();
+	            }
+	        } else if (string_digits(_arg) == _arg && real(_arg) >= 1) {
+	            if (!variable_global_exists("demos_manifest") || array_length(global.demos_manifest) == 0) {
+	                global.__demos_pending_load = real(_arg);
+	                basic_show_message("Fetching demos from server...");
+	                var _req2 = http_get("https://johnnwfs.net/NW-BASIC/demos/manifest.json");
+	                global.http_tags[? _req2] = ":DEMOS_MANIFEST";
+	            } else {
+	                var _idx = real(_arg) - 1;
+	                if (_idx >= 0 && _idx < array_length(global.demos_manifest)) {
+	                    import_from_url(global.demos_manifest[_idx][$ "url"]);
+	                } else {
+	                    show_error_message("No demo " + _arg + ". Type :DEMOS to see the list.");
+	                }
+	            }
+	        } else {
+	            show_error_message("Usage: :DEMOS  or  :DEMOS N");
+	        }
+	        break;
+	    }
 		
 		
 

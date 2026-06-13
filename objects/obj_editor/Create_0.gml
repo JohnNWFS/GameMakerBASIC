@@ -47,3 +47,14 @@ dir_listing = [];
 // Overlay for HTML DIR listing
 show_dir_overlay = false;   // draw toggle
 dir_cursor       = 0;       // selected row (0-based)
+
+// Persistent Ctrl+V paste handler (browser only)
+if (os_browser != browser_not_a_browser) {
+    browser_paste_bind(editor_html_paste_persistent_handler);
+    global.__editor_html_paste_bound = true;
+}
+
+// Demos overlay
+showing_demos_overlay = false;
+
+// On-screen keyboard is handled entirely by obj_mobile_kb (persistent, Draw GUI).

@@ -62,14 +62,32 @@
 		// run the original handler:
 		if (onKeyDown_base) onKeyDown_base(e);
 	}
-	
+
+	// Capture-phase keydown: intercepts Ctrl+V before the canvas sees it and
+	// reads the clipboard via the modern Clipboard API so it works every time.
+	var captureKeyHandler = null;
+	function onKeyDownCapture(e) {
+		if (!pasteHandler) return;
+		if ((e.ctrlKey || e.metaKey) && (e.key == 'v' || e.which == 86)) {
+			e.preventDefault();
+			e.stopImmediatePropagation(); // canvas and window.onkeydown never see it
+			if (navigator.clipboard && navigator.clipboard.readText) {
+				navigator.clipboard.readText().then(function(text) {
+					if (pasteHandler && text) {
+						pasteHandler(pasteSelf, pasteOther, text, undefined, "text/plain");
+					}
+				}).catch(function() { /* permission denied or empty - ignore */ });
+			}
+		}
+	}
+
 	///~
 	window.browser_paste_bind_raw = function(gmlHandler, gmlFilter, gmlSelf, gmlOther) {
 		pasteHandler = get_callback_func(gmlHandler);
 		pasteFilter = get_callback_func(gmlFilter);
 		pasteSelf = gmlSelf;
 		pasteOther = gmlOther;
-		
+
 		if (pasteHandler) {
 			if (window.onkeydown != onKeyDown_hook) {
 				onKeyDown_base = window.onkeydown;
@@ -79,6 +97,10 @@
 				document.addEventListener("paste", onPaste);
 				pasteBound = true;
 			}
+			if (!captureKeyHandler) {
+				captureKeyHandler = onKeyDownCapture;
+				document.addEventListener('keydown', captureKeyHandler, true);
+			}
 		} else {
 			if (window.onkeydown == onKeyDown_hook) {
 				window.onkeydown = onKeyDown_base;
@@ -86,6 +108,10 @@
 			if (pasteBound) {
 				document.removeEventListener("paste", onPaste);
 				pasteBound = false;
+			}
+			if (captureKeyHandler) {
+				document.removeEventListener('keydown', captureKeyHandler, true);
+				captureKeyHandler = null;
 			}
 		}
 	}
@@ -171,6 +197,14 @@
 		}
 		var blob = new Blob([abuf], { type: type });
 		saveAs(blob, name);
+	}
+
+	// Returns 1 on touch devices (phones, tablets), 0 on desktop.
+	// navigator.maxTouchPoints is the W3C standard and works on all modern browsers
+	// including iPad on iPadOS 13+ (which spoofs a desktop user-agent).
+	///~
+	window.nwbasic_is_touch_device = function() {
+		return (navigator.maxTouchPoints > 0) ? 1 : 0;
 	}
 })();
 

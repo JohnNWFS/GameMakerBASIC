@@ -1,5 +1,5 @@
 function autotest_bootstrap() {
-    if (os_browser != browser_not_a_browser) return false;
+    if (os_type == os_gxgames || os_browser != browser_not_a_browser) return false;
     if (!variable_global_exists("config") || !ds_exists(global.config, ds_type_map)) return false;
 
     if (!variable_global_exists("autotest_bootstrapped")) {

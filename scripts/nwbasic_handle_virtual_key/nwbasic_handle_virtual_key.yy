@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"nwbasic_handle_virtual_key",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"nwbasic_handle_virtual_key",
+  "parent":{
+    "name":"EDITOR_SCRIPTS",
+    "path":"folders/Scripts/EDITOR_SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

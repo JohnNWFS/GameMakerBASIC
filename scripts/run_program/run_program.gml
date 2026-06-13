@@ -117,7 +117,8 @@ for (var i = 0; i < ds_list_size(global.line_list); i++) {
     if (!basic_validate_program()) {
         // Validator already printed a visible error & set end flags.
         // Ensure the user can see it.
-        if (room != rm_basic_interpreter) room_goto(rm_basic_interpreter);
+        var _text_room_for_error = ds_map_find_value(global.mode_rooms, 0);
+        if (room != _text_room_for_error) room_goto(_text_room_for_error);
         return;
     }
     dbg_log(DBG_FLOW, "RUN_PROGRAM: validation passed");
@@ -175,10 +176,11 @@ for (var i = 0; i < ds_list_size(global.line_list); i++) {
     global.editor_return_room = room;
 
     // Go to interpreter room (only if not already there)
-    if (room != rm_basic_interpreter) {
-        dbg_log(DBG_FLOW, "RUN_PROGRAM: room_goto rm_basic_interpreter from " + room_get_name(room));
-        room_goto(rm_basic_interpreter);
+    var _text_room = ds_map_find_value(global.mode_rooms, 0);
+    if (room != _text_room) {
+        dbg_log(DBG_FLOW, "RUN_PROGRAM: room_goto text room from " + room_get_name(room));
+        room_goto(_text_room);
     } else {
-        dbg_log(DBG_FLOW, "RUN_PROGRAM: already in rm_basic_interpreter");
+        dbg_log(DBG_FLOW, "RUN_PROGRAM: already in text room");
     }
 }

@@ -11,8 +11,10 @@ if (global.background_draw_enabled) {
     draw_rectangle(0, 0, room_width, room_height, false);
 }
 
+var _kb_h = (instance_exists(obj_mobile_kb) && obj_mobile_kb.kb_visible) ? obj_mobile_kb.KB_H : 0;
+var _content_height = room_height - _kb_h;
 var font_height = string_height("A");
-var visible_lines = floor(room_height / font_height) - 2;
+var visible_lines = floor(_content_height / font_height) - 2;
 var total_lines = ds_list_size(global.output_lines) + (global.awaiting_input ? 1 : 0);
 
 // === SCROLL MANAGEMENT === //
@@ -48,7 +50,7 @@ if (global.awaiting_input) {
         var curr_color = draw_get_color();
         var txt = "PAUSED...";
         var xx = room_width div 2;
-        var yy = room_height div 2;
+        var yy = _content_height div 2;
 
         draw_set_color(c_black);
         draw_text(xx - 1, yy - 1, txt);

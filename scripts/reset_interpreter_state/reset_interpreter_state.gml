@@ -21,7 +21,7 @@ function reset_interpreter_state() {
     // Reset mode if needed
     if (global.current_mode != 0) {
         global.current_mode = 0;
-        room_goto(rm_basic_interpreter);
+        room_goto(ds_map_find_value(global.mode_rooms, 0));
     }
     
     global.option_base = 1; // reset to default between runs

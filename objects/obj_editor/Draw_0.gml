@@ -1,7 +1,8 @@
 /// @event obj_editor/Draw
+// Only draw editor UI when in the editor room
+if (room != rm_editor) exit;
 // Pause regular editor drawing when screen editor is active
 if (global.screen_edit_mode) {
-    //dbg_log(DBG_FLOW, "EDITOR: Screen edit mode active, pausing regular editor draw");
     exit;
 }
 
@@ -11,6 +12,7 @@ draw_set_font(fnt_basic);
 var actual_font_height = string_height("A"); // Get real font height
 draw_set_color(make_color_rgb(255, 191, 64));
 draw_rectangle_color(0, 0, room_width, room_height, c_black, c_black, c_black, c_black, false);
+
 
 if (showing_dir_overlay) {
     // Modal backdrop
@@ -136,13 +138,58 @@ if (showing_dir_overlay) {
 }
 
 
+// === DEMOS OVERLAY ===
+if (showing_demos_overlay && variable_global_exists("demos_manifest")) {
+    draw_set_color(c_black);
+    draw_rectangle(0, 0, room_width, room_height, false);
+
+    var _lh = actual_font_height;
+    var _y  = 32;
+    var _x  = 16;
+
+    draw_set_color(c_lime);
+    draw_text(_x, _y, "=== NW-BASIC DEMO PROGRAMS ===");
+    _y += _lh * 2;
+
+    var _dm = global.demos_manifest;
+    var _dn = array_length(_dm);
+    for (var _di = 0; _di < _dn; _di++) {
+        var _de = _dm[_di];
+        draw_set_color(c_white);
+        draw_text(_x, _y, string(_di + 1) + ".  " + _de[$ "title"] + "  -  " + _de[$ "desc"]);
+        _y += _lh;
+    }
+
+    _y += _lh;
+    draw_set_color(c_lime);
+    draw_text(_x, _y, "Press a number key to load   (e.g. press 1)   or type :DEMOS N and Enter");
+    _y += _lh;
+    draw_set_color(make_color_rgb(100, 100, 100));
+    draw_text(_x, _y, "ESC or Enter to close");
+
+    // prompt still visible at bottom (above keyboard if shown)
+    var _kb_h2 = (instance_exists(obj_mobile_kb) && obj_mobile_kb.kb_visible) ? obj_mobile_kb.KB_H : 0;
+    var _cb2 = room_height - _kb_h2;
+    draw_set_color(make_color_rgb(255, 191, 64));
+    draw_text(16, _cb2 - (actual_font_height * 2), "READY");
+    draw_text(16, _cb2 - actual_font_height, "> " + current_input);
+    var _cx = 16 + string_width("> " + string_copy(current_input, 1, cursor_pos));
+    if (current_time % 1000 < 500) draw_text(_cx, _cb2 - actual_font_height, "_");
+    return;
+}
+
+// When obj_mobile_kb is visible it draws over the bottom 246 GUI px.
+// Push all bottom-anchored UI above that zone so it stays readable.
+var _kb_h = (instance_exists(obj_mobile_kb) && obj_mobile_kb.kb_visible) ? obj_mobile_kb.KB_H : 0;
+var content_bottom = room_height - _kb_h;
+
 // Draw program lines with proper spacing
 var y_pos = 32;
 var lines_shown = 0;
 var total_lines = ds_list_size(global.line_numbers);
 
 // Calculate how many lines fit on screen
-var available_height = room_height - 128; // Leave space for prompt and messages
+var available_height = content_bottom - 128; // Leave space for prompt and messages
 var max_lines = floor(available_height / actual_font_height);
 
 for (var i = display_start_line; i < total_lines && lines_shown < max_lines; i++) {
@@ -159,7 +206,7 @@ for (var i = display_start_line; i < total_lines && lines_shown < max_lines; i++
 }
 
 // When the editor is empty in the browser, show a welcome hint
-if (total_lines == 0 && os_browser != browser_not_a_browser) {
+if (total_lines == 0 && (os_type == os_gxgames || os_browser != browser_not_a_browser)) {
     var _y = 32;
     var _lh = actual_font_height;
     draw_set_color(c_lime);
@@ -176,18 +223,18 @@ if (total_lines == 0 && os_browser != browser_not_a_browser) {
 }
 
 // Draw input prompt with proper spacing
-draw_text(16, room_height - (actual_font_height * 2), "READY");
-draw_text(16, room_height - actual_font_height, "> " + current_input);
+draw_text(16, content_bottom - (actual_font_height * 2), "READY");
+draw_text(16, content_bottom - actual_font_height, "> " + current_input);
 
 // Draw cursor
 var cursor_x = 16 + string_width("> " + string_copy(current_input, 1, cursor_pos));
 if (current_time % 1000 < 500) { // Blinking cursor
-    draw_text(cursor_x, room_height - actual_font_height, "_");
+    draw_text(cursor_x, content_bottom - actual_font_height, "_");
 }
 
 // Draw message with proper spacing
 if (message_text != "") {
     draw_set_color(c_yellow);
-    draw_text(16, room_height - (actual_font_height * 3), message_text);
+    draw_text(16, content_bottom - (actual_font_height * 3), message_text);
     draw_set_color(make_color_rgb(255, 191, 64)); // Reset color
 }

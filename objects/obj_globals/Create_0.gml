@@ -109,10 +109,17 @@ global.colors[? "DKGRAY"] = make_color_rgb(64, 64, 64);
 // MODE 0 remains as a compatibility alias for text mode.
 global.current_mode = 0;
 global.mode_rooms = ds_map_create();
-global.mode_rooms[? 0] = rm_basic_interpreter; // Text
-global.mode_rooms[? 1] = rm_basic_interpreter; // Text
-global.mode_rooms[? 2] = rm_mode1_graphics;    // Tile graphics
-global.mode_rooms[? 3] = rm_mode2_pixel;       // Pixel graphics
+if (os_type == os_gxgames || os_browser != browser_not_a_browser) {
+    global.mode_rooms[? 0] = rm_html5_basic_interpreter; // Text + on-screen keyboard
+    global.mode_rooms[? 1] = rm_html5_basic_interpreter; // Text + on-screen keyboard
+    global.mode_rooms[? 2] = rm_html5_mode1_graphics;    // Tile graphics + on-screen keyboard
+    global.mode_rooms[? 3] = rm_html5_mode2_pixel;       // Pixel graphics + on-screen keyboard
+} else {
+    global.mode_rooms[? 0] = rm_basic_interpreter; // Text
+    global.mode_rooms[? 1] = rm_basic_interpreter; // Text
+    global.mode_rooms[? 2] = rm_mode1_graphics;    // Tile graphics
+    global.mode_rooms[? 3] = rm_mode2_pixel;       // Pixel graphics
+}
 
 // MODE 1 sprite sheet container
 // FONT registry for MODE 1

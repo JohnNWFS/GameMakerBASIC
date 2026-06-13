@@ -38,6 +38,7 @@
         {"$GMExtensionFunction":"","%Name":"browser_drop_bind_raw","argCount":4,"args":[2,2,2,2,],"documentation":"","externalName":"browser_drop_bind_raw","help":"","hidden":true,"kind":11,"name":"browser_drop_bind_raw","resourceType":"GMExtensionFunction","resourceVersion":"2.0","returnType":2,},
         {"$GMExtensionFunction":"","%Name":"browser_show_open_dialog_raw","argCount":6,"args":[2,2,2,2,2,2,],"documentation":"","externalName":"browser_show_open_dialog_raw","help":"","hidden":true,"kind":11,"name":"browser_show_open_dialog_raw","resourceType":"GMExtensionFunction","resourceVersion":"2.0","returnType":2,},
         {"$GMExtensionFunction":"","%Name":"browser_show_save_dialog_raw","argCount":4,"args":[2,2,2,2,],"documentation":"","externalName":"browser_show_save_dialog_raw","help":"","hidden":true,"kind":11,"name":"browser_show_save_dialog_raw","resourceType":"GMExtensionFunction","resourceVersion":"2.0","returnType":2,},
+        {"$GMExtensionFunction":"","%Name":"nwbasic_is_touch_device","argCount":0,"args":[],"documentation":"","externalName":"nwbasic_is_touch_device","help":"Returns 1 if the browser reports touch support (phone/tablet), 0 otherwise.","hidden":false,"kind":11,"name":"nwbasic_is_touch_device","resourceType":"GMExtensionFunction","resourceVersion":"2.0","returnType":2,},
       ],"init":"","kind":5,"name":"","origname":"","ProxyFiles":[],"resourceType":"GMExtensionFile","resourceVersion":"2.0","uncompress":false,"usesRunnerInterface":false,},
   ],
   "gradleinject":"",

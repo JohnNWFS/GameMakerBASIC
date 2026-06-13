@@ -17,6 +17,34 @@ if (global.justreturned == 1) {
     exit; // skip the rest of this Step event
 }
 
+
+// === DEMOS OVERLAY INPUT ===
+if (showing_demos_overlay) {
+    if (keyboard_check_pressed(vk_escape) || keyboard_check_pressed(vk_enter)) {
+        showing_demos_overlay = false;
+        keyboard_string = "";
+        current_input   = "";
+        cursor_pos      = 0;
+        exit;
+    }
+    // Number keys 1-9 load demo directly
+    if (variable_global_exists("demos_manifest")) {
+        var _dn = array_length(global.demos_manifest);
+        for (var _dk = 1; _dk <= min(_dn, 9); _dk++) {
+            if (keyboard_check_pressed(ord(string(_dk)))) {
+                showing_demos_overlay = false;
+                keyboard_string = "";
+                current_input   = "";
+                cursor_pos      = 0;
+                import_from_url(global.demos_manifest[_dk - 1][$ "url"]);
+                exit;
+            }
+        }
+    }
+    exit; // block regular input while overlay is up
+}
+
+
 // === DIRECTORY OVERLAY INPUT (ASCII) ===
 if (showing_dir_overlay) {
 
@@ -159,6 +187,24 @@ if (keyboard_check_pressed(vk_enter)) {
  }
  else if (keyboard_check(vk_control) && keyboard_check_pressed(ord("Z"))) {
     undo_last_change();
+ }
+ else if (keyboard_check(vk_control) && keyboard_check_pressed(ord("V"))) {
+    // Desktop: paste first line of clipboard text at cursor
+    if (os_browser == browser_not_a_browser) {
+        var _clip = clipboard_get_text();
+        if (string_length(_clip) > 0) {
+            _clip = string_replace_all(string_replace_all(_clip, "\r\n", "\n"), "\r", "\n");
+            var _nl = string_pos("\n", _clip);
+            if (_nl > 0) _clip = string_copy(_clip, 1, _nl - 1);
+            _clip = string_trim(_clip);
+            if (string_length(_clip) > 0) {
+                var _before = string_copy(current_input, 1, cursor_pos);
+                var _after  = string_copy(current_input, cursor_pos + 1, string_length(current_input) - cursor_pos);
+                current_input = _before + _clip + _after;
+                cursor_pos += string_length(_clip);
+            }
+        }
+    }
  }
  else if (keyboard_check(vk_f5)) {
     dump_program_to_console();

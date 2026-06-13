@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"mobile_kb_draw",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"mobile_kb_draw",
+  "parent":{
+    "name":"EDITOR_SCRIPTS",
+    "path":"folders/Scripts/EDITOR_SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

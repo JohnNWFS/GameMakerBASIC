@@ -19,10 +19,9 @@ function editor_import_text_to_program(_text) {
                 if (is_line_number(ln_str)) {
                     var _ln = real(ln_str);
                     if (code == "") {
-                        // delete empty-numbered line
-                        if (function_exists("delete_program_line")) delete_program_line(_ln);
+                        delete_program_line(_ln);
                     } else {
-                        if (function_exists("add_or_update_program_line")) add_or_update_program_line(_ln, code);
+                        add_or_update_program_line(_ln, code);
                     }
                     count++;
                 }

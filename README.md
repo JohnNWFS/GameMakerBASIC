@@ -48,6 +48,7 @@ A custom-built BASIC interpreter and code editor created using **GameMaker Studi
 - [Color Control](#color-control)
 - [Operators](#operators)
 - [Editor Commands](#editor-commands)
+- [Browser (Web) Edition](#browser-web-edition)
 - [Error Handling](#error-handling)
 - [Programming Tips](#programming-tips)
 - [Example Programs](#example-programs)
@@ -986,7 +987,8 @@ NW-BASIC supports reading and writing text files using numbered channels (1 and 
 ```
 
 **Notes:**
-- Files are stored in the GameMaker save directory (`Documents/BasicInterpreter/` on desktop).
+- **Desktop:** files are stored in `Documents/BasicInterpreter/`.
+- **Browser:** files are stored in the browser's IndexedDB virtual filesystem and persist across page reloads automatically. `SAVE`, `LOAD`, and `DIR` all use this storage — no extra steps needed.
 - Channel numbers are integers (1, 2, 3, ...).
 - `EOF(n)` returns -1 (true in BASIC) when channel n is at end of file, 0 otherwise.
 - `OPEN` modes: `INPUT`, `OUTPUT`, `APPEND`.
@@ -1236,7 +1238,7 @@ The example below creates two independent streams. It reads two numbers from `@n
 ```
 
 ### Available Named Colors
-Named colors include `BLACK`, `WHITE`, `RED`, `GREEN`, `BLUE`, `CYAN`, `MAGENTA`, `YELLOW`, `GRAY`, `DKGRAY`, `ORANGE`, `LIME`, `NAVY`, and `LIGHTGRAY`.
+Named colors include `BLACK`, `WHITE`, `RED`, `GREEN`, `BLUE`, `CYAN`, `MAGENTA`, `YELLOW`, `GRAY`, `DKGRAY`, `ORANGE`, `LIME`, and `NAVY`.
 
 **Note:** `COLOR` and `BGCOLOR` apply to subsequent `PRINT` output. Individual tile commands (`PRINTAT`, `CHARAT`, `PSET`, etc.) take their own fg/bg color arguments and do not use these globals.
 
@@ -1318,16 +1320,17 @@ These commands are typed at the prompt without a line number (immediate mode). T
 | `SAVE "filename"` | Save program to disk (`.bas` extension added automatically) |
 | `LOAD "filename"` | Load a program from disk |
 | `DIR` | Open the interactive file browser |
+| `DIR IMPORT` | Open the OS file picker to import a `.bas` file (browser only) |
 | `HELP` | Open the built-in help browser |
 | `:PASTE` | Paste a multi-line program from the clipboard |
-| `:LOADURL url` | Load a program from a URL (HTML build) |
+| `:LOADURL url` | Fetch and load a program from a URL (browser only) |
 | `SCREENEDIT` or `SE` | Enter full-screen C64-style editor |
 | `QUIT` or `Q` | Exit NW-BASIC |
 
 ### File Browser (DIR)
 - Arrow keys to navigate
 - Enter to load the selected file
-- D/X to delete (desktop only)
+- D/X/Delete to delete the selected file
 - Esc to close
 
 ### Screen Editor (SCREENEDIT / SE)
@@ -1348,6 +1351,46 @@ These commands are typed at the prompt without a line number (immediate mode). T
 | `Up Arrow` | Navigate up through command history |
 | `Down Arrow` | Navigate down through command history |
 | `Ctrl+Z` | Undo last change |
+
+---
+
+## Browser (Web) Edition
+
+NW-BASIC runs in the browser at **[johnnwfs.net/NW-BASIC](https://johnnwfs.net/NW-BASIC/)**. The web edition works the same as the desktop version with a few differences in how files are handled and how programs can be loaded.
+
+### File Storage in the Browser
+Saved programs are stored in the browser's **IndexedDB** virtual filesystem. They persist across page reloads and browser restarts automatically — just `SAVE myprogram` and it will be there next session. Each browser/device has its own independent storage.
+
+### Browser-Only Commands
+
+| Command | Description |
+|---------|-------------|
+| `SAVE "name"` | Save the current program to IndexedDB. Triggers a download to your local disk as well so you keep a copy. |
+| `LOAD "name"` | Load a previously saved program from IndexedDB. |
+| `DIR` | Open the file browser showing all programs saved in IndexedDB. Press D/X/Delete to remove a file. |
+| `DIR IMPORT` | Open your OS file picker. Select any `.bas` file from your computer — it is loaded into the editor and also saved to IndexedDB for future sessions. |
+| `:LOADURL url` | Fetch a plain-text `.bas` program from any URL and load it into the editor. Example: `:LOADURL https://johnnwfs.net/NW-BASIC/demos/mode1_fizzbuzz.bas` |
+| `:PASTE` | Paste a complete multi-line BASIC program from your clipboard directly into the editor. |
+
+### Demo Programs
+Three demo programs are hosted on the server and ready to load:
+
+| URL | Mode | Description |
+|-----|------|-------------|
+| `https://johnnwfs.net/NW-BASIC/demos/mode1_fizzbuzz.bas` | Mode 1 (text) | FizzBuzz 1–30 using `FOR`, `MOD`, `IF/AND`, and a summary table |
+| `https://johnnwfs.net/NW-BASIC/demos/mode2_mosaic.bas` | Mode 2 (tile) | Checkerboard mosaic with colored border and title box |
+| `https://johnnwfs.net/NW-BASIC/demos/mode3_geometric.bas` | Mode 3 (pixel) | Concentric rainbow circles, starburst, and corner ornaments |
+
+**To run a demo:**
+```
+:LOADURL https://johnnwfs.net/NW-BASIC/demos/mode1_fizzbuzz.bas
+RUN
+```
+
+### Notes
+- **File I/O** (`OPEN`/`CLOSE`/`PRINT #n`) writes to IndexedDB, not your local disk. The data is readable within the same session and persists between sessions in the same browser.
+- **No keyboard paste into the canvas** is supported yet — to paste a program use `:PASTE` or `DIR IMPORT`.
+- The `:LOADURL` command requires the file to be served with CORS headers or be on the same domain (`johnnwfs.net`).
 
 ---
 
@@ -1374,12 +1417,6 @@ These commands are typed at the prompt without a line number (immediate mode). T
 8. **RESTORE for replay**: If you read DATA values in a loop, call `RESTORE` at the top of the loop to re-read them from the start each time.
 9. **Use STR$ and VAL**: Mixing numbers into strings requires `STR$(n)`; reading numbers from file or input requires `VAL(s$)`. Forgetting these is a common source of type errors.
 10. **Test in small pieces**: Write a few lines, run them, check the output. In BASIC, incremental testing is faster than debugging a large program all at once.
-4. **Test incrementally**: Run small sections before building larger programs
-5. **Use MODE commands**: Switch to graphics modes for visual programs
-6. **Leverage INKEY$**: Create responsive, interactive programs without blocking
-7. **Arrays are 0-based by default**: Use `OPTION BASE 1` if you prefer 1-based
-8. **BEEP sequences block**: Use them for sound effects and melodies
-9. **File I/O saves and loads data**: Use `OPEN`/`CLOSE` for persistence
 
 ---
 

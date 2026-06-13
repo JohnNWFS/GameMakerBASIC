@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"editor_html_paste_persistent_handler",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"editor_html_paste_persistent_handler",
+  "parent":{
+    "name":"EDITOR_SCRIPTS",
+    "path":"folders/Scripts/EDITOR_SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}
