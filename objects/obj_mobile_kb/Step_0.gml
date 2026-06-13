@@ -10,13 +10,16 @@ var _gh = display_get_gui_height();
 if (_gw < 100) _gw = room_width;
 if (_gh < 100) _gh = room_height;
 
-// ── Toggle tab hit-test (always active, bottom-right corner) ────────────────
-var _tab_w = 80;
-var _tab_h = 32;
-if (_tx >= _gw - _tab_w && _ty >= _gh - _tab_h) {
+// ── Toggle tab hit-test ───────────────────────────────────────────────────────
+// Tab position mirrors Draw_64: above keyboard when visible, bottom-right when hidden.
+var _tab_w  = 80;
+var _tab_h  = 32;
+var _row_h2 = max(48, floor(_gh * 0.07));
+var _kb_h2  = 6 * (_row_h2 + 2) + 6;
+var _tab_y2 = kb_visible ? (_gh - _kb_h2 - _tab_h) : (_gh - _tab_h);
+if (_tx >= _gw - _tab_w && _ty >= _tab_y2 && _ty <= _tab_y2 + _tab_h) {
     kb_visible = !kb_visible;
-    var _row_h = max(48, floor(_gh * 0.07));
-    KB_H = kb_visible ? (6 * (_row_h + 2) + 6) : 0;
+    KB_H = kb_visible ? _kb_h2 : 0;
     exit;
 }
 
