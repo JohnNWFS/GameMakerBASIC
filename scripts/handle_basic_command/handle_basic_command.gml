@@ -393,6 +393,8 @@ function handle_basic_command(cmd, arg) {
             case "BEEP":     basic_cmd_beep(_rest); break;
             case "PLAY":     basic_cmd_play(_rest); break;
 
+            case "SPRITE":   bas_sprite_command(_rest); break;
+
             default:
                 // implicit LET?  e.g.  "X = 5"
                 if (string_pos("=", _verb + " " + _rest) > 0) {
