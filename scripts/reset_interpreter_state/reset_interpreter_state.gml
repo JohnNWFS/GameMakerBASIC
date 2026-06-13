@@ -50,4 +50,6 @@ function reset_interpreter_state() {
         ds_queue_clear(global.__inkey_queue);
         dbg_log(DBG_FLOW, "INKEY$ RESET: Cleared global.__inkey_queue");
     }
+
+    bas_sprite_clear_all();
 }

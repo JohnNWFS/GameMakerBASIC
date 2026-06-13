@@ -1,0 +1,10 @@
+{
+  "$GMScript":"v1",
+  "%Name":"bas_sprite_build",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"bas_sprite_build",
+  "parent":{"name":"Scripts","path":"folders/Scripts.yy"},
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0"
+}

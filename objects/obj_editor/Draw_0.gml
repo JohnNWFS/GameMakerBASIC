@@ -178,10 +178,10 @@ if (showing_demos_overlay && variable_global_exists("demos_manifest")) {
     return;
 }
 
-// When obj_mobile_kb is visible it draws over the bottom 246 GUI px.
-// Push all bottom-anchored UI above that zone so it stays readable.
+// KB_H is in screen/GUI pixels (display_set_gui_size was called by obj_mobile_kb).
+// On desktop kb_active=false so GUI = room_height and KB_H = 0, giving content_bottom = room_height.
 var _kb_h = (instance_exists(obj_mobile_kb) && obj_mobile_kb.kb_visible) ? obj_mobile_kb.KB_H : 0;
-var content_bottom = room_height - _kb_h;
+var content_bottom = display_get_gui_height() - _kb_h;
 
 // Draw program lines with proper spacing
 var y_pos = 32;

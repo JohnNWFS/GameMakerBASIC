@@ -98,7 +98,7 @@ if (keyboard_check_pressed(vk_enter) || keyboard_check_pressed(ord(">"))) {
     var _name = dir_listing[dir_sel];
     if (_name != "No .bas files found.") {
         // Check if this is an HTML file list (has global.html_dir_files data)
-        if (os_browser != browser_not_a_browser && variable_global_exists("html_dir_files") && ds_list_size(global.html_dir_files) > 0) {
+        if ((os_type == os_gxgames || os_browser != browser_not_a_browser) && variable_global_exists("html_dir_files") && ds_list_size(global.html_dir_files) > 0) {
             // HTML version - load from memory
             dbg_log(DBG_IO, "[DIR] HTML load: " + _name + " at index " + string(dir_sel + 1));
             var success = editor_html_dir_open(string(dir_sel + 1));

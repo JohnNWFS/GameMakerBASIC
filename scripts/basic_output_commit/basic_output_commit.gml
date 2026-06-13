@@ -8,7 +8,7 @@ function basic_output_transcript_reset() {
     global.autotest_transcript_finalized = false;
     global.autotest_screenshot_requested = false;
 
-    if (os_browser != browser_not_a_browser) return;
+    if (os_type == os_gxgames || os_browser != browser_not_a_browser) return;
 
     var autotest_path = get_save_directory() + "autotest.bas";
     var forced_autotest = variable_global_exists("autotest_run_active") && global.autotest_run_active;
@@ -48,7 +48,7 @@ function basic_output_transcript_reset() {
 }
 
 function basic_output_transcript_append(_line) {
-    if (os_browser != browser_not_a_browser) return;
+    if (os_type == os_gxgames || os_browser != browser_not_a_browser) return;
     if (!variable_global_exists("autotest_transcript_enabled") || !global.autotest_transcript_enabled) return;
 
     var path = global.autotest_transcript_path;

@@ -689,6 +689,24 @@ case "OR": {
 			
 
 
+                // ── Sprite query functions ─────────────────────────────────
+                case "SPRITEX": {
+                    var _sn = safe_real_pop(stack);
+                    array_push(stack, bas_sprite_fn_x(_sn));
+                    break;
+                }
+                case "SPRITEY": {
+                    var _sn = safe_real_pop(stack);
+                    array_push(stack, bas_sprite_fn_y(_sn));
+                    break;
+                }
+                case "SPRITEHIT": {
+                    var _sm = safe_real_pop(stack);
+                    var _sn = safe_real_pop(stack);
+                    array_push(stack, bas_sprite_fn_hit(_sn, _sm));
+                    break;
+                }
+
                 default:
                     dbg_log(DBG_PARSE, "? POSTFIX WARNING: Unknown function = " + token_upper + " — pushing last real as fallback");
                     array_push(stack, safe_real_pop(stack));

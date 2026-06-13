@@ -4,7 +4,7 @@ function basic_wrap_and_commit(_text, _color) {
 // Normalize and split on explicit newlines first
 var src = string(_text);
 src = string_replace_all(src, "\r\n", "\n");
-src = string_replace_all(src, "\r",   "\n");
+src = string_replace_all(src, "\r",   "\n"); //duplicate is fine because we're performing 2 operations
 
 if (string_pos("\n", src) > 0) {
     var parts = string_split(src, "\n"); // GMS2.3+

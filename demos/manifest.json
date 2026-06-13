@@ -1,0 +1,19 @@
+{
+  "demos": [
+    {
+      "title": "FizzBuzz",
+      "desc": "Mode 1: FizzBuzz 1-30 with stats",
+      "url": "https://johnnwfs.net/NW-BASIC/demos/mode1_fizzbuzz.bas"
+    },
+    {
+      "title": "Color Mosaic",
+      "desc": "Mode 2: checkerboard with border and title",
+      "url": "https://johnnwfs.net/NW-BASIC/demos/mode2_mosaic.bas"
+    },
+    {
+      "title": "Geometric Art",
+      "desc": "Mode 3: rainbow circles and starburst",
+      "url": "https://johnnwfs.net/NW-BASIC/demos/mode3_geometric.bas"
+    }
+  ]
+}

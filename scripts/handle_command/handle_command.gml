@@ -41,7 +41,7 @@ var original_command = string_trim(command);
             break;
             
         case "SAVE":
-            if (os_browser != browser_not_a_browser) {
+            if (os_type == os_gxgames || os_browser != browser_not_a_browser) {
                 // HTML build → use browser_file_tools download dialog
                 if (cmd_params == "") {
                     editor_html_save_program();
@@ -79,7 +79,7 @@ case "CHECK_SAVE_FUNCS":
 
 		
 case "DIR":
-    if (os_browser != browser_not_a_browser) {
+    if (os_type == os_gxgames || os_browser != browser_not_a_browser) {
         var p = string_trim(cmd_params);
         var P = string_upper(p);
         if (P == "" || P == "SHOW") {
@@ -185,6 +185,10 @@ break;
 
 
 			
+    case "SPRITE":
+        bas_sprite_command(cmd_params);
+        break;
+
         default:
             show_error_message("SYNTAX ERROR");
             break;

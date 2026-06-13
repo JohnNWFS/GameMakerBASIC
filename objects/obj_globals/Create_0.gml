@@ -232,3 +232,5 @@ global.beep_break_requested = false;
 
  global.gosub_targets = ds_map_create();
 global.option_base = 1; // default: arrays are 1-based (OPTION BASE 1)
+
+bas_sprite_init();

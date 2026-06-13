@@ -1,20 +1,36 @@
-/// Draw GUI — renders the keyboard in GUI/screen coordinates on top of every room.
+/// Draw GUI — keyboard in screen-pixel coordinates, overlays every room.
 if (!kb_active) exit;
 
 var _gw = display_get_gui_width();
 var _gh = display_get_gui_height();
-if (_gw <= 0) _gw = room_width;
-if (_gh <= 0) _gh = room_height;
+if (_gw < 100) _gw = room_width;
+if (_gh < 100) _gh = room_height;
+
+// ── Toggle tab (always visible at bottom-right so user can show/hide) ──────
+var _tab_w = 80;
+var _tab_h = 32;
+var _tab_x = _gw - _tab_w;
+var _tab_y = _gh - _tab_h;
+draw_set_color(make_color_rgb(40, 40, 80));
+draw_rectangle(_tab_x, _tab_y, _gw, _gh, false);
+draw_set_font(fnt_basic_12);
+draw_set_halign(fa_center);
+draw_set_valign(fa_middle);
+draw_set_color(c_white);
+draw_text(_tab_x + _tab_w * 0.5, _tab_y + _tab_h * 0.5, kb_visible ? "HIDE KB" : "SHOW KB");
+draw_set_halign(fa_left);
+draw_set_valign(fa_top);
 
 if (!kb_visible) exit;
 
-var _row_h = 38;
+// ── Row geometry (derived from screen height, same as Create_0) ─────────────
+var _row_h = max(48, floor(_gh * 0.07));
 var _gap   = 2;
 var _rows  = 6;
 var _kb_h  = _rows * (_row_h + _gap) + 6;
 var _kb_y  = _gh - _kb_h;
 
-// Background
+// Background strip
 draw_set_color(make_color_rgb(18, 18, 18));
 draw_rectangle(0, _kb_y - 2, _gw, _gh, false);
 

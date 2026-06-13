@@ -12,7 +12,7 @@ if (global.background_draw_enabled) {
 }
 
 var _kb_h = (instance_exists(obj_mobile_kb) && obj_mobile_kb.kb_visible) ? obj_mobile_kb.KB_H : 0;
-var _content_height = room_height - _kb_h;
+var _content_height = display_get_gui_height() - _kb_h;
 var font_height = string_height("A");
 var visible_lines = floor(_content_height / font_height) - 2;
 var total_lines = ds_list_size(global.output_lines) + (global.awaiting_input ? 1 : 0);

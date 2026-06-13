@@ -1,19 +1,34 @@
-/// Handle touch input on the keyboard.
+/// Handle touch input: toggle tab + keyboard keys.
 if (!kb_active) exit;
-if (!kb_visible) exit;
 if (!device_mouse_check_button_pressed(0, mb_left)) exit;
 
 var _tx = device_mouse_x_to_gui(0);
 var _ty = device_mouse_y_to_gui(0);
 
-var _gw    = display_get_gui_width();
-var _gh    = display_get_gui_height();
-var _row_h = 38;
+var _gw = display_get_gui_width();
+var _gh = display_get_gui_height();
+if (_gw < 100) _gw = room_width;
+if (_gh < 100) _gh = room_height;
+
+// ── Toggle tab hit-test (always active, bottom-right corner) ────────────────
+var _tab_w = 80;
+var _tab_h = 32;
+if (_tx >= _gw - _tab_w && _ty >= _gh - _tab_h) {
+    kb_visible = !kb_visible;
+    var _row_h = max(48, floor(_gh * 0.07));
+    KB_H = kb_visible ? (6 * (_row_h + 2) + 6) : 0;
+    exit;
+}
+
+if (!kb_visible) exit;
+
+// ── Keyboard key hit-test ────────────────────────────────────────────────────
+var _row_h = max(48, floor(_gh * 0.07));
 var _gap   = 2;
 var _kb_h  = 6 * (_row_h + _gap) + 6;
 var _kb_y  = _gh - _kb_h;
 
-if (_ty < _kb_y - 2) exit;  // tap above keyboard — pass through
+if (_ty < _kb_y - 2) exit;  // tap above keyboard — pass through to game
 
 var _layout = [
     [["ESC","ESC",1.5],["F1","F1",1],["F2","F2",1],["F3","F3",1],["F4","F4",1],["F5","F5",1],["<-","LEFT",1],["->","RIGHT",1],["BKSP","BACKSPACE",1.5]],

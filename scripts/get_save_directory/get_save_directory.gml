@@ -2,8 +2,8 @@
 function get_save_directory()
 {
    // Check for HTML5/browser first - return empty string to skip file operations
-   if (os_browser != browser_not_a_browser) {
-       return ""; // HTML5 - no file system access
+   if (os_type == os_gxgames || os_browser != browser_not_a_browser) {
+       return ""; // HTML5/browser - no file system access
    }
    
    var base = "";

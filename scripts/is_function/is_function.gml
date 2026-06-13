@@ -46,6 +46,9 @@ function is_function(t) {
          || fn == "TILENAME$"
 		 || fn == "LEN"
          || fn == "EOF"
-         || fn == "STRING$";
+         || fn == "STRING$"
+         || fn == "SPRITEX"
+         || fn == "SPRITEY"
+         || fn == "SPRITEHIT";
 }
 // === END: is_function ===
