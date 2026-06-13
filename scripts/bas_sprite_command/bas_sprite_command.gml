@@ -18,14 +18,13 @@ function bas_sprite_command(params) {
     case "DEF": {
         var args = basic_parse_csv_args(rest);
         if (array_length(args) < 2) { show_error_message("SPRITE DEF: expected slot, hexstring"); break; }
-        var slot = clamp(floor(basic_eval_number_arg(args[0], "SPRITE DEF", "slot")) - 1, 0, 63);
+        var _r0 = basic_eval_number_arg(args[0], "SPRITE DEF", "slot"); if (!_r0.ok) break;
+        var slot = clamp(floor(_r0.value) - 1, 0, 63);
         var hexstr = string_trim(args[1]);
-        // Strip optional surrounding quotes
         if (string_length(hexstr) >= 2 && string_char_at(hexstr,1) == "\"")
             hexstr = string_copy(hexstr, 2, string_length(hexstr) - 2);
         var is_color = (array_length(args) >= 3 && string_upper(string_trim(args[2])) == "COLOR");
         if (is_color) {
-            // COLOR mode: treat hexstring as row 1 of a colour sprite
             bas_sprite_def_color_row(slot, 1, hexstr);
         } else {
             bas_sprite_def_mono(slot, hexstr);
@@ -37,19 +36,22 @@ function bas_sprite_command(params) {
     case "ROW": {
         var args = basic_parse_csv_args(rest);
         if (array_length(args) < 3) { show_error_message("SPRITE ROW: expected slot, row, hexstring"); break; }
-        var slot   = clamp(floor(basic_eval_number_arg(args[0], "SPRITE ROW", "slot")) - 1, 0, 63);
-        var row    = clamp(floor(basic_eval_number_arg(args[1], "SPRITE ROW", "row")), 1, 16);
+        var _r0 = basic_eval_number_arg(args[0], "SPRITE ROW", "slot"); if (!_r0.ok) break;
+        var _r1 = basic_eval_number_arg(args[1], "SPRITE ROW", "row");  if (!_r1.ok) break;
+        var slot   = clamp(floor(_r0.value) - 1, 0, 63);
+        var row    = clamp(floor(_r1.value), 1, 16);
         var hexstr = string_trim(args[2]);
         if (string_length(hexstr) >= 2 && string_char_at(hexstr,1) == "\"")
             hexstr = string_copy(hexstr, 2, string_length(hexstr) - 2);
-        global.bas_spr_mode[slot] = 1;  // ensure colour mode
+        global.bas_spr_mode[slot] = 1;
         bas_sprite_def_color_row(slot, row, hexstr);
         break;
     }
 
     // ── SPRITE COLOR n  — switch slot to colour mode (clears pixels) ─────
     case "COLOR": {
-        var slot = clamp(floor(basic_eval_number_arg(rest, "SPRITE COLOR", "slot")) - 1, 0, 63);
+        var _r0 = basic_eval_number_arg(rest, "SPRITE COLOR", "slot"); if (!_r0.ok) break;
+        var slot = clamp(floor(_r0.value) - 1, 0, 63);
         global.bas_spr_pixels[slot]  = array_create(256, 0);
         global.bas_spr_mode[slot]    = 1;
         global.bas_spr_defined[slot] = true;
@@ -60,8 +62,10 @@ function bas_sprite_command(params) {
     case "FG": {
         var args = basic_parse_csv_args(rest);
         if (array_length(args) < 2) { show_error_message("SPRITE FG: expected slot, colour"); break; }
-        var slot = clamp(floor(basic_eval_number_arg(args[0], "SPRITE FG", "slot")) - 1, 0, 63);
-        global.bas_spr_fg[slot] = bas_palette(clamp(floor(basic_eval_number_arg(args[1], "SPRITE FG", "colour")), 1, 15));
+        var _r0 = basic_eval_number_arg(args[0], "SPRITE FG", "slot");   if (!_r0.ok) break;
+        var _r1 = basic_eval_number_arg(args[1], "SPRITE FG", "colour"); if (!_r1.ok) break;
+        var slot = clamp(floor(_r0.value) - 1, 0, 63);
+        global.bas_spr_fg[slot] = bas_palette(clamp(floor(_r1.value), 1, 15));
         if (global.bas_spr_defined[slot]) bas_sprite_build(slot);
         break;
     }
@@ -70,8 +74,10 @@ function bas_sprite_command(params) {
     case "BG": {
         var args = basic_parse_csv_args(rest);
         if (array_length(args) < 2) { show_error_message("SPRITE BG: expected slot, colour"); break; }
-        var slot = clamp(floor(basic_eval_number_arg(args[0], "SPRITE BG", "slot")) - 1, 0, 63);
-        var ci   = floor(basic_eval_number_arg(args[1], "SPRITE BG", "colour"));
+        var _r0 = basic_eval_number_arg(args[0], "SPRITE BG", "slot");   if (!_r0.ok) break;
+        var _r1 = basic_eval_number_arg(args[1], "SPRITE BG", "colour"); if (!_r1.ok) break;
+        var slot = clamp(floor(_r0.value) - 1, 0, 63);
+        var ci   = floor(_r1.value);
         global.bas_spr_bg[slot] = (ci <= 0) ? -1 : bas_palette(clamp(ci, 1, 15));
         if (global.bas_spr_defined[slot]) bas_sprite_build(slot);
         break;
@@ -81,10 +87,17 @@ function bas_sprite_command(params) {
     case "SHOW": {
         var args = basic_parse_csv_args(rest);
         if (array_length(args) < 3) { show_error_message("SPRITE SHOW: expected slot, x, y"); break; }
-        var slot  = clamp(floor(basic_eval_number_arg(args[0], "SPRITE SHOW", "slot")) - 1, 0, 63);
-        var wx    = basic_eval_number_arg(args[1], "SPRITE SHOW", "x");
-        var wy    = basic_eval_number_arg(args[2], "SPRITE SHOW", "y");
-        var ang   = (array_length(args) >= 4) ? basic_eval_number_arg(args[3], "SPRITE SHOW", "angle") : 0;
+        var _r0 = basic_eval_number_arg(args[0], "SPRITE SHOW", "slot"); if (!_r0.ok) break;
+        var _r1 = basic_eval_number_arg(args[1], "SPRITE SHOW", "x");    if (!_r1.ok) break;
+        var _r2 = basic_eval_number_arg(args[2], "SPRITE SHOW", "y");    if (!_r2.ok) break;
+        var slot = clamp(floor(_r0.value) - 1, 0, 63);
+        var wx   = _r1.value;
+        var wy   = _r2.value;
+        var ang  = 0;
+        if (array_length(args) >= 4) {
+            var _r3 = basic_eval_number_arg(args[3], "SPRITE SHOW", "angle"); if (!_r3.ok) break;
+            ang = _r3.value;
+        }
 
         if (!global.bas_spr_defined[slot]) { show_error_message("SPRITE " + string(slot+1) + " not defined"); break; }
 
@@ -93,11 +106,11 @@ function bas_sprite_command(params) {
         global.bas_spr_angle[slot]   = ang;
         global.bas_spr_visible[slot] = true;
 
-        // Reuse existing instance or create a new one
         if (!instance_exists(global.bas_spr_inst[slot])) {
             var inst = instance_create_depth(wx, wy, -100, obj_bas_sprite);
             inst.bas_slot  = slot;
             inst.bas_angle = ang;
+            inst.bas_scale = global.bas_spr_scale[slot];
             global.bas_spr_inst[slot] = inst;
         } else {
             var inst = global.bas_spr_inst[slot];
@@ -114,7 +127,8 @@ function bas_sprite_command(params) {
         if (upper == "ALL") {
             for (var si = 0; si < 64; si++) bas_sprite_hide(si);
         } else {
-            var slot = clamp(floor(basic_eval_number_arg(rest, "SPRITE HIDE", "slot")) - 1, 0, 63);
+            var _r0 = basic_eval_number_arg(rest, "SPRITE HIDE", "slot"); if (!_r0.ok) break;
+            var slot = clamp(floor(_r0.value) - 1, 0, 63);
             bas_sprite_hide(slot);
         }
         break;
@@ -124,9 +138,12 @@ function bas_sprite_command(params) {
     case "MOVE": {
         var args = basic_parse_csv_args(rest);
         if (array_length(args) < 3) { show_error_message("SPRITE MOVE: expected slot, x, y"); break; }
-        var slot = clamp(floor(basic_eval_number_arg(args[0], "SPRITE MOVE", "slot")) - 1, 0, 63);
-        var wx   = basic_eval_number_arg(args[1], "SPRITE MOVE", "x");
-        var wy   = basic_eval_number_arg(args[2], "SPRITE MOVE", "y");
+        var _r0 = basic_eval_number_arg(args[0], "SPRITE MOVE", "slot"); if (!_r0.ok) break;
+        var _r1 = basic_eval_number_arg(args[1], "SPRITE MOVE", "x");    if (!_r1.ok) break;
+        var _r2 = basic_eval_number_arg(args[2], "SPRITE MOVE", "y");    if (!_r2.ok) break;
+        var slot = clamp(floor(_r0.value) - 1, 0, 63);
+        var wx   = _r1.value;
+        var wy   = _r2.value;
         global.bas_spr_x[slot] = wx;
         global.bas_spr_y[slot] = wy;
         if (instance_exists(global.bas_spr_inst[slot])) {
@@ -140,8 +157,10 @@ function bas_sprite_command(params) {
     case "ANGLE": {
         var args = basic_parse_csv_args(rest);
         if (array_length(args) < 2) { show_error_message("SPRITE ANGLE: expected slot, angle"); break; }
-        var slot = clamp(floor(basic_eval_number_arg(args[0], "SPRITE ANGLE", "slot")) - 1, 0, 63);
-        var ang  = basic_eval_number_arg(args[1], "SPRITE ANGLE", "angle");
+        var _r0 = basic_eval_number_arg(args[0], "SPRITE ANGLE", "slot");  if (!_r0.ok) break;
+        var _r1 = basic_eval_number_arg(args[1], "SPRITE ANGLE", "angle"); if (!_r1.ok) break;
+        var slot = clamp(floor(_r0.value) - 1, 0, 63);
+        var ang  = _r1.value;
         global.bas_spr_angle[slot] = ang;
         if (instance_exists(global.bas_spr_inst[slot]))
             global.bas_spr_inst[slot].bas_angle = ang;
@@ -152,8 +171,10 @@ function bas_sprite_command(params) {
     case "SCALE": {
         var args = basic_parse_csv_args(rest);
         if (array_length(args) < 2) { show_error_message("SPRITE SCALE: expected slot, factor"); break; }
-        var slot = clamp(floor(basic_eval_number_arg(args[0], "SPRITE SCALE", "slot")) - 1, 0, 63);
-        global.bas_spr_scale[slot] = max(1, basic_eval_number_arg(args[1], "SPRITE SCALE", "factor"));
+        var _r0 = basic_eval_number_arg(args[0], "SPRITE SCALE", "slot");   if (!_r0.ok) break;
+        var _r1 = basic_eval_number_arg(args[1], "SPRITE SCALE", "factor"); if (!_r1.ok) break;
+        var slot = clamp(floor(_r0.value) - 1, 0, 63);
+        global.bas_spr_scale[slot] = max(1, _r1.value);
         if (instance_exists(global.bas_spr_inst[slot]))
             global.bas_spr_inst[slot].bas_scale = global.bas_spr_scale[slot];
         break;
