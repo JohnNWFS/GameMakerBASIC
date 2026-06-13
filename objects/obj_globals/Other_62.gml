@@ -16,8 +16,12 @@ ds_map_delete(global.http_tags, req_id);
 
 if (tag == ":LOADURL") {
     if (stat == 0 && is_string(body)) {
+        if (variable_global_exists("__demos_loading") && global.__demos_loading) {
+            global.__demos_loading = false;
+            new_program();
+        }
         var n = editor_import_text_to_program(body);
-        show_error_message("Imported " + string(n) + " line(s) from URL.");
+        basic_show_message("Loaded " + string(n) + " line(s).");
     } else {
         var sc = ds_map_find_value(async_load, "http_status");
         show_error_message("LOADURL failed (status=" + string(sc) + ").");

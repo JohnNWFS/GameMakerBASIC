@@ -142,27 +142,44 @@ break;
 	    case ":DEMOS":
 	    {
 	        var _arg = string_trim(cmd_params);
+	        var _is_desktop = (os_type != os_gxgames && os_browser == browser_not_a_browser);
 	        if (!variable_global_exists("http_tags")) global.http_tags = ds_map_create();
 	        if (_arg == "") {
 	            if (!variable_global_exists("demos_manifest") || array_length(global.demos_manifest) == 0) {
-	                basic_show_message("Fetching demos from server...");
-	                var _req = http_get("https://johnnwfs.net/NW-BASIC/demos/manifest.json");
-	                global.http_tags[? _req] = ":DEMOS_MANIFEST";
+	                if (_is_desktop) {
+	                    demos_load_manifest_local();
+	                } else {
+	                    basic_show_message("Fetching demos from server...");
+	                    var _req = http_get("https://johnnwfs.net/NW-BASIC/demos/manifest.json");
+	                    global.http_tags[? _req] = ":DEMOS_MANIFEST";
+	                }
 	            } else {
 	                demos_show_list();
 	            }
 	        } else if (string_digits(_arg) == _arg && real(_arg) >= 1) {
-	            if (!variable_global_exists("demos_manifest") || array_length(global.demos_manifest) == 0) {
-	                global.__demos_pending_load = real(_arg);
-	                basic_show_message("Fetching demos from server...");
-	                var _req2 = http_get("https://johnnwfs.net/NW-BASIC/demos/manifest.json");
-	                global.http_tags[? _req2] = ":DEMOS_MANIFEST";
-	            } else {
-	                var _idx = real(_arg) - 1;
-	                if (_idx >= 0 && _idx < array_length(global.demos_manifest)) {
-	                    import_from_url(global.demos_manifest[_idx][$ "url"]);
+	            var _idx = real(_arg) - 1;
+	            if (_is_desktop) {
+	                if (!variable_global_exists("demos_manifest") || array_length(global.demos_manifest) == 0) {
+	                    demos_load_manifest_local();
+	                }
+	                if (variable_global_exists("demos_manifest") && _idx >= 0 && _idx < array_length(global.demos_manifest)) {
+	                    demos_load_file_local(_idx);
 	                } else {
 	                    show_error_message("No demo " + _arg + ". Type :DEMOS to see the list.");
+	                }
+	            } else {
+	                if (!variable_global_exists("demos_manifest") || array_length(global.demos_manifest) == 0) {
+	                    global.__demos_pending_load = real(_arg);
+	                    basic_show_message("Fetching demos from server...");
+	                    var _req2 = http_get("https://johnnwfs.net/NW-BASIC/demos/manifest.json");
+	                    global.http_tags[? _req2] = ":DEMOS_MANIFEST";
+	                } else {
+	                    if (_idx >= 0 && _idx < array_length(global.demos_manifest)) {
+	                        global.__demos_loading = true;
+	                        import_from_url(global.demos_manifest[_idx][$ "url"]);
+	                    } else {
+	                        show_error_message("No demo " + _arg + ". Type :DEMOS to see the list.");
+	                    }
 	                }
 	            }
 	        } else {

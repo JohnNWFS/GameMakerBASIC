@@ -53,8 +53,7 @@ global.config[? "max_line_number"] = 65535;
 global.config[? "max_history_size"] = 50;
 global.config[? "show_error_hints"] = true; // show compact help lines under syntax errors
 
-// Spawn the editor after globals are ready
-instance_create_layer(0, 0, "Instances", obj_editor);
+// obj_editor is placed in rm_editor; do not create a second instance here.
 
 // Initialize variable store
 if (!variable_global_exists("basic_variables")) {

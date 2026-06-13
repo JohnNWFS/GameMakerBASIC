@@ -172,9 +172,6 @@ for (var i = 0; i < ds_list_size(global.line_list); i++) {
     global.current_line_number            = (ds_list_size(global.line_list) > 0)
                                            ? (global.line_list[| 0]) : -1;
 
-    // Where to return when done
-    global.editor_return_room = room;
-
     // Go to interpreter room (only if not already there)
     var _text_room = ds_map_find_value(global.mode_rooms, 0);
     if (room != _text_room) {

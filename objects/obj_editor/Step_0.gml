@@ -1,4 +1,6 @@
 /// @event obj_editor/Step
+// Only process input when in the editor room
+if (room != rm_editor) exit;
 // Pause regular editor when screen editor is active
 if (global.screen_edit_mode) {
     //dbg_log(DBG_FLOW, "EDITOR: Screen edit mode active, pausing regular editor");
@@ -30,13 +32,19 @@ if (showing_demos_overlay) {
     // Number keys 1-9 load demo directly
     if (variable_global_exists("demos_manifest")) {
         var _dn = array_length(global.demos_manifest);
+        var _is_desktop = (os_type != os_gxgames && os_browser == browser_not_a_browser);
         for (var _dk = 1; _dk <= min(_dn, 9); _dk++) {
             if (keyboard_check_pressed(ord(string(_dk)))) {
                 showing_demos_overlay = false;
                 keyboard_string = "";
                 current_input   = "";
                 cursor_pos      = 0;
-                import_from_url(global.demos_manifest[_dk - 1][$ "url"]);
+                if (_is_desktop) {
+                    demos_load_file_local(_dk - 1);
+                } else {
+                    global.__demos_loading = true;
+                    import_from_url(global.demos_manifest[_dk - 1][$ "url"]);
+                }
                 exit;
             }
         }

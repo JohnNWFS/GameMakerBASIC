@@ -83,6 +83,7 @@ if (global.program_has_ended) {
 
         global.program_has_ended = false;
         global.current_mode = 0;
+        global.justreturned = 1;
 
         var _ret = variable_global_exists("editor_return_room")
                ? global.editor_return_room
@@ -300,6 +301,9 @@ if (variable_global_exists("beep_waiting") && global.beep_waiting) {
 
 
 
+// Guard: don't execute program lines if the interpreter was stopped
+if (!global.interpreter_running) return;
+
 // ==============================
 // Synchronize for structured IF…ELSE handling
 // ==============================
@@ -449,7 +453,12 @@ if (line_index < ds_list_size(global.line_list)) {
 // Escape Returns to Editor
 // ==============================
 if (keyboard_check_pressed(vk_escape)) {
-    global.current_mode = 0;
+    global.interpreter_running = false;
+    global.program_has_ended   = false;
+    global.inkey_waiting       = false;
+    global.pause_in_effect     = false;
+    global.current_mode        = 0;
+    global.justreturned        = 1;
     room_goto(global.editor_return_room);
 }
 

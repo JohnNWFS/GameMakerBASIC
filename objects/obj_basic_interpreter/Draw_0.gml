@@ -1,4 +1,5 @@
 /// @event obj_basic_interpreter/Draw
+if (!global.interpreter_running && !global.program_has_ended) exit;
 draw_set_font(fnt_basic);
 
     //draw_set_color(c_white);
