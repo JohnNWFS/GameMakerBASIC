@@ -51,5 +51,4 @@ function reset_interpreter_state() {
         dbg_log(DBG_FLOW, "INKEY$ RESET: Cleared global.__inkey_queue");
     }
 
-    bas_sprite_clear_all();
 }

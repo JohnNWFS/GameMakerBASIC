@@ -8,6 +8,7 @@
     
     ds_map_clear(global.program_lines);
     ds_list_clear(global.line_numbers);
+    bas_sprite_clear_all();
     current_filename = "";
     list_range_active = false;
     display_start_line = 0;
