@@ -1,9 +1,9 @@
 /// Allocate a 2D native GML grid of tile structs.
 function mode1_grid_alloc(_cols, _rows, _char = 32, _fg = c_white, _bg = c_black) {
     var g = array_create(_cols, _rows);
-    for (var x = 0; x < _cols; x++) {
-        for (var y = 0; y < _rows; y++) {
-            g[x][y] = { char: _char, fg: _fg, bg: _bg };
+    for (var col = 0; col < _cols; col++) {
+        for (var row = 0; row < _rows; row++) {
+            g[col][row] = { char: _char, fg: _fg, bg: _bg };
         }
     }
     return g;
