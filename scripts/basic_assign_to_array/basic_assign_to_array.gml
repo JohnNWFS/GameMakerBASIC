@@ -96,7 +96,7 @@ function basic_assign_to_array(varName, val) {
         }
 
         var idx1 = floor(real(indexVal));
-        if (!is_real(idx1) || idx1 < _base) {
+        if (!basic_is_number_val(idx1) || idx1 < _base) {
             basic_syntax_error("Array index must be >= " + string(_base) + " for " + arrayName + " (got " + string(indexVal) + ")",
                                undefined, global.interpreter_current_stmt_index, "ARRAY_INDEX_RANGE");
             return;
