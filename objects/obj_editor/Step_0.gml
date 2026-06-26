@@ -77,12 +77,21 @@ if (showing_dir_overlay) {
     if (dir_confirm_active) {
         if (keyboard_check_pressed(ord("Y"))) {
             var _name = dir_listing[dir_confirm_index];
-            var _path = dir_save_dir + _name;
-            if (file_exists(_path)) {
-                dbg_log(DBG_IO, "[DIR] delete " + _path);
-                file_delete(_path);
+            if (variable_instance_exists(id, "dir_readonly")
+             && is_array(dir_readonly)
+             && dir_confirm_index < array_length(dir_readonly)
+             && dir_readonly[dir_confirm_index]) {
+                basic_show_message("Cannot delete bundled file: " + _name);
+            } else {
+                var _path = (variable_instance_exists(id, "dir_paths") && is_array(dir_paths) && dir_confirm_index < array_length(dir_paths) && dir_paths[dir_confirm_index] != "")
+                    ? dir_paths[dir_confirm_index]
+                    : dir_save_dir + _name;
+                if (file_exists(_path)) {
+                    dbg_log(DBG_IO, "[DIR] delete " + _path);
+                    file_delete(_path);
+                }
+                list_saved_programs();
             }
-            list_saved_programs(); // refresh overlay
         }
         if (keyboard_check_pressed(ord("N")) || keyboard_check_pressed(vk_escape)) {
             dbg_log(DBG_FLOW, "[DIR] delete cancelled");
@@ -120,7 +129,9 @@ if (keyboard_check_pressed(vk_enter) || keyboard_check_pressed(ord(">"))) {
             exit;
         } else {
             // Windows version - load from disk
-            var _path = dir_save_dir + _name;
+            var _path = (variable_instance_exists(id, "dir_paths") && is_array(dir_paths) && dir_sel < array_length(dir_paths) && dir_paths[dir_sel] != "")
+                ? dir_paths[dir_sel]
+                : dir_save_dir + _name;
             if (file_exists(_path)) {
                 dbg_log(DBG_IO, "[DIR] load " + _path);
                 load_program_from_path(_path, _name);

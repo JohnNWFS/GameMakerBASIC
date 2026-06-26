@@ -43,6 +43,9 @@ keyboard_string = "";
 //for directory listings
 showing_dir_overlay = false;
 dir_listing = [];
+dir_paths = [];
+dir_readonly = [];
+dir_sizes = [];
 
 // Overlay for HTML DIR listing
 show_dir_overlay = false;   // draw toggle
