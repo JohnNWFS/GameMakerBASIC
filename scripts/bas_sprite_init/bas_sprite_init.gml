@@ -1,16 +1,31 @@
-/// bas_sprite_init() — allocate global sprite tables.  Call once from obj_globals Create.
+/// bas_sprite_init() — allocate sprite slot table. Call once from obj_globals Create.
 function bas_sprite_init() {
     var N = 64;
-    global.bas_spr_defined  = array_create(N, false);
-    global.bas_spr_pixels   = array_create(N, undefined); // array[256] per slot
-    global.bas_spr_mode     = array_create(N, 0);         // 0=mono  1=color
-    global.bas_spr_fg       = array_create(N, c_white);
-    global.bas_spr_bg       = array_create(N, -1);        // -1 = transparent
-    global.bas_spr_gmspr    = array_create(N, -1);        // GML sprite index
-    global.bas_spr_visible  = array_create(N, false);
-    global.bas_spr_x        = array_create(N, 0);
-    global.bas_spr_y        = array_create(N, 0);
-    global.bas_spr_angle    = array_create(N, 0);
-    global.bas_spr_scale    = array_create(N, 4);         // game-pixels per BASIC pixel
-    global.bas_spr_inst     = array_create(N, noone);     // obj_bas_sprite instance
+    global.bas_sprites = array_create(N);
+    for (var i = 0; i < N; i++) {
+        global.bas_sprites[i] = bas_sprite_slot_default();
+    }
+}
+
+/// Default state for one BASIC sprite slot (0-based internal index).
+function bas_sprite_slot_default() {
+    return {
+        defined : false,
+        pixels  : undefined, // array[256] when defined
+        mode    : 0,         // 0 = mono, 1 = colour
+        fg      : c_white,
+        bg      : -1,        // -1 = transparent (mono)
+        gmspr   : -1,        // GML sprite asset id
+        visible : false,
+        x       : 0,
+        y       : 0,
+        angle   : 0,
+        scale   : 4,         // game pixels per BASIC pixel
+        inst    : noone      // obj_bas_sprite instance while visible
+    };
+}
+
+/// Clamp and return the slot struct for internal index 0..63.
+function bas_sprite_slot(_slot) {
+    return global.bas_sprites[clamp(floor(_slot), 0, 63)];
 }

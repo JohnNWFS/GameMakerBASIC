@@ -3,13 +3,15 @@
 /// scale are applied around the centre automatically.
 var slot = bas_slot;
 if (slot < 0 || slot >= 64) exit;
-if (!global.bas_spr_defined[slot]) exit;
 
-var spr = global.bas_spr_gmspr[slot];
+var spr_slot = bas_sprite_slot(slot);
+if (!spr_slot.defined) exit;
+
+var spr = spr_slot.gmspr;
 if (spr == -1 || !sprite_exists(spr)) {
     // Sprite asset lost (e.g. surface purged) — rebuild it
     bas_sprite_build(slot);
-    spr = global.bas_spr_gmspr[slot];
+    spr = spr_slot.gmspr;
     if (spr == -1) exit;
 }
 

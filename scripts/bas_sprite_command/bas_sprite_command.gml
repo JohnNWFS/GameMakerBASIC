@@ -43,7 +43,7 @@ function bas_sprite_command(params) {
         var hexstr = string_trim(args[2]);
         if (string_length(hexstr) >= 2 && string_char_at(hexstr,1) == "\"")
             hexstr = string_copy(hexstr, 2, string_length(hexstr) - 2);
-        global.bas_spr_mode[slot] = 1;
+        bas_sprite_slot(slot).mode = 1;
         bas_sprite_def_color_row(slot, row, hexstr);
         break;
     }
@@ -52,9 +52,10 @@ function bas_sprite_command(params) {
     case "COLOR": {
         var _r0 = basic_eval_number_arg(rest, "SPRITE COLOR", "slot"); if (!_r0.ok) break;
         var slot = clamp(floor(_r0.value) - 1, 0, 63);
-        global.bas_spr_pixels[slot]  = array_create(256, 0);
-        global.bas_spr_mode[slot]    = 1;
-        global.bas_spr_defined[slot] = true;
+        var spr_slot = bas_sprite_slot(slot);
+        spr_slot.pixels  = array_create(256, 0);
+        spr_slot.mode    = 1;
+        spr_slot.defined = true;
         break;
     }
 
@@ -65,8 +66,9 @@ function bas_sprite_command(params) {
         var _r0 = basic_eval_number_arg(args[0], "SPRITE FG", "slot");   if (!_r0.ok) break;
         var _r1 = basic_eval_number_arg(args[1], "SPRITE FG", "colour"); if (!_r1.ok) break;
         var slot = clamp(floor(_r0.value) - 1, 0, 63);
-        global.bas_spr_fg[slot] = bas_palette(clamp(floor(_r1.value), 1, 15));
-        if (global.bas_spr_defined[slot]) bas_sprite_build(slot);
+        var spr_slot = bas_sprite_slot(slot);
+        spr_slot.fg = bas_palette(clamp(floor(_r1.value), 1, 15));
+        if (spr_slot.defined) bas_sprite_build(slot);
         break;
     }
 
@@ -78,8 +80,9 @@ function bas_sprite_command(params) {
         var _r1 = basic_eval_number_arg(args[1], "SPRITE BG", "colour"); if (!_r1.ok) break;
         var slot = clamp(floor(_r0.value) - 1, 0, 63);
         var ci   = floor(_r1.value);
-        global.bas_spr_bg[slot] = (ci <= 0) ? -1 : bas_palette(clamp(ci, 1, 15));
-        if (global.bas_spr_defined[slot]) bas_sprite_build(slot);
+        var spr_slot = bas_sprite_slot(slot);
+        spr_slot.bg = (ci <= 0) ? -1 : bas_palette(clamp(ci, 1, 15));
+        if (spr_slot.defined) bas_sprite_build(slot);
         break;
     }
 
@@ -99,21 +102,22 @@ function bas_sprite_command(params) {
             ang = _r3.value;
         }
 
-        if (!global.bas_spr_defined[slot]) { show_error_message("SPRITE " + string(slot+1) + " not defined"); break; }
+        var spr_slot = bas_sprite_slot(slot);
+        if (!spr_slot.defined) { show_error_message("SPRITE " + string(slot+1) + " not defined"); break; }
 
-        global.bas_spr_x[slot]       = wx;
-        global.bas_spr_y[slot]       = wy;
-        global.bas_spr_angle[slot]   = ang;
-        global.bas_spr_visible[slot] = true;
+        spr_slot.x       = wx;
+        spr_slot.y       = wy;
+        spr_slot.angle   = ang;
+        spr_slot.visible = true;
 
-        if (!instance_exists(global.bas_spr_inst[slot])) {
+        if (!instance_exists(spr_slot.inst)) {
             var inst = instance_create_depth(wx, wy, -100, obj_bas_sprite);
             inst.bas_slot  = slot;
             inst.bas_angle = ang;
-            inst.bas_scale = global.bas_spr_scale[slot];
-            global.bas_spr_inst[slot] = inst;
+            inst.bas_scale = spr_slot.scale;
+            spr_slot.inst = inst;
         } else {
-            var inst = global.bas_spr_inst[slot];
+            var inst = spr_slot.inst;
             inst.x         = wx;
             inst.y         = wy;
             inst.bas_angle = ang;
@@ -144,11 +148,12 @@ function bas_sprite_command(params) {
         var slot = clamp(floor(_r0.value) - 1, 0, 63);
         var wx   = _r1.value;
         var wy   = _r2.value;
-        global.bas_spr_x[slot] = wx;
-        global.bas_spr_y[slot] = wy;
-        if (instance_exists(global.bas_spr_inst[slot])) {
-            global.bas_spr_inst[slot].x = wx;
-            global.bas_spr_inst[slot].y = wy;
+        var spr_slot = bas_sprite_slot(slot);
+        spr_slot.x = wx;
+        spr_slot.y = wy;
+        if (instance_exists(spr_slot.inst)) {
+            spr_slot.inst.x = wx;
+            spr_slot.inst.y = wy;
         }
         break;
     }
@@ -161,9 +166,10 @@ function bas_sprite_command(params) {
         var _r1 = basic_eval_number_arg(args[1], "SPRITE ANGLE", "angle"); if (!_r1.ok) break;
         var slot = clamp(floor(_r0.value) - 1, 0, 63);
         var ang  = _r1.value;
-        global.bas_spr_angle[slot] = ang;
-        if (instance_exists(global.bas_spr_inst[slot]))
-            global.bas_spr_inst[slot].bas_angle = ang;
+        var spr_slot = bas_sprite_slot(slot);
+        spr_slot.angle = ang;
+        if (instance_exists(spr_slot.inst))
+            spr_slot.inst.bas_angle = ang;
         break;
     }
 
@@ -174,9 +180,10 @@ function bas_sprite_command(params) {
         var _r0 = basic_eval_number_arg(args[0], "SPRITE SCALE", "slot");   if (!_r0.ok) break;
         var _r1 = basic_eval_number_arg(args[1], "SPRITE SCALE", "factor"); if (!_r1.ok) break;
         var slot = clamp(floor(_r0.value) - 1, 0, 63);
-        global.bas_spr_scale[slot] = max(1, _r1.value);
-        if (instance_exists(global.bas_spr_inst[slot]))
-            global.bas_spr_inst[slot].bas_scale = global.bas_spr_scale[slot];
+        var spr_slot = bas_sprite_slot(slot);
+        spr_slot.scale = max(1, _r1.value);
+        if (instance_exists(spr_slot.inst))
+            spr_slot.inst.bas_scale = spr_slot.scale;
         break;
     }
 
@@ -193,28 +200,22 @@ function bas_sprite_command(params) {
 
 /// bas_sprite_hide(slot) — hide a single sprite slot.
 function bas_sprite_hide(slot) {
-    global.bas_spr_visible[slot] = false;
-    if (instance_exists(global.bas_spr_inst[slot])) {
-        instance_destroy(global.bas_spr_inst[slot]);
+    var spr_slot = bas_sprite_slot(slot);
+    spr_slot.visible = false;
+    if (instance_exists(spr_slot.inst)) {
+        instance_destroy(spr_slot.inst);
     }
-    global.bas_spr_inst[slot] = noone;
+    spr_slot.inst = noone;
 }
 
 /// bas_sprite_clear_all() — release all instances and GML sprite assets.
 function bas_sprite_clear_all() {
     for (var si = 0; si < 64; si++) {
         bas_sprite_hide(si);
-        if (global.bas_spr_gmspr[si] != -1) {
-            sprite_delete(global.bas_spr_gmspr[si]);
-            global.bas_spr_gmspr[si] = -1;
+        var spr_slot = bas_sprite_slot(si);
+        if (spr_slot.gmspr != -1) {
+            sprite_delete(spr_slot.gmspr);
         }
-        global.bas_spr_defined[si]  = false;
-        global.bas_spr_visible[si]  = false;
-        global.bas_spr_pixels[si]   = undefined;
-        global.bas_spr_mode[si]     = 0;
-        global.bas_spr_fg[si]       = c_white;
-        global.bas_spr_bg[si]       = -1;
-        global.bas_spr_angle[si]    = 0;
-        global.bas_spr_scale[si]    = 4;
+        global.bas_sprites[si] = bas_sprite_slot_default();
     }
 }
