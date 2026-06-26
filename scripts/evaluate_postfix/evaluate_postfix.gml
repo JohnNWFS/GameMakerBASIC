@@ -59,11 +59,11 @@ function evaluate_postfix(postfix) {
 
                 if (_has_top_comma) {
                     // Multi-dim: evaluate each index expression, join with ","
-                    var _idx_parts = string_split(idxText, ","); // simple split is fine here (no nested commas expected in index exprs)
+                    var _idx_parts = basic_split_top_commas(idxText);
                     var _idx_joined = "";
                     var _ok = true;
                     for (var _di = 0; _di < array_length(_idx_parts); _di++) {
-                        var _iv = basic_evaluate_expression_v2(string_trim(_idx_parts[_di]));
+                        var _iv = basic_evaluate_expression_v2(_idx_parts[_di]);
                         if (!basic_is_number_val(_iv)) { _ok = false; break; }
                         if (_di > 0) _idx_joined += ",";
                         _idx_joined += string(floor(real(_iv)));
@@ -147,14 +147,11 @@ function evaluate_postfix(postfix) {
 		            break;
 
 case "=": {
-    // Check if both are numeric (but exclude empty strings)
-    var an = is_real(a) || (is_string(a) && string_length(a) > 0 && is_numeric_string(a));
-    var bn = is_real(b) || (is_string(b) && string_length(b) > 0 && is_numeric_string(b));
+    var an = basic_is_number_val(a) || (is_string(a) && string_length(a) > 0 && is_numeric_string(a));
+    var bn = basic_is_number_val(b) || (is_string(b) && string_length(b) > 0 && is_numeric_string(b));
 
     if (an && bn) {
-        if (is_string(a)) a = real(a);
-        if (is_string(b)) b = real(b);
-        result = (a == b) ? 1 : 0;
+        result = (basic_coerce_number(a) == basic_coerce_number(b)) ? 1 : 0;
     } else {
         result = (string(a) == string(b)) ? 1 : 0;
     }
@@ -729,12 +726,7 @@ case "OR": {
 			        if (is_undefined(vv)) vv = "";
 			        vv = string(vv); // ensure string; do not numeric-coerce
 			    } else {
-			        // Numeric variables: allow numeric strings, else 0
-			        if (is_string(vv)) {
-			            vv = is_numeric_string(vv) ? real(vv) : 0;
-			        } else if (!is_real(vv)) {
-			            vv = 0;
-			        }
+			        vv = basic_coerce_number(vv, 0);
 			    }
 
 			    array_push(stack, vv);
@@ -777,11 +769,7 @@ case "OR": {
 		        if (is_undefined(vv)) vv = "";
 		        if (!is_string(vv))  vv = string(vv);
 		    } else {
-		        if (is_string(vv)) {
-		            vv = is_numeric_string(vv) ? real(vv) : 0;
-		        } else if (!is_real(vv)) {
-		            vv = 0;
-		        }
+		        vv = basic_coerce_number(vv, 0);
 		    }
 		    array_push(stack, vv);
 		    dbg_log(DBG_PARSE, "POSTFIX: Loaded/created ident " + key + " = " + string(vv));

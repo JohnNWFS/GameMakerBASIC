@@ -30,7 +30,7 @@ function basic_array_get(_name, _idx) {
             return 0;
         }
         var dims = global.basic_array_dims[? nm];
-        var parts = string_split(idx_str, ",");
+        var parts = basic_split_top_commas(idx_str);
         if (array_length(parts) != array_length(dims)) {
             dbg_log(DBG_FLOW, "ARRAY_GET ERROR: Wrong number of indices for " + nm);
             return 0;

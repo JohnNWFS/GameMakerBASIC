@@ -27,7 +27,7 @@ function basic_assign_to_array(varName, val) {
     var flat_idx;
 
     if (string_pos(",", indexExpr) > 0) {
-        var idx_parts = string_split(indexExpr, ",");
+        var idx_parts = basic_split_top_commas(indexExpr);
         var ndims = array_length(idx_parts);
 
         var idx_vals = array_create(ndims, 0);

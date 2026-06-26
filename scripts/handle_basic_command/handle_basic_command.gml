@@ -151,8 +151,8 @@ function handle_basic_command(cmd, arg) {
 			                var post = infix_to_postfix(tok);
 			                var val  = evaluate_postfix(post);
 			                var truth = 0;
-			                if (is_real(val))        truth = (val != 0);
-			                else if (is_string(val)) truth = (string_length(val) > 0);
+			                if (basic_is_number_val(val)) truth = (basic_coerce_number(val) != 0);
+			                else if (is_string(val))    truth = (string_length(val) > 0);
 
 			                // Execute chosen arm via normal dispatcher (arm may contain colons)
 			                if (truth) {

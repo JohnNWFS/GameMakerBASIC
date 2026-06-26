@@ -119,11 +119,8 @@ function basic_cmd_let(arg) {
         basic_var_set(k, string(val));
         dbg_log(DBG_FLOW, "LET: Assigned string value: '" + string(val) + "' to '" + k + "'");
     } else {
-        // Numeric: if it looks numeric, coerce to real; else 0 (or keep as-is if you prefer)
-        if (is_real(val)) {
-            basic_var_set(k, val);
-        } else if (basic_looks_numeric(string(val))) {
-            basic_var_set(k, real(val));
+        if (basic_is_number_val(val) || basic_looks_numeric(string(val))) {
+            basic_var_set(k, basic_coerce_number(val, 0));
         } else {
             basic_var_set(k, 0);
         }

@@ -32,6 +32,38 @@ function basic_is_number_val(_v) {
     return is_real(_v) || is_int64(_v);
 }
 
+/// Coerce BASIC numeric operands (real, int64, or numeric string) to real.
+function basic_coerce_number(_v, _default = 0) {
+    if (basic_is_number_val(_v)) return real(_v);
+    if (is_string(_v) && basic_looks_numeric(_v)) return real(_v);
+    return _default;
+}
+
+/// Split on commas not inside quotes or nested parentheses.
+function basic_split_top_commas(_s) {
+    var parts = [];
+    var _dl = 0;
+    var _dq = false;
+    var start = 1;
+    var L = string_length(_s);
+    for (var i = 1; i <= L; i++) {
+        var ch = string_char_at(_s, i);
+        if (ch == "\"") _dq = !_dq;
+        if (!_dq) {
+            if (ch == "(") _dl++;
+            else if (ch == ")") _dl = max(0, _dl - 1);
+            else if (ch == "," && _dl == 0) {
+                array_push(parts, string_trim(string_copy(_s, start, i - start)));
+                start = i + 1;
+            }
+        }
+    }
+    if (start <= L) {
+        array_push(parts, string_trim(string_copy(_s, start, L - start + 1)));
+    }
+    return parts;
+}
+
 /// Destroy legacy ds_list array storage only (native GML arrays need no release).
 function basic_array_release_storage(_storage) {
     if (is_real(_storage) && ds_exists(_storage, ds_type_list)) {
