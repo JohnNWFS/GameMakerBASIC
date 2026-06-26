@@ -17,7 +17,6 @@ function basic_assign_to_array(varName, val) {
 
     var _base = variable_global_exists("option_base") ? global.option_base : 1;
 
-    // Ensure maps exist
     if (!variable_global_exists("basic_arrays") || is_undefined(global.basic_arrays)) {
         global.basic_arrays = ds_map_create();
     }
@@ -27,13 +26,10 @@ function basic_assign_to_array(varName, val) {
 
     var flat_idx;
 
-    // Check for comma → multi-dimensional index
     if (string_pos(",", indexExpr) > 0) {
-        // Split index expressions on commas
         var idx_parts = string_split(indexExpr, ",");
         var ndims = array_length(idx_parts);
 
-        // Evaluate each index expression
         var idx_vals = array_create(ndims, 0);
         for (var di = 0; di < ndims; di++) {
             var iv_tok  = basic_tokenize_expression_v2(string_trim(idx_parts[di]));
@@ -47,9 +43,8 @@ function basic_assign_to_array(varName, val) {
             idx_vals[di] = floor(real(iv_val));
         }
 
-        // Auto-create array if missing (assigns default dim size = max index)
         if (!ds_map_exists(global.basic_arrays, nm)) {
-            global.basic_arrays[? nm] = ds_list_create();
+            global.basic_arrays[? nm] = [];
             var auto_dims = array_create(ndims, 0);
             for (var di = 0; di < ndims; di++) auto_dims[di] = idx_vals[di] - _base + 1;
             global.basic_array_dims[? nm] = auto_dims;
@@ -62,7 +57,6 @@ function basic_assign_to_array(varName, val) {
             return;
         }
 
-        // Row-major flat index
         flat_idx = 0;
         var stride = 1;
         for (var di = ndims - 1; di >= 0; di--) {
@@ -76,13 +70,21 @@ function basic_assign_to_array(varName, val) {
             stride *= dims[di];
         }
 
-        // Grow list to accommodate
-        var lst = global.basic_arrays[? nm];
+        var arr = global.basic_arrays[? nm];
+        if (!is_array(arr)) {
+            arr = [];
+            global.basic_arrays[? nm] = arr;
+        }
         var needed = flat_idx + 1;
-        while (ds_list_size(lst) < needed) ds_list_add(lst, 0);
+        var _len = array_length(arr);
+        while (_len < needed) {
+            arr = array_resize(arr, _len + 1);
+            arr[_len] = 0;
+            _len++;
+        }
+        global.basic_arrays[? nm] = arr;
 
     } else {
-        // 1D path
         var indexTokens  = basic_tokenize_expression_v2(indexExpr);
         var indexPostfix = infix_to_postfix(indexTokens);
         var indexVal     = evaluate_postfix(indexPostfix);
@@ -102,24 +104,35 @@ function basic_assign_to_array(varName, val) {
         flat_idx = idx1 - _base;
 
         if (!ds_map_exists(global.basic_arrays, nm)) {
-            global.basic_arrays[? nm] = ds_list_create();
+            global.basic_arrays[? nm] = [];
         }
-        var lst = global.basic_arrays[? nm];
-        while (ds_list_size(lst) <= flat_idx) ds_list_add(lst, 0);
+        var arr = global.basic_arrays[? nm];
+        if (!is_array(arr)) {
+            arr = [];
+            global.basic_arrays[? nm] = arr;
+        }
+        var _len = array_length(arr);
+        while (_len <= flat_idx) {
+            arr = array_resize(arr, _len + 1);
+            arr[_len] = 0;
+            _len++;
+        }
+        global.basic_arrays[? nm] = arr;
     }
 
     if (dbg_on(DBG_FLOW)) {
         show_debug_message("ARRAY ASSIGN: " + nm + " flat_idx=" + string(flat_idx) + " val='" + string(val) + "'");
     }
 
-    var arrayList = global.basic_arrays[? nm];
+    var arr = global.basic_arrays[? nm];
     var is_string_array = (string_length(nm) > 0)
                        && (string_char_at(nm, string_length(nm)) == "$");
 
     if (is_string_array) {
-        ds_list_replace(arrayList, flat_idx, string(val));
+        arr[flat_idx] = string(val);
     } else {
         var numVal = is_real(val) ? val : (basic_looks_numeric(string(val)) ? real(val) : 0);
-        ds_list_replace(arrayList, flat_idx, numVal);
+        arr[flat_idx] = numVal;
     }
+    global.basic_arrays[? nm] = arr;
 }

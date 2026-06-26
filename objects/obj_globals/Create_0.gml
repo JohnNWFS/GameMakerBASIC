@@ -154,7 +154,7 @@ global.active_font_sprite = global.font_sheets[? global.active_font_name];
 global.grid_refresh_needed = false;
 global.grid_refresh_char = 32;
 
-global.basic_arrays = ds_map_create();      // name → ds_list (flat storage)
+global.basic_arrays = ds_map_create();      // name → native GML array (flat row-major storage)
 global.basic_array_dims = ds_map_create(); // name → GML array of dimension sizes
 global.basic_file_handles = ds_map_create(); // channel# → GML file handle
 global.basic_file_modes   = ds_map_create(); // channel# → "INPUT"/"OUTPUT"/"APPEND"

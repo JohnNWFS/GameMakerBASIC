@@ -9,9 +9,9 @@ function basic_array_get(_name, _idx) {
         dbg_log(DBG_FLOW, "ARRAY_GET ERROR: Array '" + nm + "' does not exist");
         return 0;
     }
-    var lst = global.basic_arrays[? nm];
-    if (!ds_exists(lst, ds_type_list)) {
-        dbg_log(DBG_FLOW, "ARRAY_GET ERROR: '" + nm + "' is not a ds_list");
+    var arr = global.basic_arrays[? nm];
+    if (!is_array(arr)) {
+        dbg_log(DBG_FLOW, "ARRAY_GET ERROR: '" + nm + "' is not a native array");
         return 0;
     }
 
@@ -53,10 +53,10 @@ function basic_array_get(_name, _idx) {
         flat_idx = idx_basic - _base;
     }
 
-    var n = ds_list_size(lst);
+    var n = array_length(arr);
     if (flat_idx < 0 || flat_idx >= n) {
         dbg_log(DBG_FLOW, "ARRAY_GET ERROR: flat_idx " + string(flat_idx) + " out of bounds for " + nm + " (size=" + string(n) + ")");
         return 0;
     }
-    return ds_list_find_value(lst, flat_idx);
+    return arr[flat_idx];
 }

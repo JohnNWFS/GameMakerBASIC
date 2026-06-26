@@ -1,6 +1,6 @@
 /// @function basic_cmd_dim(rest)
 /// @description DIM NAME(d1[,d2,...]) or multiple declarations comma-separated at top level.
-/// Stores flat ds_list with row-major layout; dimension sizes in global.basic_array_dims.
+/// Stores flat native GML array with row-major layout; dimension sizes in global.basic_array_dims.
 /// Inclusive upper bound per dimension: DIM A(3,4) => valid indices (1..3, 1..4) with OPTION BASE 1.
 function basic_cmd_dim(rest) {
     var s = string_trim(rest);
@@ -56,7 +56,7 @@ function basic_cmd_dim(rest) {
 
         // Parse comma-separated dimension expressions
         var dim_exprs = string_split(inside, ",");
-        var dims = [];  // sizes per dimension (inclusive: upper+1 slots each)
+        var dims = [];
         var total = 1;
         var ok = true;
         for (var di = 0; di < array_length(dim_exprs); di++) {
@@ -67,23 +67,18 @@ function basic_cmd_dim(rest) {
                 ok = false; break;
             }
             var n = floor(max(0, dval));
-            array_push(dims, n + 1); // inclusive upper bound
+            array_push(dims, n + 1);
             total *= (n + 1);
         }
         if (!ok || total <= 0) continue;
 
-        // Destroy old ds_list if present
         if (ds_map_exists(global.basic_arrays, nm)) {
             var _old = global.basic_arrays[? nm];
             if (ds_exists(_old, ds_type_list)) ds_list_destroy(_old);
         }
 
-        // Allocate flat ds_list, zero-filled
-        var lst = ds_list_create();
-        for (var i = 0; i < total; i++) ds_list_add(lst, 0);
-
-        global.basic_arrays[? nm]     = lst;
-        global.basic_array_dims[? nm] = dims; // GML array of per-dimension sizes
+        global.basic_arrays[? nm]     = array_create(total, 0);
+        global.basic_array_dims[? nm] = dims;
 
         if (dbg_on(DBG_FLOW)) {
             var _dstr = "";
