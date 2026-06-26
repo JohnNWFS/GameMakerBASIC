@@ -1,17 +1,9 @@
 /// MODE 1 COMMAND
 /// @function mode1_get_color(col, row)
-/// @description Get foreground color at grid position  
+/// @description Get foreground color at grid position
 function mode1_get_color(col, row) {
     var grid_obj = instance_find(obj_mode1_grid, 0);
     if (!instance_exists(grid_obj)) return c_white;
-    
-    var cols = grid_obj.grid_cols;
-    var rows = grid_obj.grid_rows;
-    
-    if (col < 0 || col >= cols || row < 0 || row >= rows) {
-        return c_white; // Return white for out of bounds
-    }
-    
-    var i = col + row * cols;
-    return grid_obj.grid[i].fg;
+    if (!mode1_grid_in_bounds(grid_obj, col, row)) return c_white;
+    return grid_obj.grid[col][row].fg;
 }

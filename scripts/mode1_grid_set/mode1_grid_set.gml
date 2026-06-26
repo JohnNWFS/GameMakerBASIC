@@ -1,22 +1,45 @@
+/// Allocate a 2D native GML grid of tile structs.
+function mode1_grid_alloc(_cols, _rows, _char = 32, _fg = c_white, _bg = c_black) {
+    var g = array_create(_cols, _rows);
+    for (var x = 0; x < _cols; x++) {
+        for (var y = 0; y < _rows; y++) {
+            g[x][y] = { char: _char, fg: _fg, bg: _bg };
+        }
+    }
+    return g;
+}
+
+function mode1_grid_in_bounds(_grid_obj, _x, _y) {
+    return (_x >= 0 && _x < _grid_obj.grid_cols && _y >= 0 && _y < _grid_obj.grid_rows);
+}
+
+function mode1_grid_fill_all(_grid_obj, _char, _fg, _bg) {
+    if (!instance_exists(_grid_obj)) return;
+    with (_grid_obj) {
+        for (var row = 0; row < grid_rows; row++) {
+            for (var col = 0; col < grid_cols; col++) {
+                grid[col][row].char = _char;
+                grid[col][row].fg = _fg;
+                grid[col][row].bg = _bg;
+            }
+        }
+        needs_redraw = true;
+    }
+}
+
 /// MODE 1 COMMAND
 /// @function mode1_grid_set(x, y, ch, [fg], [bg])
 /// @desc Update a grid cell; preserve fg/bg if the arg is undefined.
 function mode1_grid_set(_x, _y, _char, _fg, _bg) {
     var grid_obj = instance_find(obj_mode1_grid, 0);
     if (!instance_exists(grid_obj)) return;
+    if (!mode1_grid_in_bounds(grid_obj, _x, _y)) return;
 
-    var cols = grid_obj.grid_cols;
-    var rows = grid_obj.grid_rows;
-    if (_x < 0 || _x >= cols || _y < 0 || _y >= rows) return;
-
-    var idx  = _x + _y * cols;
-    var cell = grid_obj.grid[idx];
-
+    var cell = grid_obj.grid[_x][_y];
     cell.char = mode1_ascii_fallback_code(_char);
-    if (!is_undefined(_fg)) cell.fg = _fg;      // PRESERVE if undefined
-    if (!is_undefined(_bg)) cell.bg = _bg;      // PRESERVE if undefined
-
-    grid_obj.grid[idx] = cell;
+    if (!is_undefined(_fg)) cell.fg = _fg;
+    if (!is_undefined(_bg)) cell.bg = _bg;
+    grid_obj.grid[_x][_y] = cell;
     grid_obj.needs_redraw = true;
 }
 
