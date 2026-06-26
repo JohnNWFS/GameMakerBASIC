@@ -8,8 +8,7 @@ function basic_array_init(_name, _size) {
 
     if (ds_map_exists(global.basic_arrays, nm)) {
         dbg_log(DBG_FLOW, "ARRAY_INIT WARNING: Array '" + nm + "' already exists, replacing");
-        var _old = global.basic_arrays[? nm];
-        if (ds_exists(_old, ds_type_list)) ds_list_destroy(_old);
+        basic_array_release_storage(global.basic_arrays[? nm]);
         ds_map_delete(global.basic_arrays, nm);
     }
 

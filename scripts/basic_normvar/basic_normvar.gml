@@ -27,6 +27,13 @@ function basic_var_set(_key, _val) {
     global.basic_variables[$ basic_normvar(_key)] = _val;
 }
 
+/// Destroy legacy ds_list array storage only (native GML arrays need no release).
+function basic_array_release_storage(_storage) {
+    if (is_real(_storage) && ds_exists(_storage, ds_type_list)) {
+        ds_list_destroy(_storage);
+    }
+}
+
 /// basic_looks_numeric(s) -> bool  (no regex; robust enough for BASIC)
 function basic_looks_numeric(_s) {
     var s = string_trim(string(_s));

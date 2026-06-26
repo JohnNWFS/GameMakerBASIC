@@ -337,8 +337,7 @@ function handle_basic_command(cmd, arg) {
             case "ERASE": {
                 var _nm = string_upper(string_trim(_rest));
                 if (ds_exists(global.basic_arrays, ds_type_map) && ds_map_exists(global.basic_arrays, _nm)) {
-                    var _old = global.basic_arrays[? _nm];
-                    if (ds_exists(_old, ds_type_list)) ds_list_destroy(_old);
+                    basic_array_release_storage(global.basic_arrays[? _nm]);
                     ds_map_delete(global.basic_arrays, _nm);
                 }
                 if (variable_global_exists("basic_array_dims")

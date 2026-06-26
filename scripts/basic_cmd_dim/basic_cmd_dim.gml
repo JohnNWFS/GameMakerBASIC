@@ -73,8 +73,7 @@ function basic_cmd_dim(rest) {
         if (!ok || total <= 0) continue;
 
         if (ds_map_exists(global.basic_arrays, nm)) {
-            var _old = global.basic_arrays[? nm];
-            if (ds_exists(_old, ds_type_list)) ds_list_destroy(_old);
+            basic_array_release_storage(global.basic_arrays[? nm]);
         }
 
         global.basic_arrays[? nm]     = array_create(total, 0);
