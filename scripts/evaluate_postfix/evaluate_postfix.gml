@@ -64,7 +64,7 @@ function evaluate_postfix(postfix) {
                     var _ok = true;
                     for (var _di = 0; _di < array_length(_idx_parts); _di++) {
                         var _iv = basic_evaluate_expression_v2(string_trim(_idx_parts[_di]));
-                        if (!is_real(_iv)) { _ok = false; break; }
+                        if (!basic_is_number_val(_iv)) { _ok = false; break; }
                         if (_di > 0) _idx_joined += ",";
                         _idx_joined += string(floor(real(_iv)));
                     }
@@ -79,7 +79,7 @@ function evaluate_postfix(postfix) {
                 }
 
                 var idxVal = basic_evaluate_expression_v2(idxText);
-                if (!is_real(idxVal)) {
+                if (!basic_is_number_val(idxVal)) {
                     dbg_log(DBG_PARSE, "POSTFIX[ARRAY] ERROR: Index non-numeric from '" + idxText + "' → '" + string(idxVal) + "'. Pushing 0.");
                     array_push(stack, 0);
                     continue;

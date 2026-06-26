@@ -35,7 +35,7 @@ function basic_assign_to_array(varName, val) {
             var iv_tok  = basic_tokenize_expression_v2(string_trim(idx_parts[di]));
             var iv_post = infix_to_postfix(iv_tok);
             var iv_val  = evaluate_postfix(iv_post);
-            if (!is_real(iv_val)) {
+            if (!basic_is_number_val(iv_val)) {
                 basic_syntax_error("Invalid array index expression: " + idx_parts[di],
                                    undefined, global.interpreter_current_stmt_index, "ARRAY_INDEX_EVAL");
                 return;

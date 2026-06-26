@@ -27,6 +27,11 @@ function basic_var_set(_key, _val) {
     global.basic_variables[$ basic_normvar(_key)] = _val;
 }
 
+/// True when a value can be used as a numeric array index or expression operand.
+function basic_is_number_val(_v) {
+    return is_real(_v) || is_int64(_v);
+}
+
 /// Destroy legacy ds_list array storage only (native GML arrays need no release).
 function basic_array_release_storage(_storage) {
     if (is_real(_storage) && ds_exists(_storage, ds_type_list)) {
