@@ -30,8 +30,6 @@ if (string_pos("\n", src) > 0) {
         ? floor(global.wrap_width) : _auto_width;
     if (wrap_width < 4) wrap_width = 4; // safety
 
-    // Defensive copy of input text (prevents any aliasing/truncation surprises)
-    var src       = string(_text);
     var src_len   = string_length(src);
     var remaining = (src_len > 0) ? string_copy(src, 1, src_len) : "";
 
