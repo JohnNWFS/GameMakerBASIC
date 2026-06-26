@@ -3,6 +3,30 @@ function basic_normvar(_name) {
     return string_upper(string_trim(string(_name)));
 }
 
+/// Ensure global.basic_variables exists as a struct (modern GML store).
+function basic_var_ensure() {
+    if (!variable_global_exists("basic_variables") || !is_struct(global.basic_variables)) {
+        global.basic_variables = {};
+    }
+}
+
+function basic_var_exists(_key) {
+    basic_var_ensure();
+    return variable_struct_exists(global.basic_variables, basic_normvar(_key));
+}
+
+function basic_var_get(_key, _default = undefined) {
+    basic_var_ensure();
+    var k = basic_normvar(_key);
+    if (!variable_struct_exists(global.basic_variables, k)) return _default;
+    return global.basic_variables[$ k];
+}
+
+function basic_var_set(_key, _val) {
+    basic_var_ensure();
+    global.basic_variables[$ basic_normvar(_key)] = _val;
+}
+
 /// basic_looks_numeric(s) -> bool  (no regex; robust enough for BASIC)
 function basic_looks_numeric(_s) {
     var s = string_trim(string(_s));

@@ -30,9 +30,9 @@ function basic_cmd_input_file(arg) {
 
     // Assign: string vars get string; numeric vars get real
     if (string_length(_var_name) > 0 && string_char_at(_var_name, string_length(_var_name)) == "$") {
-        global.basic_variables[? _var_name] = _line;
+        basic_var_set(_var_name, _line);
     } else {
-        global.basic_variables[? _var_name] = (basic_looks_numeric(_line)) ? real(_line) : 0;
+        basic_var_set(_var_name, (basic_looks_numeric(_line)) ? real(_line) : 0);
     }
     dbg_log(DBG_FLOW, "INPUT#" + string(_chan) + " → " + _var_name + " = '" + _line + "'");
 }
@@ -64,7 +64,7 @@ function basic_cmd_line_input_file(arg) {
 
     var _handle = global.basic_file_handles[? _chan];
     var _line   = _file_read_line(_handle);
-    global.basic_variables[? _var_name] = _line;
+    basic_var_set(_var_name, _line);
     dbg_log(DBG_FLOW, "LINE INPUT#" + string(_chan) + " → " + _var_name + " = '" + _line + "'");
 }
 

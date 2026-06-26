@@ -77,7 +77,7 @@ function infix_to_postfix(tokens) {
         if (is_numeric_string(t)) { array_push(output, t); dbg_log(DBG_PARSE, "Added number to output: " + string(t)); continue; }
 
         // 3) KNOWN VARIABLE
-        if (ds_map_exists(global.basic_variables, tu)) { array_push(output, tu); dbg_log(DBG_PARSE, "Added variable name to output: " + tu); continue; }
+        if (basic_var_exists(tu)) { array_push(output, tu); dbg_log(DBG_PARSE, "Added variable name to output: " + tu); continue; }
 
         // 4) OPEN PAREN
         if (t == "(") { array_push(stack, t); dbg_log(DBG_PARSE, "Pushed '(' onto operator stack"); continue; }

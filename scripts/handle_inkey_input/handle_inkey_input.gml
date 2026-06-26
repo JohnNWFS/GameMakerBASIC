@@ -11,7 +11,7 @@ function handle_inkey_input() {
             var ch = chr(key);
             
             // Store the result
-            global.basic_variables[? "__INKEY_RESULT"] = ch;
+            basic_var_set("__INKEY_RESULT", ch);
             
             // Resume program execution
             global.pause_in_effect = false;
@@ -28,7 +28,7 @@ function handle_inkey_input() {
     
     // Handle special keys if needed
     if (keyboard_check_pressed(vk_enter)) {
-        global.basic_variables[? "__INKEY_RESULT"] = chr(13);
+        basic_var_set("__INKEY_RESULT", chr(13));
         // Resume execution (same cleanup as above)
         global.pause_in_effect = false;
         global.awaiting_input = false;

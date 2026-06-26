@@ -301,16 +301,16 @@ case "OR": {
 
                     if (is_real(min_val_raw)) {
                         min_val = min_val_raw;
-                    } else if (ds_map_exists(global.basic_variables, min_val_raw) && is_real(global.basic_variables[? min_val_raw])) {
-                        min_val = global.basic_variables[? min_val_raw];
+                    } else if (basic_var_exists(min_val_raw) && is_real(basic_var_get(min_val_raw))) {
+                        min_val = basic_var_get(min_val_raw);
                     } else {
                         min_val = undefined;
                     }
 
                     if (is_real(max_val_raw)) {
                         max_val = max_val_raw;
-                    } else if (ds_map_exists(global.basic_variables, max_val_raw) && is_real(global.basic_variables[? max_val_raw])) {
-                        max_val = global.basic_variables[? max_val_raw];
+                    } else if (basic_var_exists(max_val_raw) && is_real(basic_var_get(max_val_raw))) {
+                        max_val = basic_var_get(max_val_raw);
                     } else {
                         max_val = undefined;
                     }
@@ -719,8 +719,8 @@ case "OR": {
 			// -------------------------------------------------------
 			// Scalar variable load (string vars stay strings; numeric vars coerce)
 			// -------------------------------------------------------
-			if (ds_map_exists(global.basic_variables, token_upper)) {
-			    var vv = global.basic_variables[? token_upper];
+			if (basic_var_exists(token_upper)) {
+			    var vv = basic_var_get(token_upper);
 
 			    var is_string_var = (string_char_at(token_upper, string_length(token_upper)) == "$");
 
@@ -760,18 +760,17 @@ case "OR": {
 
 		if (looks_ident) {
 		    var key = string_upper(ident);
-		    if (!ds_map_exists(global.basic_variables, key)) {
+		    if (!basic_var_exists(key)) {
 		        // Check color name constants before creating as 0
 		        if (variable_global_exists("colors") && ds_map_exists(global.colors, key)) {
 		            array_push(stack, global.colors[? key]);
 		            dbg_log(DBG_PARSE, "POSTFIX: Color constant '" + key + "' = " + string(global.colors[? key]));
 		            continue;
 		        }
-		        // create as numeric 0 (QBASIC style)
-		        global.basic_variables[? key] = 0;
+		        basic_var_set(key, 0);
 		        dbg_log(DBG_PARSE, "POSTFIX: Implicit numeric var created '" + key + "' = 0");
 		    }
-		    var vv = global.basic_variables[? key];
+		    var vv = basic_var_get(key);
 
 		    // coerce type by suffix: $ means string var
 		    if (string_char_at(key, string_length(key)) == "$") {

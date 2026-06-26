@@ -56,9 +56,7 @@ global.config[? "show_error_hints"] = true; // show compact help lines under syn
 // obj_editor is placed in rm_editor; do not create a second instance here.
 
 // Initialize variable store
-if (!variable_global_exists("basic_variables")) {
-    global.basic_variables = ds_map_create();
-}
+global.basic_variables = {};
 
 // Output buffer
 global.print_line_buffer = "";

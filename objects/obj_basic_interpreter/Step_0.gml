@@ -54,13 +54,6 @@ if (global.inkey_flush_frames > 0) {
 }
 
 // ==============================
-// Sort program lines in ascending order
-// ==============================
-if (ds_exists(global.line_list, ds_type_list)) {
-    ds_list_sort(global.line_list, true);
-}
-
-// ==============================
 // === Program Ended: Wait for user action ===
 // ==============================
 if (global.program_has_ended) {
@@ -141,12 +134,12 @@ if (global.awaiting_input) {
 
             // String typed variable → always store as string
             if (string_length(_name) > 0 && string_char_at(_name, string_length(_name)) == "$") {
-                global.basic_variables[? _name] = _val;
+                basic_var_set(_name, _val);
             } else {
                 if (is_numeric_string(_val_trim)) {
-                    global.basic_variables[? _name] = real(_val_trim);
+                    basic_var_set(_name, real(_val_trim));
                 } else {
-                    global.basic_variables[? _name] = _val; // keep literal if non-numeric
+                    basic_var_set(_name, _val);
                 }
             }
 

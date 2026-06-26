@@ -3,7 +3,7 @@ global.inkey_mode = false;
 // ─────────────────────────────
 // MAPS
 // ─────────────────────────────
-if (ds_exists(global.basic_variables, ds_type_map)) ds_map_destroy(global.basic_variables);
+global.basic_variables = undefined;
 if (ds_exists(global.program_lines, ds_type_map)) ds_map_destroy(global.program_lines);
 if (ds_exists(global.basic_program, ds_type_map)) ds_map_destroy(global.basic_program);
 if (ds_exists(global.program_map, ds_type_map)) ds_map_destroy(global.program_map);

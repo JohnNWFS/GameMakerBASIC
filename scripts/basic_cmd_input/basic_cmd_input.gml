@@ -55,9 +55,8 @@ function basic_cmd_input(arg) {
     
 // Initialize the variable only if absent; avoid numeric 0 pre-seed
  varName = basic_normvar(varName); // ensure canonical now
-if (!ds_map_exists(global.basic_variables, varName)) {
-    // Seed both kinds to empty string; numeric coercion happens on commit
-    global.basic_variables[? varName] = "";
+if (!basic_var_exists(varName)) {
+    basic_var_set(varName, "");
 }
 
     

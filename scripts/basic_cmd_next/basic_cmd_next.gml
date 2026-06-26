@@ -26,24 +26,18 @@ function basic_cmd_next(arg) {
     var loop_line   = (variable_struct_exists(frame, "loop_line")) ? frame.loop_line : -1;
     var loop_stmt   = (variable_struct_exists(frame, "loop_stmt")) ? frame.loop_stmt : -1;
 
-    if (is_undefined(global.basic_variables)) {
-        basic_system_message("RUNTIME ERROR: variable store not initialized");
-        global.interpreter_running = false;
-        return;
-    }
-
     // Re-evaluate TO / STEP each iteration if they weren’t numeric
     if (!is_real(to_val)) {
         var to_expr_local = variable_struct_exists(frame, "to_raw") ? frame.to_raw : to_val;
         to_val = basic_evaluate_expression_v2(to_expr_local);
         if (is_string(to_val)) {
             var key_to = string_upper(string_trim(to_expr_local));
-            if (!ds_map_exists(global.basic_variables, key_to)) {
+            if (!basic_var_exists(key_to)) {
                 basic_syntax_error("FOR ... TO must be numeric",
                     global.current_line_number, global.interpreter_current_stmt_index, "FOR_TO_NONNUM");
                 return;
             }
-            to_val = global.basic_variables[? key_to];
+            to_val = basic_var_get(key_to);
         }
         frame.to = to_val;
     }
@@ -52,17 +46,16 @@ function basic_cmd_next(arg) {
         step_val = basic_evaluate_expression_v2(step_expr_local);
         if (is_string(step_val)) {
             var key_step = string_upper(string_trim(step_expr_local));
-            if (!ds_map_exists(global.basic_variables, key_step)) {
-                // default if someone did STEP with a non-numeric symbol
+            if (!basic_var_exists(key_step)) {
                 step_val = 1;
             } else {
-                step_val = global.basic_variables[? key_step];
+                step_val = basic_var_get(key_step);
             }
         }
         frame.step = step_val;
     }
 
-    var current = global.basic_variables[? varname];
+    var current = basic_var_get(varname, 0);
 
     if (step_val == 0) {
         var inferred = (to_val >= current) ? 1 : -1;
@@ -72,7 +65,7 @@ function basic_cmd_next(arg) {
     }
 
     current += step_val;
-    global.basic_variables[? varname] = current;
+    basic_var_set(varname, current);
 
     var continue_loop = (step_val > 0) ? (current <= to_val) : (current >= to_val);
     if (dbg_on(DBG_FLOW)) show_debug_message("NEXT: to=" + string(to_val)

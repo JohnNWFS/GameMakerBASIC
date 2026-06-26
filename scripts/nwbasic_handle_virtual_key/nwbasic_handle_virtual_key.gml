@@ -119,10 +119,10 @@ function mobile_kb_handle_key(key) {
                 var _val_trim = string_trim(string(_val));
 
                 if (string_length(_name) > 0 && string_char_at(_name, string_length(_name)) == "$") {
-                    global.basic_variables[? _name] = _val;
+                    basic_var_set(_name, _val);
                 } else {
-                    if (is_numeric_string(_val_trim)) global.basic_variables[? _name] = real(_val_trim);
-                    else global.basic_variables[? _name] = _val;
+                    if (is_numeric_string(_val_trim)) basic_var_set(_name, real(_val_trim));
+                    else basic_var_set(_name, _val);
                 }
 
                 var _echo = (global.input_show_qmark ? "? " : global.input_prompt) + _val;

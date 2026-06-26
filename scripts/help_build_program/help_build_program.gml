@@ -8,8 +8,8 @@ function help_build_program() {
     var topic_count = ds_list_size(global.help_topics);
 
     // Seed the runtime variable store
-    if (!is_undefined(global.basic_variables)) {
-        global.basic_variables[? "TOPIC_COUNT"] = topic_count;
+    if (variable_global_exists("basic_variables")) {
+        basic_var_set("TOPIC_COUNT", topic_count);
     }
 
     var add = function(n, s) {

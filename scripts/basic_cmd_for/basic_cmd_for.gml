@@ -68,8 +68,8 @@ function basic_cmd_for(arg) {
     // --- SAFE RESOLUTION: only accept string if it's a variable name; never call real() on text ---
     if (is_string(to_val_eval)) {
         var key_to = string_upper(string_trim(to_expr));
-        if (!is_undefined(global.basic_variables) && ds_map_exists(global.basic_variables, key_to)) {
-            to_val_eval = global.basic_variables[? key_to];
+        if (basic_var_exists(key_to)) {
+            to_val_eval = basic_var_get(key_to);
         } else {
             basic_syntax_error("FOR ... TO must be numeric or a numeric variable",
                 global.current_line_number, global.interpreter_current_stmt_index, "FOR_RANGE");
@@ -78,8 +78,8 @@ function basic_cmd_for(arg) {
     }
     if (is_string(step_val_eval)) {
         var key_step = string_upper(string_trim(step_expr));
-        if (!is_undefined(global.basic_variables) && ds_map_exists(global.basic_variables, key_step)) {
-            step_val_eval = global.basic_variables[? key_step];
+        if (basic_var_exists(key_step)) {
+            step_val_eval = basic_var_get(key_step);
         } else {
             // if user wrote STEP "" or a non-var string, reject
             basic_syntax_error("FOR ... STEP must be numeric or a numeric variable",
@@ -93,12 +93,7 @@ function basic_cmd_for(arg) {
         + " | step(eval)=" + string(step_val_eval) + " [raw='" + step_expr + "']");
 
     // 3) Initialize loop var
-    if (is_undefined(global.basic_variables)) {
-        basic_system_message("RUNTIME ERROR: variable store not initialized");
-        global.interpreter_running = false;
-        return;
-    }
-    global.basic_variables[? varname] = start_val;
+    basic_var_set(varname, start_val);
     dbg_log(DBG_FLOW, "FOR: Initialized variable " + varname + " = " + string(start_val));
 
     // 4) Push frame (legacy + inline stmt coordinates)

@@ -1,7 +1,7 @@
 /// handle_interpreter_character_input(key)
 /// Processes editor keystrokes while awaiting BASIC INPUT.
 /// Assumes helpers basic_normvar(name) and basic_looks_numeric(s) exist,
-/// and global.basic_variables (ds_map) is initialized.
+/// and global.basic_variables (struct) is initialized.
 function handle_interpreter_character_input(key) {
     // --- NUMPAD DIGITS ---
     if (key >= vk_numpad0 && key <= vk_numpad9) {
@@ -85,7 +85,7 @@ function handle_interpreter_character_input(key) {
         }
 
         // Store under canonical key
-        global.basic_variables[? k] = val;
+        basic_var_set(k, val);
 
         if (!is_undefined(global.DEBUG_INPUT) && global.DEBUG_INPUT) {
             show_debug_message("[INPUT] commit " + k + " <= '" + string(val) + "'");

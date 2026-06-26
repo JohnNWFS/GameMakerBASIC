@@ -13,12 +13,10 @@ function help_launch() {
     global.help_active = true;
     
     // Initialize BASIC variables if they don't exist
-    if (!variable_global_exists("basic_variables")) {
-        global.basic_variables = ds_map_create();
-    }
+    basic_var_ensure();
     
     // Set the help done flag to false initially
-    global.basic_variables[? "HELP_DONE"] = 0;
+    basic_var_set("HELP_DONE", 0);
     
     // Launch the interpreter with the help program
     run_program();

@@ -39,7 +39,7 @@ function basic_cmd_let(arg) {
                     basic_assign_to_array(varName, ch_commit);
                 } else {
                     var k = basic_normvar(varName);
-                    global.basic_variables[? k] = ch_commit;
+                    basic_var_set(k, ch_commit);
                 }
 
                 // Clear modal flags
@@ -77,7 +77,7 @@ function basic_cmd_let(arg) {
                 basic_assign_to_array(varName, string(ch2));
             } else {
                 var k = basic_normvar(varName);
-                global.basic_variables[? k] = string(ch2);
+                basic_var_set(k, string(ch2));
             }
 
             if (variable_global_exists("__inkey_queue") && ds_exists(global.__inkey_queue, ds_type_queue)) {
@@ -116,18 +116,18 @@ function basic_cmd_let(arg) {
     // Coerce based on variable sigil: trailing $ means string var
     var is_string_var = (string_length(k) > 0) && (string_char_at(k, string_length(k)) == "$");
     if (is_string_var) {
-        global.basic_variables[? k] = string(val);
+        basic_var_set(k, string(val));
         dbg_log(DBG_FLOW, "LET: Assigned string value: '" + string(val) + "' to '" + k + "'");
     } else {
         // Numeric: if it looks numeric, coerce to real; else 0 (or keep as-is if you prefer)
         if (is_real(val)) {
-            global.basic_variables[? k] = val;
+            basic_var_set(k, val);
         } else if (basic_looks_numeric(string(val))) {
-            global.basic_variables[? k] = real(val);
+            basic_var_set(k, real(val));
         } else {
-            global.basic_variables[? k] = 0;
+            basic_var_set(k, 0);
         }
-        dbg_log(DBG_FLOW, "LET: Assigned value: '" + string(global.basic_variables[? k]) + "' to '" + k + "'");
+        dbg_log(DBG_FLOW, "LET: Assigned value: '" + string(basic_var_get(k)) + "' to '" + k + "'");
     }
 }
 
