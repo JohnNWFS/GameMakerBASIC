@@ -22,10 +22,20 @@ function basic_cmd_let(arg) {
     var expr_uc = string_upper(exprStr);
     var is_pure_inkey = false;
 
-    // Allow "INKEY$" or "INKEY$()" with arbitrary spaces
-    // Strip whitespace
+    // Allow "INKEY$" or "INKEY$()" with arbitrary spaces — never when RHS is an expression.
     var expr_compact = string_replace_all(string_replace_all(expr_uc, " ", ""), "\t", "");
-    if (expr_compact == "INKEY$" || expr_compact == "INKEY$()") is_pure_inkey = true;
+    if (expr_compact == "INKEY$" || expr_compact == "INKEY$()") {
+        var _has_expr_op = false;
+        for (var _ci = 1; _ci <= string_length(exprStr); _ci++) {
+            var _ch = string_char_at(exprStr, _ci);
+            if (_ch == "+" || _ch == "-" || _ch == "*" || _ch == "/" || _ch == "\\"
+             || _ch == "&" || _ch == "," || _ch == ":") {
+                _has_expr_op = true;
+                break;
+            }
+        }
+        if (!_has_expr_op) is_pure_inkey = true;
+    }
 
     if (is_pure_inkey) {
 

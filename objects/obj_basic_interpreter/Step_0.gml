@@ -37,16 +37,15 @@ if (global.inkey_flush_frames > 0) {
     global.inkey_captured = "";
     global.inkey_flush_frames--;
 } else if (global.inkey_release_guard) {
+    // Debounce: ignore held keys until released, but never block program execution.
     keyboard_string = "";
     if (variable_global_exists("__inkey_queue") && ds_exists(global.__inkey_queue, ds_type_queue)) {
         ds_queue_clear(global.__inkey_queue);
     }
     global.inkey_captured = "";
-    if (keyboard_check(vk_anykey)) {
-        global.pause_in_effect = global.inkey_waiting;
-        return;
+    if (!keyboard_check(vk_anykey)) {
+        global.inkey_release_guard = false;
     }
-    global.inkey_release_guard = false;
 } else {
     // ---------- Feed INKEY$ queue once per frame ----------
     // (The function itself arbitrates INPUT vs. INKEY modal wait.)

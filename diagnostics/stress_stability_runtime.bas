@@ -7,9 +7,8 @@
 70 PRINT "NW-BASIC STABILITY RUNTIME TEST"
 80 PRINT "================================"
 90 PRINT ""
-100 REM --- INKEY$ nonblocking expression ---
-110 K$ = INKEY$ + ""
-120 IF LEN(K$) >= 0 THEN PRINT "TEST: INKEY_NONBLOCK = PASS" ELSE PRINT "TEST: INKEY_NONBLOCK = FAIL"
+100 REM --- INKEY$ nonblocking expression (no modal LET) ---
+110 IF LEN(INKEY$ + "") >= 0 THEN PRINT "TEST: INKEY_NONBLOCK = PASS" ELSE PRINT "TEST: INKEY_NONBLOCK = FAIL"
 130 REM --- TIMER advances ---
 140 T0 = TIMER
 150 FOR I = 1 TO 1000
