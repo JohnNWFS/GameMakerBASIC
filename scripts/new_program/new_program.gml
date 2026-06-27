@@ -2,12 +2,11 @@
 // https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
  function new_program() {
     // Save state for undo before clearing
-    if (ds_list_size(global.line_numbers) > 0) {
+    if (ds_list_size(global.line_list) > 0) {
         save_undo_state();
     }
     
-    ds_map_clear(global.program_lines);
-    ds_list_clear(global.line_numbers);
+    basic_program_clear();
     bas_sprite_clear_all();
     current_filename = "";
     list_range_active = false;

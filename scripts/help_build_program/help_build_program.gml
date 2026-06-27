@@ -1,8 +1,7 @@
 /// help_build_program() - CORRECTED VERSION
 function help_build_program() {
     // clear current program and line numbers
-    if (ds_exists(global.program_lines, ds_type_map)) ds_map_clear(global.program_lines);
-    if (ds_exists(global.line_numbers, ds_type_list)) ds_list_clear(global.line_numbers);
+    basic_program_clear();
 
     // Work out how many topics we're going to list
     var topic_count = ds_list_size(global.help_topics);
@@ -13,8 +12,8 @@ function help_build_program() {
     }
 
     var add = function(n, s) {
-        ds_map_add(global.program_lines, n, s);
-        ds_list_add(global.line_numbers, n);
+        ds_map_add(global.program_map, n, s);
+        ds_list_add(global.line_list, n);
     };
 
     // ==== BASIC "HELP BROWSER" PROGRAM ====
@@ -505,4 +504,5 @@ add(10755,"DATA \"Tips: Re-run often; save before big edits\"");
 add(10756,"DATA \"See also: Editor Commands\"");
 add(10757,"DATA \"\"");
 
+    basic_program_rebuild_index_map();
 }

@@ -77,23 +77,15 @@ function editor_html_build_program_text() {
         }
     }
 
-    // === Try global.program_lines (ds_map keyed by line numbers) ===
-    if (source_used == "NONE" && variable_global_exists("program_lines") && ds_exists(global.program_lines, ds_type_map)) {
-        var gpl_keys = ds_list_create();
-        var gpl_k = ds_map_find_first(global.program_lines);
-        while (gpl_k != undefined) { ds_list_add(gpl_keys, gpl_k); gpl_k = ds_map_find_next(global.program_lines, gpl_k); }
-        var gpl_numeric = true;
-        for (var gpi = 0; gpi < ds_list_size(gpl_keys); gpi++) {
-            if (!is_real(ds_list_find_value(gpl_keys, gpi))) { gpl_numeric = false; break; }
-        }
-        if (gpl_numeric) ds_list_sort(gpl_keys, true);
-        for (var gpj = 0; gpj < ds_list_size(gpl_keys); gpj++) {
-            var gln  = ds_list_find_value(gpl_keys, gpj);
-            var gval = ds_map_find_value(global.program_lines, gln);
+    // === Try global.program_map + line_list (canonical editor storage) ===
+    if (source_used == "NONE" && variable_global_exists("program_map") && ds_exists(global.program_map, ds_type_map)
+     && variable_global_exists("line_list") && ds_exists(global.line_list, ds_type_list)) {
+        for (var gpj = 0; gpj < ds_list_size(global.line_list); gpj++) {
+            var gln  = ds_list_find_value(global.line_list, gpj);
+            var gval = ds_map_find_value(global.program_map, gln);
             ds_list_add(lines_list, string(gln) + " " + string(gval));
         }
-        ds_list_destroy(gpl_keys);
-        if (ds_list_size(lines_list) > 0) source_used = "global.program_lines (ds_map)";
+        if (ds_list_size(lines_list) > 0) source_used = "global.program_map+line_list";
     }
 
     // --- Emit CRLF text

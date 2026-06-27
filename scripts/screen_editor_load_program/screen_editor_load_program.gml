@@ -10,13 +10,13 @@ function screen_editor_load_program(editor_inst) {
         }
         
         // Load program lines with scroll offset
-        var total_lines = ds_list_size(global.line_numbers);
+        var total_lines = ds_list_size(global.line_list);
         var screen_row = 0;
         
         // Start from scroll_offset instead of 0
 		for (var i = scroll_offset; i < total_lines && screen_row < screen_rows; i++) {
-		    var line_num = ds_list_find_value(global.line_numbers, i);
-		    var code = ds_map_find_value(global.program_lines, line_num);
+		    var line_num = ds_list_find_value(global.line_list, i);
+		    var code = ds_map_find_value(global.program_map, line_num);
 		    var line_text = string(line_num) + " " + code;
     
 		    // Apply horizontal offset ONLY to the current cursor line

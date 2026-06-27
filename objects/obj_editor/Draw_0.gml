@@ -186,18 +186,18 @@ var content_bottom = display_get_gui_height() - _kb_h;
 // Draw program lines with proper spacing
 var y_pos = 32;
 var lines_shown = 0;
-var total_lines = ds_list_size(global.line_numbers);
+var total_lines = ds_list_size(global.line_list);
 
 // Calculate how many lines fit on screen
 var available_height = content_bottom - 128; // Leave space for prompt and messages
 var max_lines = floor(available_height / actual_font_height);
 
 for (var i = display_start_line; i < total_lines && lines_shown < max_lines; i++) {
-    var line_num = ds_list_find_value(global.line_numbers, i);
+    var line_num = ds_list_find_value(global.line_list, i);
     if (list_range_active && line_num < list_range_start_line) continue;
     if (list_range_active && line_num > list_range_end_line) break;
 
-    var code = ds_map_find_value(global.program_lines, line_num);
+    var code = ds_map_find_value(global.program_map, line_num);
     var display_text = string(line_num) + " " + code;
     
     draw_text(16, y_pos, display_text);

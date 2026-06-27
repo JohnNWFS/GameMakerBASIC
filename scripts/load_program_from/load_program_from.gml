@@ -24,7 +24,7 @@ function load_program_from(filename)
         return;
     }
 
-    // Clear current program (your function should reset global.program_lines etc.)
+    // Clear current program (resets program_map + line_list)
     new_program();
 
     var file = file_text_open_read(file_path);
@@ -59,12 +59,12 @@ function load_program_from(filename)
             var line_num = real(line_num_str);
             if (!is_valid_line_number(line_num)) continue;
             // Store into your canonical container and order list
-            ds_map_set(global.program_lines, line_num, code_content);
-            insert_line_number_ordered(line_num);
+            basic_program_set_line(line_num, code_content, false);
         }
     }
 
     file_text_close(file);
+    basic_program_rebuild_index_map();
     current_filename = filename;
     basic_show_message("LOADED: " + filename);
     update_display();

@@ -1,18 +1,12 @@
 function dump_program_to_console() {
-    dbg_log(DBG_FLOW, "==== BASIC PROGRAM DUMP ====");
-
-    var lines = global.line_numbers; // numeric line numbers
-    var prog = global.program_lines;
-
-    for (var i = 0; i < ds_list_size(lines); i++) {
-        var linenum = ds_list_find_value(lines, i); // numeric
-        if (ds_map_exists(prog, linenum)) {
-            var code = ds_map_find_value(prog, linenum);
-            dbg_log(DBG_FLOW, string(linenum) + " " + code);
-        } else {
-            dbg_log(DBG_FLOW, "Missing entry for key: " + string(linenum));
-        }
+    var lines = global.line_list;
+    var prog = global.program_map;
+    if (!ds_exists(prog, ds_type_map) || !ds_exists(lines, ds_type_list)) {
+        show_debug_message("No program in memory.");
+        return;
     }
-
-    dbg_log(DBG_FLOW, "==== END OF DUMP ====");
+    for (var i = 0; i < ds_list_size(lines); i++) {
+        var ln = ds_list_find_value(lines, i);
+        show_debug_message(string(ln) + " " + string(ds_map_find_value(prog, ln)));
+    }
 }

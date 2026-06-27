@@ -54,7 +54,7 @@ function go_program_line(line_text, command_name = "GO") {
         return;
     }
 
-    var total = ds_list_size(global.line_numbers);
+    var total = ds_list_size(global.line_list);
     if (total <= 0) {
         basic_show_message("NO PROGRAM");
         return;
@@ -67,7 +67,7 @@ function go_program_line(line_text, command_name = "GO") {
     display_start_line = clamp(idx, 0, max(0, total - 1));
     update_display();
 
-    var shown_line = ds_list_find_value(global.line_numbers, display_start_line);
+    var shown_line = ds_list_find_value(global.line_list, display_start_line);
     if (shown_line == target) {
         basic_show_message(command_name + " " + string(target));
     } else {
@@ -76,17 +76,17 @@ function go_program_line(line_text, command_name = "GO") {
 }
 
 function editor_find_first_line_index_at_or_after(target) {
-    var total = ds_list_size(global.line_numbers);
+    var total = ds_list_size(global.line_list);
     for (var i = 0; i < total; i++) {
-        var line_num = ds_list_find_value(global.line_numbers, i);
+        var line_num = ds_list_find_value(global.line_list, i);
         if (line_num >= target) return i;
     }
     return -1;
 }
 
 function editor_find_last_line_index_at_or_before(target) {
-    for (var i = ds_list_size(global.line_numbers) - 1; i >= 0; i--) {
-        var line_num = ds_list_find_value(global.line_numbers, i);
+    for (var i = ds_list_size(global.line_list) - 1; i >= 0; i--) {
+        var line_num = ds_list_find_value(global.line_list, i);
         if (line_num <= target) return i;
     }
     return -1;
@@ -101,7 +101,7 @@ function editor_scroll_min_index() {
 }
 
 function editor_scroll_max_index(page_lines) {
-    var total = ds_list_size(global.line_numbers);
+    var total = ds_list_size(global.line_list);
     if (total <= 0) return 0;
 
     if (variable_instance_exists(id, "list_range_active") && list_range_active) {

@@ -26,13 +26,11 @@ global.username = "";
 global.editor_spawned = false;
 
 // Program and source management
-global.program_lines = ds_map_create();
 global.program_map  = ds_map_create();
 global.line_index_map = ds_map_create();
 
-// Line tracking
+// Line tracking (sorted line numbers; shares storage with runtime)
 global.line_list    = ds_list_create();
-global.line_numbers = ds_list_create();
 global.undo_stack = ds_list_create();
 global.output_lines = ds_list_create();
 global.output_colors = ds_list_create();

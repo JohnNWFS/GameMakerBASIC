@@ -4,7 +4,7 @@ function run_program() {
 	global.editor_return_room = rm_editor;
 
     // ── Guard: no program ────────────────────────────────────────────────
-    if (!ds_exists(global.line_numbers, ds_type_list) || ds_list_size(global.line_numbers) == 0) {
+    if (!ds_exists(global.line_list, ds_type_list) || ds_list_size(global.line_list) == 0) {
         show_error_message("NO PROGRAM");
         return;
     }

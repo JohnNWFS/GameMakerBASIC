@@ -37,9 +37,9 @@ var move_right_once = function() {
     var line_index = cursor_y + scroll_offset;
     var full_line_text = "";
 
-    if (line_index < ds_list_size(global.line_numbers)) {
-        var line_num = ds_list_find_value(global.line_numbers, line_index);
-        var code = ds_map_find_value(global.program_lines, line_num);
+    if (line_index < ds_list_size(global.line_list)) {
+        var line_num = ds_list_find_value(global.line_list, line_index);
+        var code = ds_map_find_value(global.program_map, line_num);
         full_line_text = string(line_num) + " " + code;
     }
 
@@ -137,7 +137,7 @@ if (keyboard_check_pressed(vk_down)) {
     // Reset horizontal scrolling - always show left edge of new line
     horizontal_offset = 0;
     
-    var total_lines = ds_list_size(global.line_numbers);
+    var total_lines = ds_list_size(global.line_list);
     var visible_lines = min(screen_rows, total_lines - scroll_offset);
     
     if (cursor_y < visible_lines - 1 && cursor_y < screen_rows - 1) {
@@ -172,7 +172,7 @@ if (keyboard_check_pressed(vk_pageup)) {
 
 if (keyboard_check_pressed(vk_pagedown)) {
     var old_offset = scroll_offset;
-    var total_lines = ds_list_size(global.line_numbers);
+    var total_lines = ds_list_size(global.line_list);
     scroll_offset = min(max(0, total_lines - screen_rows), scroll_offset + screen_rows);
     if (scroll_offset != old_offset) {
         horizontal_offset = 0;
@@ -255,12 +255,12 @@ if (keyboard_check_pressed(vk_anykey)) {
 
                     // Update the actual BASIC program line
                     var line_index = cursor_y + scroll_offset;
-                    if (line_index < ds_list_size(global.line_numbers)) {
-                        var line_num  = ds_list_find_value(global.line_numbers, line_index);
+                    if (line_index < ds_list_size(global.line_list)) {
+                        var line_num  = ds_list_find_value(global.line_list, line_index);
                         var space_pos = string_pos(" ", new_line);
                         if (space_pos > 0) {
                             var code_part = string_copy(new_line, space_pos + 1, string_length(new_line));
-                            ds_map_set(global.program_lines, line_num, code_part);
+                            basic_program_set_line(line_num, code_part);
                         }
                     }
 
@@ -308,12 +308,12 @@ if (keyboard_check_pressed(vk_backspace)) {
         
         // Update program line
         var line_index = cursor_y + scroll_offset;
-        if (line_index < ds_list_size(global.line_numbers)) {
-            var line_num = ds_list_find_value(global.line_numbers, line_index);
+        if (line_index < ds_list_size(global.line_list)) {
+            var line_num = ds_list_find_value(global.line_list, line_index);
             var space_pos = string_pos(" ", new_line);
             if (space_pos > 0) {
                 var code_part = string_copy(new_line, space_pos + 1, string_length(new_line));
-                ds_map_set(global.program_lines, line_num, code_part);
+                basic_program_set_line(line_num, code_part);
             }
         }
         
@@ -345,24 +345,23 @@ if (keyboard_check_pressed(vk_enter)) {
 
     horizontal_offset = 0;
 
-    var total_lines_after_commit = ds_list_size(global.line_numbers);
+    var total_lines_after_commit = ds_list_size(global.line_list);
 
     if (insert_requested) {
         if (current_line_index >= 0 && current_line_index < total_lines_after_commit - 1) {
-            var cur_line_num = ds_list_find_value(global.line_numbers, current_line_index);
-            var next_line_num = ds_list_find_value(global.line_numbers, current_line_index + 1);
+            var cur_line_num = ds_list_find_value(global.line_list, current_line_index);
+            var next_line_num = ds_list_find_value(global.line_list, current_line_index + 1);
             var gap = next_line_num - cur_line_num;
 
             if (gap > 1) {
                 var new_line_num = (gap == 2) ? (cur_line_num + 1) : floor((cur_line_num + next_line_num) / 2);
-                ds_map_set(global.program_lines, new_line_num, "");
-                insert_line_number_ordered(new_line_num);
+                basic_program_set_line(new_line_num, "");
                 dbg_log(DBG_FLOW, "SCREEN_EDITOR: Inserted blank line " + string(new_line_num) + " between " + string(cur_line_num) + " and " + string(next_line_num));
 
                 if (cursor_y < screen_rows - 1) {
                     cursor_y++;
                 } else {
-                    scroll_offset = min(max(0, ds_list_size(global.line_numbers) - screen_rows), scroll_offset + 1);
+                    scroll_offset = min(max(0, ds_list_size(global.line_list) - screen_rows), scroll_offset + 1);
                 }
                 cursor_x = string_length(string(new_line_num) + " ");
                 screen_editor_load_program(id);
@@ -377,18 +376,17 @@ if (keyboard_check_pressed(vk_enter)) {
             screen_editor_load_program(id);
         }
     } else if (current_line_index >= total_lines_after_commit - 1 && total_lines_after_commit > 0) {
-        var last_line_num = ds_list_find_value(global.line_numbers, total_lines_after_commit - 1);
+        var last_line_num = ds_list_find_value(global.line_list, total_lines_after_commit - 1);
         var append_line_num = min(65535, last_line_num + 10);
 
         if (append_line_num > last_line_num) {
-            ds_map_set(global.program_lines, append_line_num, "");
-            insert_line_number_ordered(append_line_num);
+            basic_program_set_line(append_line_num, "");
             dbg_log(DBG_FLOW, "SCREEN_EDITOR: Appended blank line " + string(append_line_num));
 
             if (cursor_y < screen_rows - 1) {
                 cursor_y++;
             } else {
-                scroll_offset = min(max(0, ds_list_size(global.line_numbers) - screen_rows), scroll_offset + 1);
+                scroll_offset = min(max(0, ds_list_size(global.line_list) - screen_rows), scroll_offset + 1);
             }
             cursor_x = string_length(string(append_line_num) + " ");
             screen_editor_load_program(id);

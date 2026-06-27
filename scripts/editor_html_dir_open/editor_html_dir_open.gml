@@ -1,4 +1,4 @@
-/// Load a selected file (by 1-based index or exact filename) into program_lines/line_numbers
+/// Load a selected file (by 1-based index or exact filename) into program_map/line_list
 function editor_html_dir_open(which) {
     if (os_browser == browser_not_a_browser) {
         show_error_message("HTML DIR is only available in browser builds.");
@@ -53,14 +53,13 @@ function editor_html_dir_open(which) {
             if (is_line_number(ln_str)) {
                 var _ln = real(ln_str);
                 if (_ln > 0 && string_length(code) > 0) {
-                    ds_map_set(global.program_lines, _ln, code);
-                    var found = ds_list_find_index(global.line_numbers, _ln);
-                    if (found == -1) { ds_list_add(global.line_numbers, _ln); ds_list_sort(global.line_numbers, true); }
+                    basic_program_set_line(_ln, code, false);
                 }
             }
         }
     }
 
+    basic_program_rebuild_index_map();
     basic_show_message("Program loaded: " + ds_map_find_value(rec, "name"));
     return true;
 }

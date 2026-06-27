@@ -24,13 +24,13 @@ function load_program_from_path(file_path, filename) {
                     if (is_line_number(line_num_str)) {
                         var line_num = real(line_num_str);
                         if (!is_valid_line_number(line_num)) continue;
-                        ds_map_set(global.program_lines, line_num, code_content);
-                        insert_line_number_ordered(line_num);
+                        basic_program_set_line(line_num, code_content, false);
                     }
                 }
             }
         }
         file_text_close(file);
+        basic_program_rebuild_index_map();
         current_filename = filename;
         basic_show_message("LOADED via DRAG: " + filename);
         update_display();
