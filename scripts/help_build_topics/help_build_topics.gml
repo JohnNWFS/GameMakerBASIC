@@ -49,7 +49,8 @@ function help_build_topics() {
         title: "INPUT / INKEY$", 
         lines: [
             "INPUT prompts and waits; assigns to variable.",
-            "INKEY$ returns last key (\"\" when none).",
+            "K$ = INKEY$ waits for one key (modal).",
+            "K$ = INKEY$ + \"\" polls without waiting.",
             "Extended keys return 2-char sequences."
         ]
     });

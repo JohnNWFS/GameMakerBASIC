@@ -34,7 +34,7 @@ AUDIO_TEMPO   = 600      # BPM injected into audio programs to keep tests fast
 
 # ─── Classification helpers ───────────────────────────────────────────────────
 # Patterns that force a category regardless of other rules
-SKIP_INPUT_PAT  = re.compile(r'(?:^\s*\d+\s+INPUT\s+(?!#))|(?:INKEY\$)', re.MULTILINE | re.IGNORECASE)
+SKIP_INPUT_PAT  = re.compile(r'(?:^\s*\d+\s+INPUT\s+(?!#))|(?:^\s*\d+\s+K\$\s*=\s*INKEY\$)', re.MULTILINE | re.IGNORECASE)
 MODE2_PAT       = re.compile(r'^\s*\d+\s+(MODE\s+2|PRINTAT|DRAWSTR|CHARAT|TILE\s+\d|TILEDEF|TILEPX|TILECLEAR|TILERESTORE|TILESAVE|TILELOAD|CLSCHAR|LOCATE\s+\d|SCROLL\s+|HLINE\b|VLINE\b|FILL\s+\d|BOX\s+\d.*(?:YELLOW|WHITE|BLACK|RED|BLUE|GREEN|CYAN|MAGENTA|GRAY|ORANGE))', re.MULTILINE | re.IGNORECASE)
 MODE3_PAT       = re.compile(r'^\s*\d+\s+(MODE\s+3|PSET\s+\d.*(?:\d|RED|BLUE)|CIRCLE\b|LINE\s+\d|BOX\s+\d.*(?:WHITE|RED|GREEN)|POINT\()', re.MULTILINE | re.IGNORECASE)
 AUDIO_PAT       = re.compile(r'^\s*\d+\s+(BEEP|PLAY\s+")', re.MULTILINE | re.IGNORECASE)
@@ -45,8 +45,7 @@ def classify(code):
     """Return category string for a code block."""
     if SKIP_INPUT_PAT.search(code):
         return "skip_input"
-    if NAMED_DATA_PAT.search(code):
-        return "known_broken"
+    # Named DATA @streams are implemented; keep in default text suite.
     if MODE2_PAT.search(code) or MODE3_PAT.search(code):
         return "graphics"
     if AUDIO_PAT.search(code):

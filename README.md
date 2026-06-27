@@ -227,15 +227,16 @@ The program prompts for a name and age, then echoes both values back in complete
 ```
 
 ### LOCATE (MODE 2 only)
-`LOCATE` moves the tile-mode text cursor to a specific row and column so the next `PRINT` appears at that position.
+`LOCATE` moves the tile-mode text cursor so the next `PRINT` appears at that position. Syntax: `LOCATE row, col` using **1-based** row and column numbers (BASIC-style). This differs from `PRINTAT`, which uses **0-based column, row** order.
+
 ```basic
 10 MODE 2
 20 PRINTAT 0, 0, "LOCATE moves the PRINT cursor.", YELLOW, BLACK
 30 PAUSE
 40 CLS
-50 LOCATE 5, 10      ' Move cursor to row 5, column 10
+50 LOCATE 6, 11      ' 1-based row 6, column 11
 60 PRINT "Hello!"    ' Printed at that position
-70 LOCATE 10, 1
+70 LOCATE 11, 2
 80 PRINT "Done."
 90 PAUSE
 100 END
@@ -459,14 +460,16 @@ When you need multiple lines of code under a condition, use the block form. `IF`
 ```
 
 #### Logical Operators
-`AND` requires both conditions to be true. `OR` requires at least one to be true.
+`AND` requires both conditions to be true. `OR` requires at least one to be true. `NOT` inverts a condition.
 ```basic
 10 LET X = 8 : LET Y = 7
 20 IF X > 5 AND Y < 10 THEN PRINT "Both conditions true — X > 5 and Y < 10."
 30 LET A = 1 : LET B = 9
 40 IF A = 1 OR B = 2 THEN PRINT "One condition true — A = 1 matches."
-50 PAUSE
-60 END
+50 LET DONE = 0
+60 IF NOT DONE THEN PRINT "NOT DONE is true while DONE = 0."
+70 PAUSE
+80 END
 ```
 
 ### Loops
@@ -617,7 +620,7 @@ In MODE 2, `PRINT` writes text to the tile grid at the current cursor position. 
 ```basic
 10 MODE 2, 16
 20 PRINTAT 0, 0, "PRINT uses the tile cursor.", YELLOW, BLACK
-30 LOCATE 3, 5       ' Row 3, column 5
+30 LOCATE 4, 6       ' 1-based row 4, column 6
 40 PRINT "Hello"     ' Prints at that position
 50 PAUSE
 60 END
@@ -1033,12 +1036,12 @@ The sprite orbits the center of the screen, rotating as it goes. Because each BA
 140 SPRITE FG 1, 9 : SPRITE FG 2, 9
 150 PRINT "*** CRASH! ***"
 160 PRINT "PRESS ANY KEY..."
-170 K$ = INKEY$
+170 K$ = INKEY$        ' modal wait — blocks until a key is pressed
 180 SPRITE CLEAR
 190 END
 ```
 
-Both sprites move 10 pixels per frame (one line = one frame). At collision the angles are skewed and both sprites turn orange before the program waits for a keypress.
+Both sprites move 10 pixels per frame (one line = one frame). At collision the angles are skewed and both sprites turn orange before the program waits for a keypress. Line 170 uses bare `INKEY$` on purpose — that is the modal “press any key” form, not a poll loop.
 
 ### Notes
 
@@ -1216,24 +1219,37 @@ These functions convert between numbers and strings, and between characters and 
 
 ## System Functions
 
-### INKEY$ - Non-Blocking Keyboard Input
-`INKEY$` checks for a queued keypress without stopping the program. It is best used in a loop where an empty string means “no key yet.”
+### INKEY$ - Keyboard Input
+`INKEY$` reads one character from the keyboard queue. NW-BASIC supports two behaviors:
+
+**Modal wait (blocking)** — the program pauses until the user presses a key. Use this for “press any key to continue” prompts:
 
 ```basic
-10 PRINT "Press A to finish this INKEY$ demo."
-20 K$ = INKEY$
+10 PRINT "Press any key to continue..."
+20 K$ = INKEY$         ' waits here until a key is pressed
+30 PRINT "You pressed: "; K$
+40 PAUSE
+50 END
+```
+
+**Non-blocking poll** — the program keeps running and checks whether a key is already waiting. Use this inside game loops. Add `+ ""` (or use `INKEY$` inside another expression) so the interpreter does not enter modal wait:
+
+```basic
+10 PRINT "Press A to finish (other keys are ignored)."
+20 K$ = INKEY$ + ""    ' returns "" immediately if no key is queued
 30 IF K$ = "" THEN GOTO 20
 40 IF K$ <> "A" AND K$ <> "a" THEN
-50 PRINT "Ignoring "; K$
-60 GOTO 20
+50   PRINT "Ignoring "; K$
+60   GOTO 20
 70 ENDIF
 80 PRINT "You pressed A."
 90 PAUSE
 100 END
 ```
-- `INKEY$` is non-blocking: it reads from a key queue and returns `""` if no key is waiting.
-- Use it in a loop to create responsive interactive programs.
-- Arrow keys and other extended keys arrive as two-character sequences.
+
+- **Poll loops:** use `K$ = INKEY$ + ""` or `IF INKEY$ + "" <> "" THEN ...`. Bare `K$ = INKEY$` waits every time it runs.
+- Keys are read from a per-frame queue; `""` means no key was waiting.
+- Arrow keys and other extended keys arrive as two-character sequences (`CHR$(0)` + `CHR$(scan_code)`).
 
 ### Mobile/Touch Support (Android)
 On Android, the screen is divided into touch regions that inject keystrokes as if the user pressed a key — so `INKEY$`-based programs work on touch devices without modification.
@@ -1338,6 +1354,29 @@ The example below creates two independent streams. It reads two numbers from `@n
 100 PAUSE
 110 END
 ```
+
+### Hex Color Forms
+In addition to named colors and `RGB(r,g,b)`, NW-BASIC accepts several hex forms in `COLOR`, `BGCOLOR`, and tile color arguments:
+
+| Form | Example | Notes |
+|------|---------|-------|
+| `&HBBGGRR` | `COLOR &H0000FF` | QBASIC-style byte order (blue, green, red) |
+| `$RRGGBB` | `COLOR $00FF00` | Six-digit RGB hex |
+| `#RRGGBB` | `BGCOLOR #000080` | Same as `$` form |
+
+```basic
+10 COLOR &H0000FF       ' Red (&H BBGGRR)
+20 PRINT "Line 1: &H red"
+30 COLOR $00FF00        ' Green ($ RRGGBB)
+40 PRINT "Line 2: $ green"
+50 BGCOLOR #000080      ' Navy background
+60 COLOR WHITE
+70 PRINT "Line 3: white on navy"
+80 PAUSE
+90 END
+```
+
+`LIGHTGRAY` / `LIGHTGREY` and `GREY` / `GRAY` are accepted aliases.
 
 ### Available Named Colors
 Named colors include `BLACK`, `WHITE`, `RED`, `GREEN`, `BLUE`, `CYAN`, `MAGENTA`, `YELLOW`, `GRAY`, `DKGRAY`, `ORANGE`, `LIME`, and `NAVY`.
@@ -1502,7 +1541,7 @@ RUN
 - **Syntax errors** show the line number and a description.
 - **Runtime errors** include hints to help diagnose the problem.
 - Pre-execution validation checks for mismatched `IF`/`ENDIF`, `FOR`/`NEXT`, `WHILE`/`WEND`, and `GOSUB`/`RETURN`.
-- `INKEY$` usage is validated (must appear in an assignment or expression context).
+- `INKEY$` usage is validated (must appear in an assignment or expression — e.g. `K$ = INKEY$`, `K$ = INKEY$ + ""`, or `IF INKEY$ + "" <> ""`).
 - Command arguments are validated before they reach GameMaker runtime calls. Malformed numeric arguments such as `BOX x1,y1,80,80` should produce a clean NW-BASIC syntax error instead of a GameMaker fatal error.
 - Program state is preserved after errors so you can inspect variables.
 - NW-BASIC should handle ordinary syntax and runtime errors itself. If you still find a GameMaker fatal error, please report the error text and, if possible, the NW-BASIC code that triggered it.
@@ -1520,6 +1559,7 @@ RUN
 8. **RESTORE for replay**: If you read DATA values in a loop, call `RESTORE` at the top of the loop to re-read them from the start each time.
 9. **Use STR$ and VAL**: Mixing numbers into strings requires `STR$(n)`; reading numbers from file or input requires `VAL(s$)`. Forgetting these is a common source of type errors.
 10. **Test in small pieces**: Write a few lines, run them, check the output. In BASIC, incremental testing is faster than debugging a large program all at once.
+11. **INKEY$ modal vs poll**: `K$ = INKEY$` waits for a key; `K$ = INKEY$ + ""` polls without stopping. Game loops need the `+ ""` form (or an expression like `LEN(INKEY$ + "")`).
 
 ---
 
