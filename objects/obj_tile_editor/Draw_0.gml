@@ -50,7 +50,7 @@ var pv = layout.preview_cell;
 var px0 = layout.preview_x;
 var label_y = layout.preview_label_y;
 var row_h = string_height("PREVIEW");
-var py0 = label_y + row_h + 8;
+var py0 = label_y + row_h + 18;
 draw_set_color(c_white);
 draw_text(px0, label_y, "PREVIEW");
 draw_set_color(bg_color);
@@ -62,15 +62,16 @@ if (undo_has && undo_code == tile_code) {
     draw_text(px0, py0 + pv + 8, "R or U = revert last clear");
 }
 
-// Help line
-draw_set_color(c_lime);
-var help_y = room_height - 56;
-draw_text(16, help_y, "Arrows  Space  B erase  C color  N/P code  F/V flip  X clear  R/U revert");
-draw_text(16, help_y + 20, "G glyph  S save  L load  ESC exit");
+tile_editor_draw_help_footer(status_msg, status_timer);
 
-if (status_timer > 0 && status_msg != "") {
-    draw_set_color(c_white);
-    draw_text(16, help_y - 22, status_msg);
+if (variable_global_exists("autotest_tileedit_capture") && global.autotest_tileedit_capture) {
+    screenshot_capture_wait -= 1;
+    if (screenshot_capture_wait <= 0) {
+        var shot_path = get_save_directory() + "autotest_tileedit.png";
+        screen_save(shot_path);
+        global.autotest_tileedit_capture = false;
+        dbg_log(DBG_FLOW, "AUTOTEST: saved TILEEDIT screenshot " + shot_path);
+    }
 }
 
 // File overlay

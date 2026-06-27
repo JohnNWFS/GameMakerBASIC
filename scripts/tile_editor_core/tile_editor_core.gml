@@ -132,10 +132,45 @@ function tile_editor_nwtile_stem(_fname) {
     return s;
 }
 
+function autotest_seed_tile_editor_demo() {
+    tile_editor_prepare_code(200, 16, 16);
+    for (var i = 0; i < 16; i++) {
+        custom_tile_set_bit(200, i, i, true);
+        custom_tile_set_bit(200, 15 - i, i, true);
+    }
+}
+
+function tile_editor_draw_help_footer(_status_msg, _status_timer) {
+    var pad_x = 12;
+    var footer_h = 84;
+    var fy = room_height - footer_h;
+
+    draw_set_color(make_color_rgb(12, 12, 12));
+    draw_rectangle(0, fy - 1, room_width, room_height, false);
+    draw_set_color(make_color_rgb(48, 48, 48));
+    draw_line(0, fy - 1, room_width, fy - 1);
+
+    if (font_exists(fnt_basic_12)) draw_set_font(fnt_basic_12);
+    var lh = string_height("Agy");
+    var y0 = fy + 10;
+    draw_set_color(c_lime);
+    draw_text(pad_x, y0, "Arrows move   Space paint   B erase/paint   C color   N/P tile code");
+    draw_text(pad_x, y0 + lh + 2, "F flip H   V flip V   X clear   R/U revert   G font glyph   S save   L load");
+    draw_text(pad_x, y0 + (lh + 2) * 2, "ESC exit");
+
+    if (_status_timer > 0 && _status_msg != "") {
+        draw_set_color(c_white);
+        var sx = room_width - pad_x - string_width(_status_msg);
+        if (sx < pad_x + 400) sx = pad_x + 400;
+        draw_text(sx, y0, _status_msg);
+    }
+}
+
 function tile_editor_grid_layout(_tile_w, _tile_h, _margin) {
     var header_h = 36;
+    var footer_h = 88;
     var avail_w = room_width - _margin * 2 - 220;
-    var avail_h = room_height - _margin * 2 - header_h - 80;
+    var avail_h = room_height - _margin * 2 - header_h - footer_h;
     var zoom = floor(min(avail_w / _tile_w, avail_h / _tile_h));
     zoom = clamp(zoom, 8, 32);
     var grid_top = _margin + header_h;

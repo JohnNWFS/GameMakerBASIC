@@ -28,6 +28,19 @@ function autotest_bootstrap() {
 
     load_program_from(filename);
 
+    if (string_pos("AUTOTEST_TILEEDIT", string_upper(global.autotest_source_text)) > 0) {
+        basic_output_transcript_reset();
+        autotest_seed_tile_editor_demo();
+        global.autotest_tileedit_capture = true;
+        start_tile_editor();
+        if (file_exists(path)) {
+            file_delete(path);
+            dbg_log(DBG_FLOW, "AUTOTEST: consumed and deleted " + path);
+        }
+        dbg_log(DBG_FLOW, "AUTOTEST: launched TILEEDIT for screenshot");
+        return true;
+    }
+
     if (file_exists(path)) {
         file_delete(path);
         dbg_log(DBG_FLOW, "AUTOTEST: consumed and deleted " + path);

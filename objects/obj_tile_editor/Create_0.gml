@@ -27,4 +27,5 @@ repeat_timer = 0;
 mouse_paint_down = false;
 
 tile_editor_prepare_code(tile_code, tile_w, tile_h);
+screenshot_capture_wait = 4;
 keyboard_string = "";
