@@ -156,3 +156,65 @@ function basic_cmd_box(arg) {
             + " thickness=" + string(thickness));
     }
 }
+
+/// @function basic_cmd_paint(arg)
+/// @syntax PAINT x, y [, color]
+/// @desc Flood-fill on the MODE 3 pixel surface (4-connected).
+function basic_cmd_paint(arg) {
+    if (global.current_mode != 3) {
+        dbg_log(DBG_FLOW, "PAINT: only available in MODE 3 pixel graphics");
+        return;
+    }
+
+    var args = basic_parse_csv_args(arg);
+    if (!basic_require_arg_count(args, "PAINT", 2, 3, "x,y[,color]")) return;
+
+    var px_arg = basic_eval_int_arg(args[0], "PAINT", "x");
+    var py_arg = basic_eval_int_arg(args[1], "PAINT", "y");
+    if (!px_arg.ok || !py_arg.ok) return;
+    var sx = px_arg.value;
+    var sy = py_arg.value;
+    var fill_col = (array_length(args) >= 3) ? basic_parse_color(string_trim(args[2])) : c_white;
+
+    if (!variable_global_exists("mode2_surface") || !surface_exists(global.mode2_surface)) {
+        mode2_surface_recreate();
+    }
+    if (!surface_exists(global.mode2_surface)) return;
+
+    var sw = surface_get_width(global.mode2_surface);
+    var sh = surface_get_height(global.mode2_surface);
+    if (sx < 0 || sy < 0 || sx >= sw || sy >= sh) return;
+
+    var target_col = surface_getpixel(global.mode2_surface, sx, sy);
+    if (target_col == fill_col) return;
+
+    var q = ds_queue_create();
+    var visited = ds_map_create();
+    ds_queue_enqueue(q, sx);
+    ds_queue_enqueue(q, sy);
+
+    surface_set_target(global.mode2_surface);
+    draw_set_color(fill_col);
+
+    while (ds_queue_size(q) > 0) {
+        var cy = ds_queue_dequeue(q);
+        var cx = ds_queue_dequeue(q);
+        var key = string(cx) + "," + string(cy);
+        if (ds_map_exists(visited, key)) continue;
+        if (cx < 0 || cy < 0 || cx >= sw || cy >= sh) continue;
+        if (surface_getpixel(global.mode2_surface, cx, cy) != target_col) continue;
+
+        ds_map_set(visited, key, true);
+        draw_point(cx, cy);
+
+        ds_queue_enqueue(q, cx + 1); ds_queue_enqueue(q, cy);
+        ds_queue_enqueue(q, cx - 1); ds_queue_enqueue(q, cy);
+        ds_queue_enqueue(q, cx);     ds_queue_enqueue(q, cy + 1);
+        ds_queue_enqueue(q, cx);     ds_queue_enqueue(q, cy - 1);
+    }
+
+    surface_reset_target();
+    ds_queue_destroy(q);
+    ds_map_destroy(visited);
+    dbg_log(DBG_FLOW, "PAINT MODE3: seed (" + string(sx) + "," + string(sy) + ") fill=" + string(fill_col));
+}

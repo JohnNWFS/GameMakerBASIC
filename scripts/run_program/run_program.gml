@@ -83,14 +83,27 @@ for (var i = 0; i < ds_list_size(global.line_list); i++) {
     }
     dbg_log(DBG_FLOW, "RUN_PROGRAM: validation passed");
 
+    var _resume_from_stop = (variable_global_exists("stop_breakpoint_active") && global.stop_breakpoint_active);
+
     // ── Fresh runtime state (vars, arrays, stacks, files) ───────────────
-    basic_runtime_reset_for_run();
+    if (_resume_from_stop) {
+        global.stop_breakpoint_active = false;
+        dbg_log(DBG_FLOW, "RUN_PROGRAM: resuming after STOP (vars preserved)");
+    } else {
+        basic_runtime_reset_for_run();
+    }
+
+    global.on_error_goto_line = 0;
+    global.error_trap_active  = false;
+    global.err_last_line      = 0;
 
     // ── Clean start: clear output buffers for a fresh run ─────────────────
-    ds_list_clear(global.output_lines);
-    ds_list_clear(global.output_colors);
-    global.print_line_buffer = "";
-    basic_output_transcript_reset();
+    if (!_resume_from_stop) {
+        ds_list_clear(global.output_lines);
+        ds_list_clear(global.output_colors);
+        global.print_line_buffer = "";
+        basic_output_transcript_reset();
+    }
     keyboard_string = "";
     if (variable_global_exists("__inkey_queue") && ds_exists(global.__inkey_queue, ds_type_queue)) {
         ds_queue_clear(global.__inkey_queue);
@@ -126,14 +139,22 @@ for (var i = 0; i < ds_list_size(global.line_list); i++) {
     global.current_draw_color = make_color_rgb(255, 191, 64); // Amber
 
     // Line navigation
-    global.interpreter_current_line_index = 0;
+    if (_resume_from_stop && variable_global_exists("stop_resume_line_index")) {
+        global.interpreter_current_line_index = max(0, global.stop_resume_line_index);
+        global.interpreter_resume_stmt_index  = max(0, global.stop_resume_stmt_index);
+        global.current_line_number = (global.interpreter_current_line_index < ds_list_size(global.line_list))
+            ? global.line_list[| global.interpreter_current_line_index] : -1;
+    } else {
+        global.interpreter_current_line_index = 0;
+        global.interpreter_resume_stmt_index  = 0;
+        global.current_line_number            = (ds_list_size(global.line_list) > 0)
+                                               ? (global.line_list[| 0]) : -1;
+    }
     global.interpreter_next_line          = -1;
     global.interpreter_use_stmt_jump      = false;
     global.interpreter_target_line        = -1;
     global.interpreter_target_stmt        = 0;
-    global.interpreter_resume_stmt_index  = 0;
-    global.current_line_number            = (ds_list_size(global.line_list) > 0)
-                                           ? (global.line_list[| 0]) : -1;
+    global.error_trap_active = false;
 
     // Go to interpreter room (only if not already there)
     var _text_room = ds_map_find_value(global.mode_rooms, 0);
@@ -142,5 +163,11 @@ for (var i = 0; i < ds_list_size(global.line_list); i++) {
         room_goto(_text_room);
     } else {
         dbg_log(DBG_FLOW, "RUN_PROGRAM: already in text room");
+        var _interp = instance_find(obj_basic_interpreter, 0);
+        if (_interp != noone) {
+            with (_interp) {
+                line_index = global.interpreter_current_line_index;
+            }
+        }
     }
 }

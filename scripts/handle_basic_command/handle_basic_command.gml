@@ -105,8 +105,16 @@ function handle_basic_command(cmd, arg) {
             }
 
             case "ON": {
-                // ON expr GOTO line1,line2,... or ON expr GOSUB line1,line2,...
+                // ON ERROR GOTO line — error handler (0 disables)
                 var _on_upper = string_upper(_rest);
+                var _err_pos = string_pos("ERROR GOTO", _on_upper);
+                if (_err_pos > 0) {
+                    var _err_tgt = string_trim(string_copy(_rest, _err_pos + 10, string_length(_rest)));
+                    basic_cmd_on_error_goto(_err_tgt);
+                    break;
+                }
+
+                // ON expr GOTO line1,line2,... or ON expr GOSUB line1,line2,...
                 var _goto_pos  = string_pos(" GOTO ",  _on_upper);
                 var _gosub_pos = string_pos(" GOSUB ", _on_upper);
                 var _is_gosub  = (_gosub_pos > 0 && (_goto_pos == 0 || _gosub_pos < _goto_pos));
@@ -206,7 +214,9 @@ function handle_basic_command(cmd, arg) {
             case "DIM":       basic_cmd_dim(_rest); break; // 1-D arrays
 
             case "END":       basic_cmd_end(); break;
-            case "STOP":      basic_cmd_end(); break;  // STOP = END for now
+            case "STOP":      basic_cmd_stop(); break;
+            case "POKE":      basic_cmd_poke(_rest); break;
+            case "PAINT":     basic_cmd_paint(_rest); break;
 
             case "ERASE": {
                 var _nm = string_upper(string_trim(_rest));

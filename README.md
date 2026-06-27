@@ -535,15 +535,29 @@ When you need multiple lines of code under a condition, use the block form. `IF`
 If `N` is out of range (less than 1 or greater than the number of targets), execution falls through to the next line.
 
 ### Program Flow
-`GOTO` jumps unconditionally to any line number, skipping everything in between. `END` stops the program immediately. `STOP` is an alias for `END`.
+`GOTO` jumps unconditionally to any line number, skipping everything in between. `END` stops the program and waits for Enter/Esc. `STOP` is a **breakpoint**: it returns to the editor immediately, **preserves variables**, and the next `RUN` continues from the `STOP` line.
+
 ```basic
 10 PRINT "Line 10 runs."
 20 GOTO 50
 30 PRINT "Line 30 is skipped."
 40 PRINT "Line 40 is skipped."
 50 PRINT "Line 50 runs — GOTO jumped here."
-60 PAUSE
-70 END
+60 STOP          ' Breakpoint — RUN again continues here
+70 PRINT "After STOP."
+80 END
+```
+
+### ON ERROR GOTO
+Install a line-number handler for syntax/runtime errors trapped by NW-BASIC. Use `ON ERROR GOTO 0` to disable.
+
+```basic
+10 ON ERROR GOTO 9000
+20 X = 1 \ 0     ' Division by zero triggers the handler
+30 PRINT "Never reached"
+40 END
+9000 PRINT "Error handler reached."
+9010 END
 ```
 
 ### RANDOMIZE
@@ -937,6 +951,19 @@ Color names are stored as integers in BGR (blue-green-red) byte order, which is 
 80 END
 ```
 
+### PAINT (MODE 3)
+`PAINT` flood-fills a connected region on the pixel surface, starting at the seed pixel. Syntax: `PAINT x, y [, color]`
+
+```basic
+10 MODE 3
+20 CLS
+30 BOX 40, 40, 200, 200, WHITE, 1, BLUE
+40 PAINT 100, 100, RED
+50 IF POINT(100, 100) = RED THEN PRINT "PAINT filled the interior."
+60 PAUSE
+70 END
+```
+
 ### CLS (MODE 3)
 `CLS` in MODE 3 clears the entire pixel surface to black.
 ```basic
@@ -1254,6 +1281,18 @@ These functions convert between numbers and strings, and between characters and 
 ### Mobile/Touch Support (Android)
 On Android, the screen is divided into touch regions that inject keystrokes as if the user pressed a key — so `INKEY$`-based programs work on touch devices without modification.
 - Top-center touch → `"W"`, Bottom-center → `"S"`, Left-center → `"A"`, Right-center → `"D"`
+
+### PEEK and POKE
+NW-BASIC provides a virtual 64K byte address space (0–65535) for machine-style experiments. `POKE addr, value` stores a byte (0–255); `PEEK(addr)` reads it back.
+
+```basic
+10 POKE 1000, 65
+20 PRINT "PEEK(1000) = "; PEEK(1000)    ' 65 = ASCII 'A'
+30 PAUSE
+40 END
+```
+
+Addresses reset on each `RUN`. This is not host machine RAM — it is an isolated NW-BASIC memory map.
 
 ### Time and Date
 These functions return the current system time and date as strings, and a running timer in seconds since the program started — useful for measuring elapsed time or timestamping saved data.
@@ -1677,14 +1716,11 @@ The opening theme of Beethoven's Für Elise, arranged for `BEEP`. Demonstrates o
 
 These features are on the roadmap but not yet available:
 
-- `PEEK` / `POKE` — memory access (no plans to implement directly)
 - `FIX`, `CINT` — additional numeric rounding functions
 - 3-D arrays — planned (1-D and 2-D are implemented)
 - Interactive tile editor UI, tile maps, window/clipping support
-- `PAINT x,y` — flood fill for MODE 3 (planned)
 - `DRAW` vector strings (classical BASIC DRAW command) — under consideration
-- `STOP` as a true breakpoint (currently behaves identically to `END`)
-- `ON ERROR GOTO` — error trapping
+- `RESUME` / `RESUME NEXT` — continue after `ON ERROR GOTO` (handler must END or GOTO today)
 
 ---
 

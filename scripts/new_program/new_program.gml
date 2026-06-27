@@ -11,6 +11,7 @@
     current_filename = "";
     list_range_active = false;
     display_start_line = 0;
+    global.stop_breakpoint_active = false;
     update_display();
     basic_show_message("NEW PROGRAM");
  }

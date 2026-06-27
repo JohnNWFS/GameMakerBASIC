@@ -389,6 +389,7 @@ if (line_index < ds_list_size(global.line_list)) {
         }
 
         global.interpreter_current_stmt_index = p;
+        global.error_trap_active = false;
 
         dbg_log(DBG_FLOW, "Command: " + cmd2 + " | Arg: " + arg2);
         handle_basic_command(cmd2, arg2);

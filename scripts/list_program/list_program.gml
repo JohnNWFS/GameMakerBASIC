@@ -100,6 +100,16 @@ function editor_scroll_min_index() {
     return 0;
 }
 
+/// Line-list index for screen editor entry (matches editor LIST/scroll view).
+function editor_get_screen_editor_start_index() {
+    if (instance_exists(obj_editor)) {
+        with (obj_editor) {
+            return clamp(display_start_line, 0, max(0, ds_list_size(global.line_list) - 1));
+        }
+    }
+    return 0;
+}
+
 function editor_scroll_max_index(page_lines) {
     var total = ds_list_size(global.line_list);
     if (total <= 0) return 0;

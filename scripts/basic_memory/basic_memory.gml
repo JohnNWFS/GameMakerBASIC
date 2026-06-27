@@ -223,7 +223,47 @@ function basic_memory_runtime_reset() {
     }
 
     global.option_base = 1;
+    basic_peek_poke_reset();
     dbg_log(DBG_FLOW, "MEMORY: runtime reset (vars/arrays/stacks/files/while_meta)");
+}
+
+/// Virtual 64K byte space for PEEK/POKE (address 0..65535).
+function basic_peek_poke_ensure() {
+    if (!variable_global_exists("peek_poke_mem") || !ds_exists(global.peek_poke_mem, ds_type_map)) {
+        global.peek_poke_mem = ds_map_create();
+    }
+}
+
+function basic_peek_poke_reset() {
+    if (variable_global_exists("peek_poke_mem") && ds_exists(global.peek_poke_mem, ds_type_map)) {
+        ds_map_clear(global.peek_poke_mem);
+    }
+}
+
+function basic_peek(_addr) {
+    basic_peek_poke_ensure();
+    var addr = floor(_addr);
+    if (addr < 0 || addr > 65535) return 0;
+    if (!ds_map_exists(global.peek_poke_mem, addr)) return 0;
+    return ds_map_find_value(global.peek_poke_mem, addr) & 255;
+}
+
+function basic_poke(_addr, _val) {
+    basic_peek_poke_ensure();
+    var addr = floor(_addr);
+    if (addr < 0 || addr > 65535) return;
+    ds_map_set(global.peek_poke_mem, addr, floor(_val) & 255);
+}
+
+/// POKE addr, value
+function basic_cmd_poke(arg) {
+    var args = basic_parse_csv_args(arg);
+    if (!basic_require_arg_count(args, "POKE", 2, 2, "addr,value")) return;
+    var a_arg = basic_eval_number_arg(args[0], "POKE", "addr");
+    var v_arg = basic_eval_number_arg(args[1], "POKE", "value");
+    if (!a_arg.ok || !v_arg.ok) return;
+    basic_poke(a_arg.value, v_arg.value);
+    dbg_log(DBG_FLOW, "POKE " + string(floor(a_arg.value)) + " = " + string(floor(v_arg.value) & 255));
 }
 
 /// Game-end teardown for all interpreter/editor ds structures.

@@ -180,6 +180,13 @@ global._abort_after_validation   = false;
 global.editor_return_room = room; // whatever room the editor lives in at startup
 
 global.screen_edit_mode = false; //for scree editing
+
+global.stop_breakpoint_active = false;
+global.stop_resume_line_index   = 0;
+global.stop_resume_stmt_index   = 0;
+global.on_error_goto_line       = 0;
+global.error_trap_active        = false;
+global.err_last_line            = 0;
 dbg_log(DBG_FLOW, "GLOBALS: screen_edit_mode initialized to false");
 
 

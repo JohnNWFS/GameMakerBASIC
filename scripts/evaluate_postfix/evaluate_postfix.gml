@@ -471,6 +471,13 @@ case "OR": {
                     break;
                 }
 
+                case "PEEK": {
+                    var _peek_addr = floor(safe_real_pop(stack));
+                    array_push(stack, basic_peek(_peek_addr));
+                    dbg_log(DBG_PARSE, "FUNC: PEEK(" + string(_peek_addr) + ") → " + string(basic_peek(_peek_addr)));
+                    break;
+                }
+
                 case "EOF": {
                     var _eof_chan = floor(safe_real_pop(stack));
                     var _is_eof  = true;

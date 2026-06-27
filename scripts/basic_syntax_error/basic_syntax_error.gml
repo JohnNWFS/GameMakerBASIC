@@ -25,6 +25,12 @@ function basic_syntax_error(msg, line_no, stmt_idx, hint_key) {
         }
     }
     global.current_draw_color = prev_col;
+
+    if (basic_error_trap_dispatch(line_no)) {
+        dbg_log(DBG_FLOW, "SYNTAX: trapped by ON ERROR GOTO");
+        return;
+    }
+
     // Stop cleanly (no gates left engaged)
     global.pause_in_effect     = false;
     global.awaiting_input      = false;

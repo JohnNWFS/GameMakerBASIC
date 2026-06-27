@@ -49,6 +49,7 @@ function is_function(t) {
          || fn == "STRING$"
          || fn == "SPRITEX"
          || fn == "SPRITEY"
-         || fn == "SPRITEHIT";
+         || fn == "SPRITEHIT"
+         || fn == "PEEK";
 }
 // === END: is_function ===

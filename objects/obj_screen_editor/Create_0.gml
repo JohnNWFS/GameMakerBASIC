@@ -23,7 +23,7 @@ horizontal_offset = 0;
 horizontal_repeat_key = 0;
 horizontal_repeat_timer = 0;
 scroll_margin = 5;
-scroll_offset = 0;
+scroll_offset = editor_get_screen_editor_start_index();
 
 // Caret blink
 blink_timer = 0;
