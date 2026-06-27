@@ -949,6 +949,38 @@ Typical workflow:
 40 END
 ```
 
+### Low-resolution graphics with TILEEDIT and saved tilesets
+
+MODE 2 is a **tile framebuffer**: every cell is a character code plus foreground and background colors. Codes **0–255** normally come from the active font sheet; codes you override with `TILEDEF` / `TILEEDIT` become **custom bitmaps** tinted by the cell's foreground color. That is how you build sprite-style graphics in pure BASIC without MODE 3 pixels.
+
+**Author once, run many times**
+
+1. In the **program editor** (not during `RUN`), type `MODE 2, 16` if you want 16×16 cells, then **`TILEEDIT`** (or **`TE`**).
+2. Paint sprites at dedicated codes — e.g. **200** = player ship, **201** = asteroid, **202** = power-up. Use **N** / **P** to change the active code.
+3. Press **S**, type a filename (e.g. `space_tiles`), press Enter. NW-BASIC writes `Documents/BasicInterpreter/space_tiles.nwtile`.
+4. Exit with **ESC**. Tiles stay in memory until you quit the app; the `.nwtile` file is what your programs load later.
+5. In your BASIC program:
+
+```basic
+10 MODE 2, 16
+20 CLSCHAR 32, WHITE, BLACK
+30 TILELOAD "space_tiles"          ' loads every custom tile in the file
+40 TILE 18, 18, 201, LIME, BLACK   ' stamp ship at column 18, row 18
+50 TILE 32, 3, 202, CYAN, BLACK    ' stamp planet
+60 PRINTAT 1, 0, "SCORE 1200", YELLOW, BLACK   ' text and sprites coexist
+70 END
+```
+
+**Design tips**
+
+- One tile code = one shape. To show two different ships at once, paint **two** codes (200 and 201), not two versions of 200.
+- **Color variation** without extra art: draw the same code with different `TILE` foreground colors (the bitmap is a mask).
+- **Screen size** at 16×16 cells is roughly 40×24; at 8×8 you get more columns for fine layouts (`MODE 2, 8`).
+- **`TILEBIT(code, x, y)`** reads mask pixels for collision or animation logic.
+- Large levels: build a **tile map** (`MAPNEW` / `MAPSET` / `MAPDRAW`) whose cells use your custom codes, then `TILELOAD` before `MAPDRAW`.
+
+**Worked example in the repo:** `diagnostics/mode2_custom_tile_scene.bas` builds a small space scene (star, ship, planet, moon, flame), saves `space_tiles.nwtile`, clears definitions, reloads from disk, and draws the scene — 5/5 autotest PASS. `diagnostics/mode2_custom_circuit_showcase.bas` is a larger 32×32-cell circuit diagram built entirely with programmatic `TILEPX` art.
+
 ### Tile Maps
 
 Tile maps are large off-screen layers (up to 256×256 cells) stored separately from the display grid. Paint cells with `MAPSET`, then blit the whole map to the screen with `MAPDRAW`. Maps persist in memory for the current `RUN`; use `MAPSAVE` / `MAPLOAD` to store them as `.nwmap` files under `Documents/BasicInterpreter/`.
