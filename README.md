@@ -535,7 +535,7 @@ When you need multiple lines of code under a condition, use the block form. `IF`
 If `N` is out of range (less than 1 or greater than the number of targets), execution falls through to the next line.
 
 ### Program Flow
-`GOTO` jumps unconditionally to any line number, skipping everything in between. `END` stops the program and waits for Enter/Esc. `STOP` is a **breakpoint**: it returns to the editor immediately, **preserves variables**, and the next `RUN` continues from the `STOP` line.
+`GOTO` jumps unconditionally to any line number, skipping everything in between. `END` stops the program and waits for Enter/Esc. `STOP` is a **breakpoint**: it returns to the editor immediately, **preserves variables and PEEK/POKE memory**, and the next `RUN` continues from the `STOP` line (a fresh `RUN` after `NEW` or a normal restart still clears everything).
 
 ```basic
 10 PRINT "Line 10 runs."
@@ -549,16 +549,18 @@ If `N` is out of range (less than 1 or greater than the number of targets), exec
 ```
 
 ### ON ERROR GOTO
-Install a line-number handler for syntax/runtime errors trapped by NW-BASIC. Use `ON ERROR GOTO 0` to disable.
+Install a line-number handler for errors that NW-BASIC traps (for example division by zero in integer division `1 \ 0`). The handler runs instead of ending the program. Use `ON ERROR GOTO 0` to disable. The error message is still printed, then execution jumps to your handler line.
 
 ```basic
 10 ON ERROR GOTO 9000
-20 X = 1 \ 0     ' Division by zero triggers the handler
+20 X = 1 \ 0     ' Trapped: integer division by zero
 30 PRINT "Never reached"
 40 END
-9000 PRINT "Error handler reached."
+9000 PRINT "Recovered — program did not END at the bad line."
 9010 END
 ```
+
+Not every failure is trapped (for example host/GameMaker fatal errors). For predictable program logic, prefer testing divisors and inputs before they fail.
 
 ### RANDOMIZE
 `RANDOMIZE` seeds the random number generator so that `RND` produces a different sequence each run. Without it, the same seed is used every time and you get the same "random" numbers. Pass a specific number to get a repeatable sequence — useful for testing.
@@ -1282,17 +1284,70 @@ These functions convert between numbers and strings, and between characters and 
 On Android, the screen is divided into touch regions that inject keystrokes as if the user pressed a key — so `INKEY$`-based programs work on touch devices without modification.
 - Top-center touch → `"W"`, Bottom-center → `"S"`, Left-center → `"A"`, Right-center → `"D"`
 
-### PEEK and POKE
-NW-BASIC provides a virtual 64K byte address space (0–65535) for machine-style experiments. `POKE addr, value` stores a byte (0–255); `PEEK(addr)` reads it back.
+### PEEK and POKE — Virtual byte memory
+
+`POKE addr, value` stores one byte (0–255) at an address. `PEEK(addr)` reads it back. Syntax: `POKE 1000, 65` and `X = PEEK(1000)`.
+
+**What this is:** a private 64K scratch map (addresses 0–65535) inside NW-BASIC. Each `RUN` clears it unless you resumed from a `STOP` breakpoint (variables and this map are both preserved in that case).
+
+**What this is not:** real PC RAM, C64/VIC memory, or a way to reach the tile grid, sprites, or GameMaker directly. For graphics use `PSET`/`PAINT`; for named data use variables and arrays.
+
+**Why use it today?** Retro BASIC books and tutorials often teach packed bytes and fixed addresses. NW-BASIC keeps that learning path alive in a safe sandbox. Modern uses that fit well:
+
+| Use | Idea |
+|-----|------|
+| Game flags | One byte per switch: door open, key found, boss defeated |
+| High score bytes | Store three bytes for scores up to 16,777,215 |
+| Phase / mode byte | `0` = title, `1` = play, `2` = game over |
+| Tiny buffers | ASCII codes, simple tables, lookup data |
+| Teaching | Addresses, bytes, and “memory maps” without risking the host OS |
+
+**Suggested address layout (convention only — your program chooses):**
+
+| Range | Suggested use |
+|-------|----------------|
+| 0–255 | System / temp (avoid for saves) |
+| 1000–1099 | User “save” slot — flags and scores |
+| 2000–2127 | 128-byte scratch buffer (one row of a small map) |
+
+#### Example: pack a high score into three bytes
 
 ```basic
-10 POKE 1000, 65
-20 PRINT "PEEK(1000) = "; PEEK(1000)    ' 65 = ASCII 'A'
+10 REM Store SCORE across bytes 1000–1002 (up to 16,777,215)
+20 SCORE = 123456
+30 POKE 1000, SCORE \ 65536
+40 POKE 1001, (SCORE \ 256) MOD 256
+50 POKE 1002, SCORE MOD 256
+60 REM Read back:
+70 H = PEEK(1000) * 65536 + PEEK(1001) * 256 + PEEK(1002)
+80 PRINT "Stored score:"; H
+90 PAUSE
+100 END
+```
+
+#### Example: game state flags
+
+```basic
+10 REM Flag bytes: 1000=level done, 1001=has key, 1002=lives
+20 POKE 1002, 3          ' 3 lives
+30 POKE 1001, 0          ' no key yet
+40 IF PEEK(1001) = 0 THEN PRINT "Find the key."
+50 POKE 1001, 1          ' picked up key
+60 IF PEEK(1001) = 1 THEN PRINT "You can open the door."
+70 PAUSE
+80 END
+```
+
+#### Example: ASCII character in a byte
+
+```basic
+10 POKE 2000, 65         ' ASCII 'A'
+20 PRINT "Character at 2000: "; CHR$(PEEK(2000))
 30 PAUSE
 40 END
 ```
 
-Addresses reset on each `RUN`. This is not host machine RAM — it is an isolated NW-BASIC memory map.
+For larger or named structures, prefer `DIM`, variables, and `DATA` streams. Use PEEK/POKE when you want fixed addresses, packed bytes, or a retro machine feel — not because it is faster or more powerful than normal BASIC storage.
 
 ### Time and Date
 These functions return the current system time and date as strings, and a running timer in seconds since the program started — useful for measuring elapsed time or timestamping saved data.
@@ -1599,6 +1654,7 @@ RUN
 9. **Use STR$ and VAL**: Mixing numbers into strings requires `STR$(n)`; reading numbers from file or input requires `VAL(s$)`. Forgetting these is a common source of type errors.
 10. **Test in small pieces**: Write a few lines, run them, check the output. In BASIC, incremental testing is faster than debugging a large program all at once.
 11. **INKEY$ modal vs poll**: `K$ = INKEY$` waits for a key; `K$ = INKEY$ + ""` polls without stopping. Game loops need the `+ ""` form (or an expression like `LEN(INKEY$ + "")`).
+12. **PEEK/POKE is virtual**: fixed-address byte storage for flags, packed scores, and retro tutorials — not real machine RAM. Prefer variables/arrays for big structures.
 
 ---
 
