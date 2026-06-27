@@ -10,19 +10,9 @@ Task breakdown for README “Planned / Not Yet Implemented” backlog. Order is 
 
 ---
 
-### 2. 3-D arrays (small/medium — ~1–2 sessions)
+### 2. 3-D arrays — done (`stress_arrays_3d.bas`)
 
-`DIM`, `basic_array_get`, and `basic_array_set` already support N dimensions via flat storage + `basic_array_dims`. Confirm whether 3-D is only blocked by validation/docs or by a hard cap.
-
-| Task | Notes | Done when |
-|------|-------|-----------|
-| 2.1 Audit parser/indexing for dim count | `DIM A(2,3,4)`, `A(i,j,k)` in LET/READ/expr | No false “unsupported” errors |
-| 2.2 Bounds + OPTION BASE for 3 indices | Row-major flat index matches 2-D rules | `diagnostics/stress_arrays_3d.bas` PASS |
-| 2.3 ERASE / REDIM interaction | 3-D cleared and re-`DIM` cleanly | Covered in same diagnostic |
-| 2.4 README | Remove “planned” note; add `DIM C(2,3,4)` example | Docs match behavior |
-
-**Depends on:** nothing  
-**Blocks:** nothing
+Verified integers, ASC/CHR$ character codes, strings, variable indices, sum, ERASE/REDIM. No engine changes required.
 
 ---
 

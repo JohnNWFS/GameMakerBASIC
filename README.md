@@ -107,23 +107,26 @@ Use assignment to store values for later. `LET` is accepted but optional, so `LE
 
 ## Arrays
 
-An array is a named list of values, all accessed by the same variable name using an index number in parentheses. Use `DIM` to declare an array before using it. Arrays can hold numbers or strings, be one-dimensional (a list) or two-dimensional (a grid), and are **1-based by default** — `DIM A(10)` gives you `A(1)` through `A(10)`.
+An array is a named list of values, all accessed by the same variable name using an index number in parentheses. Use `DIM` to declare an array before using it. Arrays can hold numbers or strings, be one-dimensional (a list), two-dimensional (a grid), or three-dimensional, and are **1-based by default** — `DIM A(10)` gives you `A(1)` through `A(10)`.
 
 ```basic
 10 DIM A(10)           ' 1-D array with indices 1-10 (10 elements)
 20 DIM B(5), C$(20)    ' Multiple declarations in one statement
 30 DIM M(3, 4)         ' 2-D array: valid indices (1..3, 1..4)
+35 DIM V(2, 3, 2)      ' 3-D array: valid indices (1..2, 1..3, 1..2)
 40 A(3) = 42           ' Set element
 50 PRINT A(3)          ' Read element
 60 M(1, 2) = 99        ' Set 2-D element
+65 V(2, 3, 1) = 7     ' Set 3-D element
 70 PRINT M(1, 2)       ' Read 2-D element
+75 PRINT V(2, 3, 1)    ' Read 3-D element
 80 PAUSE
 90 END
 ```
 
 - Arrays are **1-based** by default (index 1 through N).
 - Use `OPTION BASE 0` to switch to 0-based indexing (index 0 through N).
-- 1-D and 2-D arrays are supported. Arrays must be declared with `DIM` before use.
+- 1-D, 2-D, and 3-D arrays are supported. Numeric arrays hold integers/reals; string arrays use a `$` suffix (`DIM T$(2,2,2)`). Store character codes in numeric arrays with `ASC`/`CHR$` when you need single-character cells. Arrays must be declared with `DIM` before use.
 - `ERASE name` removes an array from memory and frees its storage. After erasing, you can `DIM` the same name again with a different size.
 
 ```basic
@@ -1777,7 +1780,6 @@ The opening theme of Beethoven's Für Elise, arranged for `BEEP`. Demonstrates o
 
 These features are on the roadmap but not yet available:
 
-- 3-D arrays — planned (1-D and 2-D are implemented)
 - Interactive tile editor UI, tile maps, window/clipping support
 - `DRAW` vector strings (classical BASIC DRAW command) — under consideration
 - `RESUME` / `RESUME NEXT` — continue after `ON ERROR GOTO` (handler must END or GOTO today)
