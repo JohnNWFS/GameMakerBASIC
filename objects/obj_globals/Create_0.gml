@@ -85,16 +85,16 @@ global.scroll_lock = false;
 
 // Named colors
 global.colors = ds_map_create();
-global.colors[? "RED"]     = c_red;
-global.colors[? "GREEN"]   = c_green;
-global.colors[? "BLUE"]    = c_blue;
+global.colors[? "RED"]     = make_color_rgb(255, 0, 0);   // web #FF0000
+global.colors[? "GREEN"]   = make_color_rgb(0, 255, 0);   // web #00FF00 / &H00FF00 (BBGGRR)
+global.colors[? "BLUE"]    = make_color_rgb(0, 0, 255);   // web #0000FF
 global.colors[? "CYAN"]    = c_teal;
 global.colors[? "MAGENTA"] = c_fuchsia;
 global.colors[? "YELLOW"]  = c_yellow;
 global.colors[? "WHITE"]   = c_white;
 global.colors[? "BLACK"]   = c_black;
 global.colors[? "GRAY"]    = c_gray;
-global.colors[? "ORANGE"]  = c_orange;
+global.colors[? "ORANGE"]  = make_color_rgb(255, 165, 0); // web #FFA500 / $FFA500
 global.colors[? "LIME"]    = c_lime;
 global.colors[? "NAVY"] = make_color_rgb(0, 0, 128);
 global.colors[? "DKGRAY"] = make_color_rgb(64, 64, 64);

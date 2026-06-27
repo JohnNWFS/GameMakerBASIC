@@ -1,84 +1,24 @@
 /// @script basic_cmd_color
 /// @description Change text color (and optional background): COLOR fg[, bg]
 function basic_cmd_color(arg) {
-    // Split into up to two parts: foreground and optional background
-    ///
-	// Split on commas, but not inside parentheses
-		var parts = [];
-		var current = "";
-		var paren_depth = 0;
-		var trimmed_arg = string_trim(arg);
-
-		for (var i = 1; i <= string_length(trimmed_arg); i++) {
-		    var ch = string_char_at(trimmed_arg, i);
-		    if (ch == "(") {
-		        paren_depth++;
-		        current += ch;
-		    } else if (ch == ")") {
-		        paren_depth--;
-		        current += ch;
-		    } else if (ch == "," && paren_depth == 0) {
-		        array_push(parts, string_trim(current));
-		        current = "";
-		    } else {
-		        current += ch;
-		    }
-		}
-		if (string_trim(current) != "") {
-		    array_push(parts, string_trim(current));
-		}
-	
-	///
+    var parts = basic_parse_csv_args(arg);
     if (!basic_require_arg_count(parts, "COLOR", 1, 2, "fg[,bg]")) return;
-    var fgStr = string_upper(string_trim(parts[0]));
-    var bgStr = (array_length(parts) > 1)
-                ? string_upper(string_trim(parts[1]))
-                : "";
 
-    // Helper: parse a single color spec (named or RGB), returns -1 on error
-    var parse_color = function(colSpec) {
-        // RGB(r,g,b) form?
-        if (string_copy(colSpec, 1, 4) == "RGB("
-            && string_char_at(colSpec, string_length(colSpec)) == ")")
-        {
-            var inner = string_copy(colSpec, 5, string_length(colSpec) - 5);
-            var comps = string_split(inner, ",");
-            if (array_length(comps) == 3) {
-                if (!is_numeric_string(string_trim(comps[0])) || !is_numeric_string(string_trim(comps[1])) || !is_numeric_string(string_trim(comps[2]))) {
-                    return -1;
-                }
-                var r = clamp(real(string_trim(comps[0])), 0, 255);
-                var g = clamp(real(string_trim(comps[1])), 0, 255);
-                var b = clamp(real(string_trim(comps[2])), 0, 255);
-                return make_color_rgb(r, g, b);
-            } else {
-                return -1;
-            }
-        }
-        // Named color lookup
-        if (ds_map_exists(global.colors, colSpec)) {
-            return global.colors[? colSpec];
-        }
-        return -1;
-    };
-
-    // Parse and apply foreground
-    var fgCol = parse_color(fgStr);
-    if (fgCol >= 0) {
-        global.basic_text_color   = fgCol;
-        global.current_draw_color = fgCol;
+    var fg_col = basic_parse_color(string_trim(parts[0]), noone);
+    if (fg_col == noone) {
+        dbg_log(DBG_FLOW, "?COLOR ERROR: Unknown foreground color '" + string_trim(parts[0]) + "'");
     } else {
-        dbg_log(DBG_FLOW, "?COLOR ERROR: Unknown foreground color '" + fgStr + "'");
+        global.basic_text_color   = fg_col;
+        global.current_draw_color = fg_col;
     }
 
-    // Parse and apply background (if provided)
-    if (bgStr != "") {
-        var bgCol = parse_color(bgStr);
-        if (bgCol >= 0) {
-            global.background_draw_color   = bgCol;
-            global.background_draw_enabled = true;
+    if (array_length(parts) > 1) {
+        var bg_col = basic_parse_color(string_trim(parts[1]), noone);
+        if (bg_col == noone) {
+            dbg_log(DBG_FLOW, "?COLOR ERROR: Unknown background color '" + string_trim(parts[1]) + "'");
         } else {
-            dbg_log(DBG_FLOW, "?COLOR ERROR: Unknown background color '" + bgStr + "'");
+            global.background_draw_color   = bg_col;
+            global.background_draw_enabled = true;
         }
     }
 }

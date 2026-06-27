@@ -43,11 +43,8 @@ function basic_cmd_pset(arg) {
     var y_val      = y_arg.value;
     var char_index = ch_arg.value;
 
-    // Colors
-    var fg_str   = string_upper(string_trim(args[3]));
-    var bg_str   = string_upper(string_trim(args[4]));
-    var fg_color = ds_map_exists(global.colors, fg_str) ? global.colors[? fg_str] : c_white;
-    var bg_color = ds_map_exists(global.colors, bg_str) ? global.colors[? bg_str] : c_black;
+    var fg_color = basic_parse_color(string_trim(args[3]), c_white);
+    var bg_color = basic_parse_color(string_trim(args[4]), c_black);
 
     var grid_obj = instance_find(obj_mode1_grid, 0);
     if (!instance_exists(grid_obj)) {

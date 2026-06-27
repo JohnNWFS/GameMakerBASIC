@@ -1,6 +1,6 @@
 5 REM AUTOTEST_SCREENSHOT
 10 REM ============================================================
-20 REM NW-BASIC COLOR PARSE TEST — Phase 7 (int64 hex)
+20 REM NW-BASIC COLOR PARSE TEST — Phase 7 (hex prefixes)
 30 REM Verifies named colors and hex prefixes via TILECOLOR readback
 40 REM Output on tile grid: TEST: name = PASS or FAIL
 50 REM ============================================================
@@ -21,7 +21,7 @@
 200 REM --- Hex prefixes match named equivalents ---
 210 CHARAT 0, R, 72, "#FF0000", BLACK
 220 CHARAT 1, R, 73, RED, BLACK
-230 CHARAT 2, R, 74, "&H00FF00", BLACK
+230 CHARAT 2, R, 74, &H00FF00, BLACK
 240 CHARAT 3, R, 75, GREEN, BLACK
 250 CHARAT 4, R, 76, "0x0000FF", BLACK
 260 CHARAT 5, R, 77, BLUE, BLACK

@@ -23,25 +23,13 @@ function basic_cmd_clschar(arg) {
     dbg_log(DBG_FLOW, "Parsed char_index: " + string(char_index));
 
     if (array_length(args) >= 2) {
-        var fg_str = string_upper(string_trim(args[1]));
-        dbg_log(DBG_FLOW, "Looking for fg color: '" + fg_str + "'");
-        if (ds_map_exists(global.colors, fg_str)) {
-            fg_color = global.colors[? fg_str];
-            dbg_log(DBG_FLOW, "Found fg color: " + string(fg_color));
-        } else {
-            dbg_log(DBG_FLOW, "FG COLOR NOT FOUND!");
-        }
+        fg_color = basic_parse_color(string_trim(args[1]), c_white);
+        dbg_log(DBG_FLOW, "CLSCHAR fg color: " + string(fg_color));
     }
 
     if (array_length(args) >= 3) {
-        var bg_str = string_upper(string_trim(args[2]));
-        dbg_log(DBG_FLOW, "Looking for bg color: '" + bg_str + "'");
-        if (ds_map_exists(global.colors, bg_str)) {
-            bg_color = global.colors[? bg_str];
-            dbg_log(DBG_FLOW, "Found bg color: " + string(bg_color));
-        } else {
-            dbg_log(DBG_FLOW, "BG COLOR NOT FOUND!");
-        }
+        bg_color = basic_parse_color(string_trim(args[2]), c_black);
+        dbg_log(DBG_FLOW, "CLSCHAR bg color: " + string(bg_color));
     }
 
     var grid_obj = instance_find(obj_mode1_grid, 0);
