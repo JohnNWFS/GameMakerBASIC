@@ -6,6 +6,8 @@ drewfont = 0;
 grid_cols = floor(room_width  / global.mode1_cell_px);
 grid_rows = floor(room_height / global.mode1_cell_px);
 grid = mode1_grid_alloc(grid_cols, grid_rows);
+needs_redraw = true;
+grid_surface = -1;
 
 self.mode1_grid_fill = function(char, fg, bg) {
     dbg_log(DBG_FLOW, ">> GRID FILL START: char=" + string(char) + ", fg=" + string(fg) + ", bg=" + string(bg));

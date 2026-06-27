@@ -109,19 +109,7 @@ function bas_sprite_command(params) {
         spr_slot.y       = wy;
         spr_slot.angle   = ang;
         spr_slot.visible = true;
-
-        if (!instance_exists(spr_slot.inst)) {
-            var inst = instance_create_depth(wx, wy, -100, obj_bas_sprite);
-            inst.bas_slot  = slot;
-            inst.bas_angle = ang;
-            inst.bas_scale = spr_slot.scale;
-            spr_slot.inst = inst;
-        } else {
-            var inst = spr_slot.inst;
-            inst.x         = wx;
-            inst.y         = wy;
-            inst.bas_angle = ang;
-        }
+        spr_slot.inst    = noone;
         break;
     }
 
@@ -151,10 +139,6 @@ function bas_sprite_command(params) {
         var spr_slot = bas_sprite_slot(slot);
         spr_slot.x = wx;
         spr_slot.y = wy;
-        if (instance_exists(spr_slot.inst)) {
-            spr_slot.inst.x = wx;
-            spr_slot.inst.y = wy;
-        }
         break;
     }
 
@@ -168,8 +152,6 @@ function bas_sprite_command(params) {
         var ang  = _r1.value;
         var spr_slot = bas_sprite_slot(slot);
         spr_slot.angle = ang;
-        if (instance_exists(spr_slot.inst))
-            spr_slot.inst.bas_angle = ang;
         break;
     }
 
@@ -182,8 +164,6 @@ function bas_sprite_command(params) {
         var slot = clamp(floor(_r0.value) - 1, 0, 63);
         var spr_slot = bas_sprite_slot(slot);
         spr_slot.scale = max(1, _r1.value);
-        if (instance_exists(spr_slot.inst))
-            spr_slot.inst.bas_scale = spr_slot.scale;
         break;
     }
 
@@ -202,14 +182,12 @@ function bas_sprite_command(params) {
 function bas_sprite_hide(slot) {
     var spr_slot = bas_sprite_slot(slot);
     spr_slot.visible = false;
-    if (instance_exists(spr_slot.inst)) {
-        instance_destroy(spr_slot.inst);
-    }
     spr_slot.inst = noone;
 }
 
 /// bas_sprite_clear_all() — release all instances and GML sprite assets.
 function bas_sprite_clear_all() {
+    bas_sprite_purge_instances();
     for (var si = 0; si < 64; si++) {
         bas_sprite_hide(si);
         var spr_slot = bas_sprite_slot(si);

@@ -75,3 +75,5 @@ if (global.program_has_ended) {
     draw_set_color(c_lime);
     draw_text(16, y1 + 16, "Program has ended - ESC or ENTER to return");
 }
+
+bas_sprite_draw_all();

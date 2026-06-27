@@ -1,5 +1,6 @@
 /// bas_sprite_init() — allocate sprite slot table. Call once from obj_globals Create.
 function bas_sprite_init() {
+    bas_sprite_purge_instances();
     var N = 64;
     global.bas_sprites = array_create(N);
     for (var i = 0; i < N; i++) {
