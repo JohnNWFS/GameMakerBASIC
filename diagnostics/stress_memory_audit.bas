@@ -1,0 +1,67 @@
+10 REM ============================================================
+20 REM NW-BASIC MEMORY AUDIT TEST — Phase 11
+30 REM Centralized ds_* lifecycle: RUN reset + WHILE meta hygiene
+40 REM Run TWICE without editing — all lines must stay PASS
+50 REM Output:  TEST: name = PASS  or  TEST: name = FAIL
+60 REM ============================================================
+70 CLS
+80 PRINT "NW-BASIC MEMORY AUDIT TEST (Phase 11)"
+90 PRINT "======================================"
+100 PRINT ""
+110 REM
+200 REM --- SECTION 1: cross-RUN variable leak ---
+210 PRINT "SECTION 1: Variable leak (2x RUN)"
+220 IF AUDIT_MARKER = 99 THEN PRINT "TEST: VAR_LEAK = FAIL" ELSE PRINT "TEST: VAR_LEAK = PASS"
+230 AUDIT_MARKER = 99
+240 PRINT ""
+250 REM
+300 REM --- SECTION 2: WHILE false-skip + nested WEND (while_meta) ---
+310 PRINT "SECTION 2: WHILE metadata"
+320 INNER = 1
+330 WHILE 0
+340   INNER = 99
+350 WEND
+360 IF INNER = 1 THEN PRINT "TEST: WHILE_FALSE = PASS" ELSE PRINT "TEST: WHILE_FALSE = FAIL ("; INNER; ")"
+370 I = 0
+380 WHILE I < 2
+390   J = 0
+400   WHILE J < 2
+410     J = J + 1
+420   WEND
+430   I = I + 1
+440 WEND
+450 IF I = 2 AND J = 2 THEN PRINT "TEST: WHILE_NEST = PASS" ELSE PRINT "TEST: WHILE_NEST = FAIL"
+460 PRINT ""
+470 REM
+500 REM --- SECTION 3: GOSUB stack ---
+510 PRINT "SECTION 3: GOSUB stack"
+520 GS = 0
+530 GOSUB 8000
+540 IF GS = 1 THEN PRINT "TEST: GOSUB_RET = PASS" ELSE PRINT "TEST: GOSUB_RET = FAIL"
+550 PRINT ""
+560 REM
+600 REM --- SECTION 4: FOR stack ---
+610 PRINT "SECTION 4: FOR stack"
+620 SUM = 0
+630 FOR A = 1 TO 2
+640   FOR B = 1 TO 3
+650     SUM = SUM + 1
+660   NEXT B
+670 NEXT A
+680 IF SUM = 6 THEN PRINT "TEST: FOR_NEST = PASS" ELSE PRINT "TEST: FOR_NEST = FAIL ("; SUM; ")"
+690 PRINT ""
+700 REM
+800 REM --- SECTION 5: arrays erased each RUN ---
+810 PRINT "SECTION 5: Arrays"
+820 DIM Z(3)
+830 Z(1) = 55
+840 ERASE Z
+850 DIM Z(2)
+860 IF Z(1) = 0 AND Z(2) = 0 THEN PRINT "TEST: ARR_RESET = PASS" ELSE PRINT "TEST: ARR_RESET = FAIL"
+870 PRINT ""
+880 REM
+900 PRINT "======================================"
+910 PRINT "Done. Run again — every TEST stays PASS."
+920 END
+8000 GS = 1
+8010 RETURN

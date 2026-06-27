@@ -1,8 +1,8 @@
 // === BEGIN: basic_cmd_print ===
 function basic_cmd_print(arg, line_number) {
 
-    if (!ds_exists(global.output_lines, ds_type_list))  global.output_lines  = ds_list_create();
-    if (!ds_exists(global.output_colors, ds_type_list)) global.output_colors = ds_list_create();
+    basic_memory_ensure_list("output_lines");
+    basic_memory_ensure_list("output_colors");
 
     var suppress_newline = false;
     var tabw = max(1, is_undefined(global.print_zone) ? 14 : global.print_zone);

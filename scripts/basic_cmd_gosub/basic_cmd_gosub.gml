@@ -7,10 +7,7 @@ function basic_cmd_gosub(arg) {
     if (!target_arg.ok) return;
     var target = target_arg.value;
 
-    // Ensure gosub stack exists
-    if (!ds_exists(global.gosub_stack, ds_type_stack)) {
-        global.gosub_stack = ds_stack_create();
-    }
+    basic_memory_ensure_stack("gosub_stack");
 
     // === CHANGE: capture statement-level resume point on this same line ===
     var resume_stmt = 0;

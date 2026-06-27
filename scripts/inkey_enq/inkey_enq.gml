@@ -1,8 +1,6 @@
 /// @function inkey_enq(val, cap)
 function inkey_enq(val, cap) {
-    if (!variable_global_exists("__inkey_queue") || !ds_exists(global.__inkey_queue, ds_type_queue)) {
-        global.__inkey_queue = ds_queue_create();
-    }
+    basic_memory_ensure_queue("__inkey_queue");
     while (ds_queue_size(global.__inkey_queue) >= cap) ds_queue_dequeue(global.__inkey_queue);
     ds_queue_enqueue(global.__inkey_queue, val);
 

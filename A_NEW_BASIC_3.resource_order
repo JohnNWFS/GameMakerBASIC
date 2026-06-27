@@ -95,6 +95,7 @@
     {"name":"basic_evaluate_condition","order":26,"path":"scripts/basic_evaluate_condition/basic_evaluate_condition.yy",},
     {"name":"basic_evaluate_expression_v2","order":10,"path":"scripts/basic_evaluate_expression_v2/basic_evaluate_expression_v2.yy",},
     {"name":"basic_is_array_reference","order":3,"path":"scripts/basic_is_array_reference/basic_is_array_reference.yy",},
+    {"name":"basic_memory","order":34,"path":"scripts/basic_memory/basic_memory.yy",},
     {"name":"basic_normvar","order":35,"path":"scripts/basic_normvar/basic_normvar.yy",},
     {"name":"basic_output_commit","order":36,"path":"scripts/basic_output_commit/basic_output_commit.yy",},
     {"name":"basic_parse_color","order":7,"path":"scripts/basic_parse_color/basic_parse_color.yy",},

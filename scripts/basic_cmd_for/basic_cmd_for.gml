@@ -104,10 +104,7 @@ function basic_cmd_for(arg) {
         loop_stmt_idx = global.interpreter_current_stmt_index + 1;
     }
 
-    if (!ds_exists(global.for_stack, ds_type_stack)) {
-        global.for_stack = ds_stack_create();
-        dbg_log(DBG_FLOW, "FOR: Safety — created global.for_stack");
-    }
+    basic_memory_ensure_stack("for_stack");
 
     var frame = {
         varname     : varname,

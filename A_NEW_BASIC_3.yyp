@@ -139,6 +139,7 @@
     {"id":{"name":"basic_evaluate_condition","path":"scripts/basic_evaluate_condition/basic_evaluate_condition.yy",},},
     {"id":{"name":"basic_evaluate_expression_v2","path":"scripts/basic_evaluate_expression_v2/basic_evaluate_expression_v2.yy",},},
     {"id":{"name":"basic_is_array_reference","path":"scripts/basic_is_array_reference/basic_is_array_reference.yy",},},
+    {"id":{"name":"basic_memory","path":"scripts/basic_memory/basic_memory.yy",},},
     {"id":{"name":"basic_normvar","path":"scripts/basic_normvar/basic_normvar.yy",},},
     {"id":{"name":"basic_output_commit","path":"scripts/basic_output_commit/basic_output_commit.yy",},},
     {"id":{"name":"basic_parse_color","path":"scripts/basic_parse_color/basic_parse_color.yy",},},

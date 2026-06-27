@@ -7,9 +7,7 @@ function basic_cmd_while(arg) {
     dbg_log(DBG_FLOW, "WHILE: Evaluated result of '" + condition + "' → " + string(value));
 
     // ---- Lazy-init tiny metadata store for WHILE frames (no global file edits required)
-    if (!variable_global_exists("while_meta") || !ds_exists(global.while_meta, ds_type_map)) {
-        global.while_meta = ds_map_create();
-    }
+    basic_memory_ensure_map("while_meta");
 
     if (!value) {
         // === FIX 1: robust skip ahead that inspects colon-separated statements, not only first token ===
@@ -65,10 +63,7 @@ function basic_cmd_while(arg) {
     dbg_log(DBG_FLOW, "WHILE: Condition is TRUE — evaluating stack push logic");
 
     // Ensure stack exists
-    if (!ds_exists(global.while_stack, ds_type_stack)) {
-        global.while_stack = ds_stack_create();
-        dbg_log(DBG_FLOW, "WHILE: Created new while_stack");
-    }
+    basic_memory_ensure_stack("while_stack");
 
     // Only push if not already at top (preserve your logic)
     if (ds_stack_empty(global.while_stack) || ds_stack_top(global.while_stack) != line_index) {

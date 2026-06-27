@@ -9,12 +9,8 @@ function basic_cmd_dim(rest) {
         return;
     }
 
-    if (is_undefined(global.basic_arrays)) {
-        global.basic_arrays = ds_map_create();
-    }
-    if (!variable_global_exists("basic_array_dims") || !ds_exists(global.basic_array_dims, ds_type_map)) {
-        global.basic_array_dims = ds_map_create();
-    }
+    basic_memory_ensure_map("basic_arrays");
+    basic_memory_ensure_map("basic_array_dims");
 
     // Split on top-level commas (ignore commas inside parentheses)
     var defs = [];

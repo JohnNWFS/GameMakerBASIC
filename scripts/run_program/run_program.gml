@@ -12,12 +12,8 @@ function run_program() {
     // ── Sync editor → canonical runtime program view ────────────────────
     basic_program_sync_runtime();
     // ── Make sure output buffers exist BEFORE validation (errors print into them) ──
-    if (!is_real(global.output_lines) || !ds_exists(global.output_lines, ds_type_list)) {
-        global.output_lines = ds_list_create();
-    }
-    if (!is_real(global.output_colors) || !ds_exists(global.output_colors, ds_type_list)) {
-        global.output_colors = ds_list_create();
-    }
+    basic_memory_ensure_list("output_lines");
+    basic_memory_ensure_list("output_colors");
 
     // Per-run flag (safe init)
     if (is_undefined(global._syntax_error_just_emitted)) global._syntax_error_just_emitted = false;
@@ -32,11 +28,8 @@ function run_program() {
 // ANCHOR: place this immediately after your "IF-block map built (...)" log in run_program
 
 // Ensure the map exists
-if (!variable_global_exists("gosub_targets") || !ds_exists(global.gosub_targets, ds_type_map)) {
-    global.gosub_targets = ds_map_create();
-} else {
-    ds_map_clear(global.gosub_targets);
-}
+basic_memory_ensure_map("gosub_targets");
+ds_map_clear(global.gosub_targets);
 
 // Walk physical line order used by the interpreter
 for (var i = 0; i < ds_list_size(global.line_list); i++) {

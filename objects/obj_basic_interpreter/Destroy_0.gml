@@ -1,3 +1,3 @@
 /// @event obj_basic_interpreter/Destroy
-// You can write your code in this editor
-ds_list_destroy(interpreter_current_program);
+basic_ds_release(interpreter_current_program);
+interpreter_current_program = undefined;
