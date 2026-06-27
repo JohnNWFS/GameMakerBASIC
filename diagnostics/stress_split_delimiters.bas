@@ -1,0 +1,58 @@
+10 REM ============================================================
+20 REM NW-BASIC SPLITTER TEST — unified delimiter parsing (Phase 5)
+30 REM Exercises colon, comma, and semicolon splitting indirectly
+40 REM via PRINT, DATA/READ, DIM multi, and inline statements.
+50 REM Output:  TEST: name = PASS  or  TEST: name = FAIL
+60 REM ============================================================
+70 CLS
+80 PRINT "NW-BASIC SPLITTER TEST (Phase 5)"
+90 PRINT "================================="
+100 PRINT ""
+110 REM
+200 REM --- SECTION 1: semicolon-separated PRINT ---
+210 PRINT "SECTION 1: Semicolon PRINT"
+220 A$ = "A"
+230 B$ = "B"
+240 PRINT "X"; A$; B$
+250 IF A$ = "A" THEN PRINT "TEST: SEMI_VARS = PASS" ELSE PRINT "TEST: SEMI_VARS = FAIL"
+260 PRINT ""
+270 REM
+300 REM --- SECTION 2: comma-separated PRINT zones ---
+310 PRINT "SECTION 2: Comma PRINT"
+320 PRINT 10, 20, 30
+330 IF 10 = 10 THEN PRINT "TEST: COMMA_PRINT = PASS" ELSE PRINT "TEST: COMMA_PRINT = FAIL"
+340 PRINT ""
+350 REM
+400 REM --- SECTION 3: colon-separated statements ---
+410 PRINT "SECTION 3: Colon statements"
+420 X = 1 : Y = 2 : Z = X + Y
+430 IF Z = 3 THEN PRINT "TEST: COLON_LET = PASS" ELSE PRINT "TEST: COLON_LET = FAIL ("; Z; ")"
+440 IF X = 1 THEN PRINT "TEST: COLON_X = PASS" ELSE PRINT "TEST: COLON_X = FAIL"
+450 PRINT ""
+460 REM
+500 REM --- SECTION 4: comma inside quotes (DATA) ---
+510 PRINT "SECTION 4: DATA commas in strings"
+520 DATA 1, 2, "ZED"
+530 RESTORE
+540 READ D1, D2, D3$
+550 IF D1 = 1 THEN PRINT "TEST: DATA_N1 = PASS" ELSE PRINT "TEST: DATA_N1 = FAIL"
+560 IF D2 = 2 THEN PRINT "TEST: DATA_N2 = PASS" ELSE PRINT "TEST: DATA_N2 = FAIL"
+570 IF D3$ = "ZED" THEN PRINT "TEST: DATA_STR = PASS" ELSE PRINT "TEST: DATA_STR = FAIL ("; D3$; ")"
+580 PRINT ""
+590 REM
+600 REM --- SECTION 5: paren-wrapped commas (DIM + array expr) ---
+610 PRINT "SECTION 5: Paren commas"
+620 DIM T(2,2)
+630 T(1,1) = 5 : T(2,2) = 9
+640 IF T(1,1) = 5 THEN PRINT "TEST: DIM_COMMA = PASS" ELSE PRINT "TEST: DIM_COMMA = FAIL"
+650 IF T(1,1) + T(2,2) = 14 THEN PRINT "TEST: ARR_COMMA = PASS" ELSE PRINT "TEST: ARR_COMMA = FAIL"
+660 PRINT ""
+670 REM
+700 REM --- SECTION 6: inline IF with colon arms ---
+710 PRINT "SECTION 6: Inline IF colons"
+720 FLAG = 0
+730 IF 1 = 1 THEN FLAG = 1 : PRINT "TEST: INLINE_COLON = PASS" ELSE PRINT "TEST: INLINE_COLON = FAIL"
+740 IF FLAG = 1 THEN PRINT "TEST: INLINE_FLAG = PASS" ELSE PRINT "TEST: INLINE_FLAG = FAIL"
+750 PRINT ""
+760 PRINT "SPLITTER TEST COMPLETE"
+770 END
