@@ -4,9 +4,9 @@
 /// Join colon-separated statement parts from index _start to end.
 function basic_join_colon_parts(_parts, _start) {
     var out = "";
-    for (var pi = _start; pi < array_length(_parts); pi++) {
-        if (pi > _start) out += ":";
-        out += _parts[pi];
+    for (var _part_i = _start; _part_i < array_length(_parts); _part_i++) {
+        if (_part_i > _start) out += ":";
+        out += _parts[_part_i];
     }
     return out;
 }
@@ -14,10 +14,10 @@ function basic_join_colon_parts(_parts, _start) {
 /// How many colon parts (from _start) cover _consumed chars in the joined string.
 function basic_colon_segments_spanned(_parts, _start, _consumed) {
     var cum = 0;
-    for (var pi = _start; pi < array_length(_parts); pi++) {
-        if (pi > _start) cum += 1;
-        cum += string_length(_parts[pi]);
-        if (cum >= _consumed) return pi - _start + 1;
+    for (var _part_i = _start; _part_i < array_length(_parts); _part_i++) {
+        if (_part_i > _start) cum += 1;
+        cum += string_length(_parts[_part_i]);
+        if (cum >= _consumed) return _part_i - _start + 1;
     }
     return array_length(_parts) - _start;
 }
@@ -29,7 +29,7 @@ function basic_find_kw_boundary(_src, _kw) {
     var L   = string_length(_src);
     var K   = string_length(kw);
     var inq = false;
-    var depth = 0;
+    var _depth = 0;
 
     for (var i = 1; i <= L - K + 1; i++) {
         var ch = string_char_at(_src, i);
@@ -41,10 +41,10 @@ function basic_find_kw_boundary(_src, _kw) {
         }
         if (inq) continue;
 
-        if (ch == "(") depth++;
-        else if (ch == ")") depth = max(0, depth - 1);
+        if (ch == "(") _depth++;
+        else if (ch == ")") _depth = max(0, _depth - 1);
 
-        if (depth == 0 && string_copy(up, i, K) == kw) {
+        if (_depth == 0 && string_copy(up, i, K) == kw) {
             var prev = (i == 1) ? " " : string_char_at(_src, i - 1);
             var next = (i + K <= L) ? string_char_at(_src, i + K) : " ";
             if ((prev == " " || prev == ":") && (next == " " || next == ":" || i + K - 1 == L)) {
@@ -59,7 +59,7 @@ function basic_find_kw_boundary(_src, _kw) {
 function basic_find_top_level_char(_src, _ch) {
     var L = string_length(_src);
     var inq = false;
-    var depth = 0;
+    var _depth = 0;
     for (var i = 1; i <= L; i++) {
         var ch = string_char_at(_src, i);
         if (ch == "\"") {
@@ -69,9 +69,9 @@ function basic_find_top_level_char(_src, _ch) {
             continue;
         }
         if (!inq) {
-            if (ch == "(") depth++;
-            else if (ch == ")") depth = max(0, depth - 1);
-            else if (ch == _ch && depth == 0) return i;
+            if (ch == "(") _depth++;
+            else if (ch == ")") _depth = max(0, _depth - 1);
+            else if (ch == _ch && _depth == 0) return i;
         }
     }
     return 0;
