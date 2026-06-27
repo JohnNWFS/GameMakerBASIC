@@ -1045,6 +1045,8 @@ Verified by `diagnostics/mode2_view_clip_smoke.bas` (6/6 PASS).
 
 **Map scrolling:** `diagnostics/mode2_map_scroll_demo.bas` builds a 56×28 map, sets a `VIEW` playfield, and pans by changing the `MAPDRAW` column (`MAPDRAW 1, 3` → `MAPDRAW -14, 3` → `MAPDRAW -29, 3`). HUD text drawn before `VIEW` stays on screen. No engine changes — pure BASIC.
 
+**Adventure POC:** `diagnostics/mode2_adventure_poc.bas` is a playable turn-based quest at `MODE 2, 32` — custom hero/tree/chest tiles (`TILEPX`), a 40×26 `MAPNEW` world, `VIEW` HUD rows, and camera-centered `MAPDRAW` scrolling. **WASD** to move, **Q** to quit; find the `*` key in the gray cave, unlock the red `+` gate, reach the gem to win. Init/render smoke: `diagnostics/mode2_adventure_init_smoke.bas`.
+
 ---
 
 ## MODE 3 Commands (Pixel Graphics)
