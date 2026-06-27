@@ -123,6 +123,9 @@ for (var i = 0; i < ds_list_size(global.line_list); i++) {
     }
     dbg_log(DBG_FLOW, "RUN_PROGRAM: validation passed");
 
+    // ── Fresh runtime state (vars, arrays, stacks, files) ───────────────
+    basic_runtime_reset_for_run();
+
     // ── Clean start: clear output buffers for a fresh run ─────────────────
     ds_list_clear(global.output_lines);
     ds_list_clear(global.output_colors);

@@ -1,0 +1,72 @@
+10 REM ============================================================
+20 REM NW-BASIC MEMORY RESET TEST — Phase 6
+30 REM Verifies fresh runtime state each RUN (vars, arrays, stacks)
+40 REM Output:  TEST: name = PASS  or  TEST: name = FAIL
+50 REM
+60 REM TWO-RUN CHECK: Run this program twice without editing.
+70 REM   VAR_LEAK must be PASS on both runs (MARKER cleared each RUN).
+80 REM ============================================================
+90 CLS
+100 PRINT "NW-BASIC MEMORY RESET TEST (Phase 6)"
+110 PRINT "====================================="
+120 PRINT ""
+130 REM
+200 REM --- SECTION 1: cross-RUN variable leak (run twice) ---
+210 PRINT "SECTION 1: Variable leak (2x RUN)"
+220 IF MARKER = 42 THEN PRINT "TEST: VAR_LEAK = FAIL" ELSE PRINT "TEST: VAR_LEAK = PASS"
+230 MARKER = 42
+240 PRINT ""
+250 REM
+300 REM --- SECTION 2: arrays DIM / ERASE ---
+310 PRINT "SECTION 2: Arrays"
+320 DIM N(8)
+330 N(1) = 100
+340 N(8) = 800
+350 IF N(1) = 100 THEN PRINT "TEST: ARR_DIM_LO = PASS" ELSE PRINT "TEST: ARR_DIM_LO = FAIL"
+360 IF N(8) = 800 THEN PRINT "TEST: ARR_DIM_HI = PASS" ELSE PRINT "TEST: ARR_DIM_HI = FAIL"
+370 ERASE N
+380 DIM N(4)
+390 IF N(1) = 0 THEN PRINT "TEST: ARR_ERASE = PASS" ELSE PRINT "TEST: ARR_ERASE = FAIL ("; N(1); ")"
+400 PRINT ""
+410 REM
+500 REM --- SECTION 3: GOSUB / RETURN stack ---
+510 PRINT "SECTION 3: GOSUB stack"
+520 GS = 0
+530 GOSUB 9000
+540 IF GS = 1 THEN PRINT "TEST: GOSUB_RET = PASS" ELSE PRINT "TEST: GOSUB_RET = FAIL"
+550 PRINT ""
+560 REM
+600 REM --- SECTION 4: DATA / READ pointer (rebuilt each RUN) ---
+610 PRINT "SECTION 4: DATA/READ"
+620 RESTORE
+630 READ V1, V2, V3$
+640 IF V1 = 10 THEN PRINT "TEST: READ_1 = PASS" ELSE PRINT "TEST: READ_1 = FAIL ("; V1; ")"
+650 IF V2 = 20 THEN PRINT "TEST: READ_2 = PASS" ELSE PRINT "TEST: READ_2 = FAIL ("; V2; ")"
+660 IF V3$ = "ZED" THEN PRINT "TEST: READ_3 = PASS" ELSE PRINT "TEST: READ_3 = FAIL"
+670 PRINT ""
+680 REM
+700 REM --- SECTION 5: OPTION BASE resets to 1 each RUN ---
+710 PRINT "SECTION 5: OPTION BASE default"
+720 DIM B(3)
+730 B(1) = 7
+740 IF B(1) = 7 THEN PRINT "TEST: OPTBASE1 = PASS" ELSE PRINT "TEST: OPTBASE1 = FAIL"
+750 PRINT ""
+760 REM
+800 REM --- SECTION 6: nested FOR (for_stack hygiene) ---
+810 PRINT "SECTION 6: FOR stack"
+820 SUM = 0
+830 FOR I = 1 TO 3
+840   FOR J = 1 TO 2
+850     SUM = SUM + 1
+860   NEXT J
+870 NEXT I
+880 IF SUM = 6 THEN PRINT "TEST: FOR_NEST = PASS" ELSE PRINT "TEST: FOR_NEST = FAIL ("; SUM; ")"
+890 PRINT ""
+900 REM
+1000 PRINT "====================================="
+1010 PRINT "Done. Run again (no edits) — VAR_LEAK"
+1020 PRINT "should stay PASS."
+1030 END
+9000 GS = 1
+9010 RETURN
+9900 DATA 10, 20, "ZED"

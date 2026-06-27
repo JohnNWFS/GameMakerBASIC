@@ -144,9 +144,9 @@ if (!basic_var_exists(varName)) {
 
     // 5) Seed the variable (string vars end with $, others numeric)
     if (string_length(varName) > 0 && string_char_at(varName, string_length(varName)) == "$") {
-        global.basic_variables[? varName] = "";
+        basic_var_set(varName, "");
     } else {
-        global.basic_variables[? varName] = "0";
+        basic_var_set(varName, 0);
     }
 
     // 6) Enter input mode
