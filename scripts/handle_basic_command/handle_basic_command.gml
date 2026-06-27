@@ -45,143 +45,17 @@ function handle_basic_command(cmd, arg) {
         // INKEY$ is valid inside expressions. LET still has a special path for
         // pure "K$ = INKEY$" modal waits.
 
-			// === INLINE IF COLLAPSE (robust; only within THIS colon segment) ===
-			// (Do this before the generic "IF requires THEN" guard so inline IF is handled cleanly.)
+			// === INLINE IF COLLAPSE (spans colon segments until ELSE / EOL) ===
 			if (_verb == "IF") {
-			    // Reconstruct the original physical line from the dispatcher’s position
-			    var line_idx   = global.interpreter_current_line_index; // set by Step
+			    var line_idx   = global.interpreter_current_line_index;
 			    var line_no    = global.line_list[| line_idx];
 			    var src_line   = ds_map_find_value(global.program_map, line_no);
 			    var parts_full = split_on_unquoted_colons(string_trim(src_line));
+			    var p          = global.interpreter_current_stmt_index;
 
-			    // Use ONLY the current colon segment
-			    var p       = global.interpreter_current_stmt_index;  // set by Step
-			    var segment = string_trim(parts_full[p]);
-			    var seg_len = string_length(segment);
-			    if (seg_len >= 2) {
-			        // Find 'IF' at the true start (skip leading spaces)
-			        var s = 1;
-			        while (s <= seg_len && string_char_at(segment, s) == " ") s++;
-			        var is_if = false;
-			        if (s + 1 <= seg_len) {
-			            var head2 = string_upper(string_copy(segment, s, 2));
-			            is_if = (head2 == "IF");
-			        }
-
-			        if (is_if) {
-			            // Position right after 'IF', then skip spaces to condition start
-			            var cond_start = s + 2;
-			            while (cond_start <= seg_len && string_char_at(segment, cond_start) == " ") cond_start++;
-			            var after_if = (cond_start <= seg_len) ? string_copy(segment, cond_start, seg_len - cond_start + 1) : "";
-			            var up_after = string_upper(after_if);
-
-			            // Find top-level THEN (quote/paren aware)
-			            var L = string_length(after_if);
-			            var lvl = 0, inq = false, then_pos = 0;
-			            for (var iTH = 1; iTH <= L - 4 + 1; iTH++) {
-			                var chTH = string_char_at(after_if, iTH);
-			                if (chTH == "\"") inq = !inq;
-			                if (!inq) {
-			                    if (chTH == "(") lvl++;
-			                    else if (chTH == ")") lvl = max(0, lvl - 1);
-			                    if (lvl == 0 && string_upper(string_copy(after_if, iTH, 4)) == "THEN") { then_pos = iTH; break; }
-			                }
-			            }
-
-			            if (then_pos > 0) {
-
-			                // --- LINT: illegal unconditional flow after inline IF on same line ---
-			                // Inspect the *next* colon segment (if any). If it's an unconditional
-			                // control-transfer, it will run regardless of IF truth and is almost
-			                // always an authoring error.
-			                if (p + 1 < array_length(parts_full)) {
-			                    var next_seg_raw = string_trim(parts_full[p + 1]);
-			                    next_seg_raw = strip_basic_remark(next_seg_raw);
-
-			                    var spn  = string_pos(" ", next_seg_raw);
-			                    var vraw = (spn > 0) ? string_copy(next_seg_raw, 1, spn - 1) : next_seg_raw;
-			                    var vup  = string_upper(vraw);
-
-			                    // Add more unconditional transfers if desired
-			                    if (vup == "GOTO" || vup == "RETURN" || vup == "END") {
-			                        basic_syntax_error(
-			                            "Illegal inline flow: unconditional " + vup +
-			                            " appears after an inline IF on the same line. " +
-			                            "Move the " + vup + " into THEN/ELSE or onto the next line.",
-			                            global.current_line_number,
-			                            p + 1, // offending colon-segment index
-			                            "INLINE_FLOW_HAZARD"
-			                        );
-			                        return;
-			                    }
-			                }
-			                // --- END LINT ---
-
-			                // Split condition and tail (still within this segment only)
-			                var cond_src = string_trim(string_copy(after_if, 1, then_pos - 1));
-			                var tail     = string_trim(string_copy(after_if, then_pos + 4, L - (then_pos + 4) + 1));
-
-			                // Empty tail means this is a structured block IF:
-			                //   IF condition THEN
-			                //     ...
-			                //   ENDIF
-			                // Let the normal IF command handler process it.
-			                if (tail == "") {
-			                    // Fall through to the structured IF dispatch below.
-			                } else {
-			                // Look for a top-level ELSE inside tail
-			                var L2 = string_length(tail), lvl2 = 0, inq2 = false, else_pos = 0;
-			                for (var iEL = 1; iEL <= L2 - 4 + 1; iEL++) {
-			                    var chEL = string_char_at(tail, iEL);
-			                    if (chEL == "\"") inq2 = !inq2;
-			                    if (!inq2) {
-			                        if (chEL == "(") lvl2++;
-			                        else if (chEL == ")") lvl2 = max(0, lvl2 - 1);
-			                        if (lvl2 == 0 && string_upper(string_copy(tail, iEL, 4)) == "ELSE") { else_pos = iEL; break; }
-			                    }
-			                }
-
-			                var then_src = (else_pos > 0) ? string_trim(string_copy(tail, 1, else_pos - 1)) : tail;
-			                var else_src = (else_pos > 0) ? string_trim(string_copy(tail, else_pos + 4, L2 - (else_pos + 4) + 1)) : "";
-
-			                dbg_log(DBG_FLOW, "COMMAND DISPATCH (collapsed IF): IF | ARG: " + (cond_src + " THEN " + then_src + (else_src!="" ? " ELSE " + else_src : "")));
-
-			                // Evaluate condition
-			                var tok  = basic_tokenize_expression_v2(cond_src);
-			                var post = infix_to_postfix(tok);
-			                var val  = evaluate_postfix(post);
-			                var truth = 0;
-			                if (basic_is_number_val(val)) truth = (basic_coerce_number(val) != 0);
-			                else if (is_string(val))    truth = (string_length(val) > 0);
-
-			                // Execute chosen arm via normal dispatcher (arm may contain colons)
-			                if (truth) {
-			                    if (then_src != "") handle_basic_command(then_src, "");
-			                } else {
-			                    if (else_src != "") handle_basic_command(else_src, "");
-			                }
-
-			                dbg_log(DBG_FLOW, "INLINE IF (" + string(truth) + "): THEN='" + then_src + "' ELSE='" + else_src + "'");
-
-			                // If INPUT/PAUSE occurred inside the THEN/ELSE arm,
-			                // schedule resume at NEXT colon segment and yield now.
-			                if (global.pause_in_effect || global.awaiting_input) {
-			                    dbg_log(DBG_FLOW, "INLINE IF: pausing after arm — scheduling resume at next segment");
-			                    global.interpreter_use_stmt_jump = true;
-			                    global.interpreter_target_line   = line_idx;
-			                    global.interpreter_target_stmt   = p + 1;  // resume at next colon slot (or EOL)
-			                    return; // yield now
-			                }
-
-			                // Normal path (no INPUT): advance to NEXT colon segment on this line
-			                global.interpreter_use_stmt_jump = true;
-			                global.interpreter_target_line   = line_idx;
-			                global.interpreter_target_stmt   = p + 1;
-			                break; // done with this segment
-			                }
-			            }
-			            // If we didn’t find THEN, fall through to structured IF guard/handler below.
-			        }
+			    if (basic_inline_if_collapse_from_line(parts_full, p, line_idx)) {
+			        if (global.pause_in_effect || global.awaiting_input) return;
+			        break;
 			    }
 			}
 
