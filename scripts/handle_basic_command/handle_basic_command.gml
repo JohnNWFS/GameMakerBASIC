@@ -229,6 +229,8 @@ function handle_basic_command(cmd, arg) {
             case "END":       basic_cmd_end(); break;
             case "STOP":      basic_cmd_stop(); break;
             case "POKE":      basic_cmd_poke(_rest); break;
+            case "BSAVE":     basic_cmd_bsave(_rest); break;
+            case "BLOAD":     basic_cmd_bload(_rest); break;
             case "PAINT":     basic_cmd_paint(_rest); break;
 
             case "ERASE": {

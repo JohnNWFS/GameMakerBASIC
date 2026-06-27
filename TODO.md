@@ -78,20 +78,9 @@ Fault line index + stmt index saved on trap; `RESUME` / `RESUME NEXT` use statem
 
 ---
 
-### 7. Optional: `BSAVE` / `BLOAD` on PEEK map (medium — ~1 session)
+### 7. `BSAVE` / `BLOAD` — done (`stress_peek_bsave.bas`)
 
-Virtual map lives in `global.peek_poke_mem` (`basic_peek` / `basic_poke` in `basic_memory.gml`). Not real hardware RAM.
-
-| Task | Notes | Done when |
-|------|-------|-----------|
-| 7.1 File format | Simple header: magic, start addr, length, raw bytes | Document in README |
-| 7.2 `BSAVE "file", addr, length` | Serialize range from peek map (unset addrs = 0) | Round-trip test |
-| 7.3 `BLOAD "file", addr` | Load into map at offset; optional length from file | Round-trip test |
-| 7.4 Channel/path rules | Reuse existing `OPEN`/path conventions or require quoted filename only | Consistent with `TILESAVE` |
-| 7.5 Diagnostics | `diagnostics/stress_peek_bsave.bas` | Autotest PASS |
-
-**Depends on:** PEEK/POKE (done)  
-**Blocks:** nothing
+NWBMEM1 binary format; paths under `Documents/BasicInterpreter/` with `.nwmem` default extension.
 
 ---
 

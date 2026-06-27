@@ -266,6 +266,150 @@ function basic_cmd_poke(arg) {
     dbg_log(DBG_FLOW, "POKE " + string(floor(a_arg.value)) + " = " + string(floor(v_arg.value) & 255));
 }
 
+/// Resolve a PEEK-map save/load path under Documents/BasicInterpreter.
+function basic_peek_resolve_filepath(_expr) {
+    var save_dir = get_save_directory();
+    if (save_dir == "") {
+        basic_syntax_error("BSAVE/BLOAD not available on this platform",
+            global.current_line_number, global.interpreter_current_stmt_index, "BSAVE_PLATFORM");
+        return "";
+    }
+    if (!directory_exists(save_dir)) directory_create(save_dir);
+
+    var fname = string(basic_evaluate_expression_v2(string_trim(_expr)));
+    if (string_length(fname) <= 0) fname = "memory.nwmem";
+    if (string_pos(".", fname) <= 0) fname += ".nwmem";
+    return save_dir + fname;
+}
+
+function __peek_bin_write_u32(_fh, _val) {
+    var v = floor(_val);
+    if (v < 0) v = 0;
+    file_bin_write_byte(_fh, v & 255);
+    file_bin_write_byte(_fh, (v >> 8) & 255);
+    file_bin_write_byte(_fh, (v >> 16) & 255);
+    file_bin_write_byte(_fh, (v >> 24) & 255);
+}
+
+function __peek_bin_read_u32(_fh) {
+    var b0 = file_bin_read_byte(_fh);
+    var b1 = file_bin_read_byte(_fh);
+    var b2 = file_bin_read_byte(_fh);
+    var b3 = file_bin_read_byte(_fh);
+    return b0 | (b1 << 8) | (b2 << 16) | (b3 << 24);
+}
+
+function __peek_bin_read_magic(_fh) {
+    var s = "";
+    for (var i = 0; i < 7; i++) s += chr(file_bin_read_byte(_fh));
+    return s;
+}
+
+/// BSAVE "file", addr, length — write virtual PEEK bytes to disk (.nwmem).
+function basic_cmd_bsave(arg) {
+    var args = basic_parse_csv_args(arg);
+    if (!basic_require_arg_count(args, "BSAVE", 3, 3, "filename,addr,length")) return;
+
+    var path = basic_peek_resolve_filepath(args[0]);
+    if (path == "") return;
+
+    var addr_arg = basic_eval_number_arg(args[1], "BSAVE", "addr");
+    var len_arg  = basic_eval_number_arg(args[2], "BSAVE", "length");
+    if (!addr_arg.ok || !len_arg.ok) return;
+
+    var start = floor(addr_arg.value);
+    var len   = floor(len_arg.value);
+    if (start < 0 || start > 65535 || len < 0 || len > 65536 || (start + len) > 65536) {
+        basic_syntax_error("BSAVE range must stay within addresses 0..65535",
+            global.current_line_number, global.interpreter_current_stmt_index, "BSAVE_RANGE");
+        return;
+    }
+
+    basic_peek_poke_ensure();
+    var fh = file_bin_open(path, 2);
+    if (fh < 0) {
+        basic_syntax_error("BSAVE failed: " + path,
+            global.current_line_number, global.interpreter_current_stmt_index, "BSAVE_FAILED");
+        return;
+    }
+
+    var _magic = "NWBMEM1";
+    for (var _mi = 1; _mi <= 7; _mi++) {
+        file_bin_write_byte(fh, ord(string_char_at(_magic, _mi)));
+    }
+    __peek_bin_write_u32(fh, start);
+    __peek_bin_write_u32(fh, len);
+    for (var i = 0; i < len; i++) {
+        file_bin_write_byte(fh, basic_peek(start + i));
+    }
+    file_bin_close(fh);
+    dbg_log(DBG_FLOW, "BSAVE: " + path + " start=" + string(start) + " len=" + string(len));
+}
+
+/// BLOAD "file", addr — load .nwmem payload bytes into the virtual map at addr.
+function basic_cmd_bload(arg) {
+    var args = basic_parse_csv_args(arg);
+    if (!basic_require_arg_count(args, "BLOAD", 2, 2, "filename,addr")) return;
+
+    var path = basic_peek_resolve_filepath(args[0]);
+    if (path == "") return;
+
+    if (!file_exists(path)) {
+        basic_syntax_error("BLOAD missing file: " + path,
+            global.current_line_number, global.interpreter_current_stmt_index, "BLOAD_MISSING");
+        return;
+    }
+
+    var addr_arg = basic_eval_number_arg(args[1], "BLOAD", "addr");
+    if (!addr_arg.ok) return;
+    var load_addr = floor(addr_arg.value);
+    if (load_addr < 0 || load_addr > 65535) {
+        basic_syntax_error("BLOAD addr must be 0..65535",
+            global.current_line_number, global.interpreter_current_stmt_index, "BLOAD_RANGE");
+        return;
+    }
+
+    var fh = file_bin_open(path, 0);
+    if (fh < 0) {
+        basic_syntax_error("BLOAD failed: " + path,
+            global.current_line_number, global.interpreter_current_stmt_index, "BLOAD_FAILED");
+        return;
+    }
+
+    var magic = __peek_bin_read_magic(fh);
+    if (magic != "NWBMEM1") {
+        file_bin_close(fh);
+        basic_syntax_error("BLOAD: not a NW-BASIC memory file (expected NWBMEM1)",
+            global.current_line_number, global.interpreter_current_stmt_index, "BLOAD_FORMAT");
+        return;
+    }
+
+    var _file_start = __peek_bin_read_u32(fh);
+    var _file_len   = __peek_bin_read_u32(fh);
+    if (_file_len < 0 || _file_len > 65536 || (load_addr + _file_len) > 65536) {
+        file_bin_close(fh);
+        basic_syntax_error("BLOAD: file length does not fit at addr " + string(load_addr),
+            global.current_line_number, global.interpreter_current_stmt_index, "BLOAD_RANGE");
+        return;
+    }
+
+    var _expected = 15 + _file_len;
+    if (file_bin_size(fh) < _expected) {
+        file_bin_close(fh);
+        basic_syntax_error("BLOAD: file too short (expected " + string(_expected) + " bytes)",
+            global.current_line_number, global.interpreter_current_stmt_index, "BLOAD_FORMAT");
+        return;
+    }
+
+    basic_peek_poke_ensure();
+    for (var i = 0; i < _file_len; i++) {
+        basic_poke(load_addr + i, file_bin_read_byte(fh));
+    }
+    file_bin_close(fh);
+    dbg_log(DBG_FLOW, "BLOAD: " + path + " -> addr=" + string(load_addr)
+        + " len=" + string(_file_len) + " (file_start=" + string(_file_start) + ")");
+}
+
 /// Game-end teardown for all interpreter/editor ds structures.
 function basic_memory_shutdown() {
     global.basic_variables = undefined;

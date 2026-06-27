@@ -1401,6 +1401,26 @@ On Android, the screen is divided into touch regions that inject keystrokes as i
 
 For larger or named structures, prefer `DIM`, variables, and `DATA` streams. Use PEEK/POKE when you want fixed addresses, packed bytes, or a retro machine feel — not because it is faster or more powerful than normal BASIC storage.
 
+#### BSAVE and BLOAD — save bytes to disk
+
+`BSAVE "filename", addr, length` writes a byte range from the virtual map to `Documents/BasicInterpreter/` (adds `.nwmem` if you omit an extension). Unset addresses in the range are saved as `0`. `BLOAD "filename", addr` reads the payload back starting at `addr`.
+
+**File format:** 7-byte magic `NWBMEM1`, then start address and length as 32-bit values, then raw bytes.
+
+```basic
+10 POKE 1000, 65
+20 POKE 1001, 66
+30 BSAVE "mydata", 1000, 2
+40 POKE 1000, 0
+50 POKE 1001, 0
+60 BLOAD "mydata", 1000
+70 PRINT CHR$(PEEK(1000)); CHR$(PEEK(1001))
+80 PAUSE
+90 END
+```
+
+Like `TILESAVE` / `OPEN`, paths are relative to the NW-BASIC save folder, not GameMaker project files.
+
 ### Time and Date
 These functions return the current system time and date as strings, and a running timer in seconds since the program started — useful for measuring elapsed time or timestamping saved data.
 ```basic
@@ -1826,7 +1846,6 @@ These features are on the roadmap but not yet available:
 
 - Interactive tile editor UI, tile maps, window/clipping support
 - `DRAW` vector strings (classical BASIC DRAW command) — under consideration
-- Optional: `BSAVE` / `BLOAD` — save and load a byte range from the virtual PEEK/POKE map to disk
 
 ---
 
