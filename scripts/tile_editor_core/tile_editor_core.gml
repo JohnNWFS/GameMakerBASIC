@@ -75,18 +75,59 @@ function tile_editor_list_nwtile_files() {
     return listing;
 }
 
+function tile_editor_snapshot_bits(_code) {
+    var def = custom_tile_get_def(_code);
+    if (is_undefined(def)) return { ok: false, w: 0, h: 0, bits: "" };
+    return { ok: true, w: def.w, h: def.h, bits: def.bits };
+}
+
+function tile_editor_apply_bits(_code, _w, _h, _bits) {
+    __custom_tile_ensure_map();
+    var key = string(floor(_code));
+    var expected = _w * _h;
+    var bits = _bits;
+    while (string_length(bits) < expected) bits += "0";
+    if (string_length(bits) > expected) bits = string_copy(bits, 1, expected);
+    global.custom_tile_defs[? key] = { w: _w, h: _h, bits: bits };
+    return true;
+}
+
+function tile_editor_filter_filename_chars(_new_chars) {
+    var filtered = "";
+    for (var i = 1; i <= string_length(_new_chars); i++) {
+        var ch = string_char_at(_new_chars, i);
+        var cc = ord(ch);
+        if ((cc >= 48 && cc <= 57) || (cc >= 65 && cc <= 90) || (cc >= 97 && cc <= 122)
+         || ch == "_" || ch == "-" || ch == ".") {
+            filtered += ch;
+        }
+    }
+    return filtered;
+}
+
+function tile_editor_nwtile_stem(_fname) {
+    var s = string_trim(_fname);
+    var dot = string_pos(".", s);
+    if (dot > 1) s = string_copy(s, 1, dot - 1);
+    return s;
+}
+
 function tile_editor_grid_layout(_tile_w, _tile_h, _margin) {
+    var header_h = 36;
     var avail_w = room_width - _margin * 2 - 220;
-    var avail_h = room_height - _margin * 2 - 96;
+    var avail_h = room_height - _margin * 2 - header_h - 80;
     var zoom = floor(min(avail_w / _tile_w, avail_h / _tile_h));
     zoom = clamp(zoom, 8, 32);
+    var grid_top = _margin + header_h;
     return {
         margin: _margin,
+        header_h: header_h,
+        grid_top: grid_top,
         zoom: zoom,
         grid_w: _tile_w * zoom,
         grid_h: _tile_h * zoom,
         preview_x: _margin + _tile_w * zoom + 32,
-        preview_y: _margin + 8,
+        preview_y: grid_top,
         preview_cell: max(16, min(64, zoom * 2))
     };
 }

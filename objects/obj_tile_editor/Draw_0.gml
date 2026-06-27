@@ -6,16 +6,24 @@ draw_rectangle(0, 0, room_width, room_height, false);
 var amber = make_color_rgb(255, 191, 64);
 var layout = tile_editor_grid_layout(tile_w, tile_h, 16);
 var gx0 = layout.margin;
-var gy0 = layout.margin + 28;
+var gy0 = layout.grid_top;
 
 if (font_exists(fnt_basic)) draw_set_font(fnt_basic);
-draw_set_color(amber);
 
-var def = custom_tile_get_def(tile_code);
-var size_txt = is_undefined(def) ? string(tile_w) + "x" + string(tile_h)
-    : string(def.w) + "x" + string(def.h);
-draw_text(16, 8, "TILE EDITOR  code " + string(tile_code) + "  (" + size_txt + ")  "
-    + tile_editor_color_name_at(color_index) + (erase_mode ? "  [ERASE]" : "  [PAINT]"));
+// Erase-mode banner (high visibility)
+if (erase_mode) {
+    draw_set_color(make_color_rgb(80, 0, 0));
+    draw_rectangle(0, 0, room_width, layout.header_h, false);
+    draw_set_color(c_red);
+    draw_text(16, 8, "*** ERASE MODE — Space/B click clears pixels — B toggles back to PAINT ***");
+} else {
+    draw_set_color(amber);
+    var def = custom_tile_get_def(tile_code);
+    var size_txt = is_undefined(def) ? string(tile_w) + "x" + string(tile_h)
+        : string(def.w) + "x" + string(def.h);
+    draw_text(16, 8, "TILE EDITOR  code " + string(tile_code) + "  (" + size_txt + ")  "
+        + tile_editor_color_name_at(color_index) + "  [PAINT]");
+}
 
 // Zoomed edit grid
 for (var py = 0; py < tile_h; py++) {
@@ -31,27 +39,32 @@ for (var py = 0; py < tile_h; py++) {
     }
 }
 
-// Cursor
-draw_set_color(c_lime);
+// Cursor — red in erase mode, lime in paint mode
 var ccx = gx0 + cursor_x * layout.zoom;
 var ccy = gy0 + cursor_y * layout.zoom;
+draw_set_color(erase_mode ? c_red : c_lime);
 draw_rectangle(ccx, ccy, ccx + layout.zoom - 1, ccy + layout.zoom - 1, true);
 
-// Live preview at cell scale
+// Live preview (below header, not overlapping title)
 var pv = layout.preview_cell;
 var px0 = layout.preview_x;
 var py0 = layout.preview_y;
 draw_set_color(c_white);
-draw_text(px0, py0 - 22, "PREVIEW");
+draw_text(px0, py0 - 20, "PREVIEW");
 draw_set_color(bg_color);
 draw_rectangle(px0, py0, px0 + pv - 1, py0 + pv - 1, false);
 custom_tile_draw(tile_code, px0, py0, pv, pv, fg_color);
 
+if (undo_has && undo_code == tile_code) {
+    draw_set_color(make_color_rgb(170, 170, 255));
+    draw_text(px0, py0 + pv + 8, "U = undo clear");
+}
+
 // Help line
 draw_set_color(c_lime);
 var help_y = room_height - 56;
-draw_text(16, help_y, "Arrows move  Space paint  B erase  C color  N/P code  F/V flip");
-draw_text(16, help_y + 20, "S save  L load  R restore font  X clear  ESC exit");
+draw_text(16, help_y, "Arrows move  Space paint  B toggle erase/paint  C color  N/P code  F/V flip");
+draw_text(16, help_y + 20, "S save  L load  X clear  U undo clear  R restore font  ESC exit");
 
 if (status_timer > 0 && status_msg != "") {
     draw_set_color(c_white);
@@ -65,16 +78,18 @@ if (ui_mode == "file_load" || ui_mode == "file_save") {
     draw_set_color(c_lime);
     if (font_exists(fnt_basic_12)) draw_set_font(fnt_basic_12);
 
-    var title = (ui_mode == "file_save") ? "SAVE .nwtile — type name or pick file, Enter confirm"
-                                         : "LOAD .nwtile — Enter confirm, ESC cancel";
+    var title = (ui_mode == "file_save")
+        ? "SAVE .nwtile — type a new name below, or pick from list, then Enter"
+        : "LOAD .nwtile — pick file, Enter confirm, ESC cancel";
     draw_text(24, 24, title);
 
     if (ui_mode == "file_save") {
-        draw_text(24, 52, "Filename: " + filename_input + "_");
+        draw_text(24, 52, "Filename (no extension): " + filename_input + "_");
+        draw_text(24, 72, "Tip: type letters/numbers, or Up/Down to pick existing file");
     }
 
     var total = array_length(file_list);
-    var row_y = 88;
+    var row_y = 96;
     if (total <= 0) {
         draw_text(32, row_y, "(no existing .nwtile files — type a name and press Enter)");
     } else {

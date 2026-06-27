@@ -7,30 +7,46 @@ if (ui_mode == "file_load" || ui_mode == "file_save") {
     if (keyboard_check_pressed(vk_escape)) {
         ui_mode = "edit";
         keyboard_string = "";
+        filename_kb_prev = "";
         exit;
     }
 
     if (ui_mode == "file_save") {
-        if (keyboard_check_pressed(vk_backspace)) {
+        if (keyboard_check_released(vk_backspace)) {
             if (string_length(filename_input) > 0) {
                 filename_input = string_copy(filename_input, 1, string_length(filename_input) - 1);
             }
         }
-        if (string_length(keyboard_string) > 0) {
-            filename_input += keyboard_string;
-            keyboard_string = "";
+
+        var ks = keyboard_string;
+        if (ks != filename_kb_prev) {
+            var delta = string_copy(ks, string_length(filename_kb_prev) + 1,
+                string_length(ks) - string_length(filename_kb_prev));
+            var filtered = tile_editor_filter_filename_chars(delta);
+            if (filtered != "") filename_input += filtered;
+            filename_kb_prev = ks;
         }
     }
 
     var total = array_length(file_list);
-    if (keyboard_check_pressed(vk_up)) file_sel = max(0, file_sel - 1);
-    if (keyboard_check_pressed(vk_down)) file_sel = min(max(0, total - 1), file_sel + 1);
+    if (keyboard_check_pressed(vk_up)) {
+        file_sel = max(0, file_sel - 1);
+        if (ui_mode == "file_save" && total > 0) {
+            filename_input = tile_editor_nwtile_stem(file_list[file_sel]);
+        }
+    }
+    if (keyboard_check_pressed(vk_down)) {
+        file_sel = min(max(0, total - 1), file_sel + 1);
+        if (ui_mode == "file_save" && total > 0) {
+            filename_input = tile_editor_nwtile_stem(file_list[file_sel]);
+        }
+    }
 
     if (keyboard_check_pressed(vk_enter)) {
         var fname = "";
         if (ui_mode == "file_save") {
             fname = string_trim(filename_input);
-            if (fname == "" && total > 0) fname = file_list[file_sel];
+            if (fname == "" && total > 0) fname = tile_editor_nwtile_stem(file_list[file_sel]);
             if (fname == "") fname = last_filename;
         } else {
             if (total <= 0) {
@@ -63,6 +79,7 @@ if (ui_mode == "file_load" || ui_mode == "file_save") {
         status_timer = 180;
         ui_mode = "edit";
         keyboard_string = "";
+        filename_kb_prev = "";
     }
     exit;
 }
@@ -109,7 +126,11 @@ if (paint_now || (moved && (keyboard_check(vk_space) || keyboard_check(vk_enter)
     custom_tile_set_bit(tile_code, cursor_x, cursor_y, !erase_mode);
 }
 
-if (keyboard_check_pressed(ord("B"))) erase_mode = !erase_mode;
+if (keyboard_check_pressed(ord("B"))) {
+    erase_mode = !erase_mode;
+    status_msg = erase_mode ? "ERASE mode ON — Space clears pixels" : "PAINT mode ON — Space sets pixels";
+    status_timer = 150;
+}
 
 if (keyboard_check_pressed(ord("C"))) {
     color_index += 1;
@@ -138,14 +159,36 @@ if (keyboard_check_pressed(ord("F"))) tile_editor_flip_h(tile_code);
 if (keyboard_check_pressed(ord("V"))) tile_editor_flip_v(tile_code);
 
 if (keyboard_check_pressed(ord("X"))) {
+    var snap = tile_editor_snapshot_bits(tile_code);
+    if (snap.ok) {
+        undo_has = true;
+        undo_code = tile_code;
+        undo_w = snap.w;
+        undo_h = snap.h;
+        undo_bits = snap.bits;
+    }
     custom_tile_clear_bits(tile_code);
-    status_msg = "Tile cleared";
-    status_timer = 90;
+    status_msg = "Tile cleared — press U to undo";
+    status_timer = 180;
+}
+
+if (keyboard_check_pressed(ord("U"))) {
+    if (undo_has && undo_code == tile_code) {
+        tile_editor_apply_bits(tile_code, undo_w, undo_h, undo_bits);
+        tile_w = undo_w;
+        tile_h = undo_h;
+        status_msg = "Restored tile before last clear";
+        status_timer = 150;
+    } else {
+        status_msg = "Nothing to undo";
+        status_timer = 90;
+    }
 }
 
 if (keyboard_check_pressed(ord("R"))) {
     custom_tile_restore_code(tile_code);
     tile_editor_prepare_code(tile_code, tile_w, tile_h);
+    undo_has = false;
     status_msg = "Restored to font glyph";
     status_timer = 90;
 }
@@ -156,6 +199,7 @@ if (keyboard_check_pressed(ord("S"))) {
     filename_input = last_filename;
     ui_mode = "file_save";
     keyboard_string = "";
+    filename_kb_prev = "";
 }
 
 if (keyboard_check_pressed(ord("L"))) {
@@ -163,12 +207,13 @@ if (keyboard_check_pressed(ord("L"))) {
     file_sel = 0;
     ui_mode = "file_load";
     keyboard_string = "";
+    filename_kb_prev = "";
 }
 
 // Mouse paint on zoomed grid
 var layout = tile_editor_grid_layout(tile_w, tile_h, 16);
 var gx0 = layout.margin;
-var gy0 = layout.margin + 28;
+var gy0 = layout.grid_top;
 if (mouse_x >= gx0 && mouse_x < gx0 + layout.grid_w
  && mouse_y >= gy0 && mouse_y < gy0 + layout.grid_h) {
     var mpx = floor((mouse_x - gx0) / layout.zoom);
