@@ -226,7 +226,7 @@ function basic_cmd_mapnew(arg) {
     }
 
     var args = basic_parse_csv_args(arg);
-    if (!basic_require_arg_count(args, "MAPNEW", 2, 3, "w,h[,name]")) return;
+    if (!basic_require_arg_count(args, "MAPNEW", 2, 6, "w,h[,name[,char[,fg[,bg]]]]")) return;
 
     var w_arg = basic_eval_int_arg(args[0], "MAPNEW", "w");
     var h_arg = basic_eval_int_arg(args[1], "MAPNEW", "h");
@@ -238,7 +238,18 @@ function basic_cmd_mapnew(arg) {
         if (string_length(name) <= 0) name = "map";
     }
 
-    tile_map_create(name, w_arg.value, h_arg.value, 32, c_white, c_black);
+    var def_char = 32;
+    var def_fg = c_white;
+    var def_bg = c_black;
+    if (array_length(args) >= 4) {
+        var ch_arg = basic_eval_int_arg(args[3], "MAPNEW", "char");
+        if (!ch_arg.ok) return;
+        def_char = ch_arg.value;
+    }
+    if (array_length(args) >= 5) def_fg = basic_parse_color(string_trim(args[4]));
+    if (array_length(args) >= 6) def_bg = basic_parse_color(string_trim(args[5]));
+
+    tile_map_create(name, w_arg.value, h_arg.value, def_char, def_fg, def_bg);
 }
 
 function basic_cmd_mapload(arg) {

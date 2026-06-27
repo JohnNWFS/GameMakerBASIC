@@ -989,7 +989,7 @@ Tile maps are large off-screen layers (up to 256×256 cells) stored separately f
 
 | Command | Syntax | Description |
 |---------|--------|-------------|
-| `MAPNEW` | `MAPNEW w, h [, name]` | Create a new map filled with spaces (char 32, white on black). Optional `name` defaults to `"map"`. |
+| `MAPNEW` | `MAPNEW w, h [, name [, char [, fg [, bg]]]]` | Create a new map filled with one cell type (default char 32, white on black). Optional `name` defaults to `"map"`. |
 | `MAPSET` | `MAPSET x, y, code [, fg [, bg]]` | Set one cell on the active map. Colors default to the cell's existing fg/bg. |
 | `MAPDRAW` | `MAPDRAW [, col [, row [, name]]]` | Copy map cells onto the display grid at `(col, row)`. Defaults: `0, 0`, active map. |
 | `MAPSAVE` | `MAPSAVE "filename"` | Save the active map to `filename.nwmap`. |
@@ -1045,7 +1045,7 @@ Verified by `diagnostics/mode2_view_clip_smoke.bas` (6/6 PASS).
 
 **Map scrolling:** `diagnostics/mode2_map_scroll_demo.bas` builds a 56×28 map, sets a `VIEW` playfield, and pans by changing the `MAPDRAW` column (`MAPDRAW 1, 3` → `MAPDRAW -14, 3` → `MAPDRAW -29, 3`). HUD text drawn before `VIEW` stays on screen. No engine changes — pure BASIC.
 
-**Adventure POC:** `diagnostics/mode2_adventure_poc.bas` is a playable turn-based quest at `MODE 2, 32` — custom hero/tree/chest tiles (`TILEPX`), a 40×26 `MAPNEW` world, `VIEW` HUD rows, and camera-centered `MAPDRAW` scrolling. **WASD** to move, **Q** to quit; find the `*` key in the gray cave, unlock the red `+` gate, reach the gem to win. Init/render smoke: `diagnostics/mode2_adventure_init_smoke.bas`.
+**Adventure POC:** `diagnostics/mode2_adventure_poc.bas` is the **playable** turn-based quest at `MODE 2, 32` — custom hero/tree/chest tiles (`TILEPX`), a 40×26 `MAPNEW` world (`MAPNEW 40, 26, "island", 46` for dotted floor), `VIEW` HUD rows, and camera-centered `MAPDRAW` scrolling. **WASD** to move, **Q** to quit; find the `*` key in the gray cave, unlock the red `+` gate, reach the gem to win. `mode2_adventure_init_smoke.bas` is autotest-only (not playable).
 
 ---
 
