@@ -224,6 +224,11 @@ function basic_memory_runtime_reset() {
 
     global.option_base = 1;
     basic_peek_poke_reset();
+    global.draw_pen_x     = 0;
+    global.draw_pen_y     = 0;
+    global.draw_scale     = 4;
+    global.draw_angle     = 0;
+    global.draw_color     = c_white;
     dbg_log(DBG_FLOW, "MEMORY: runtime reset (vars/arrays/stacks/files/while_meta)");
 }
 

@@ -51,20 +51,9 @@ Runtime tile *commands* exist (`TILEDEF`, `TILEPX`, `TILESAVE`/`TILELOAD`, etc. 
 
 ---
 
-### 4. `DRAW` vector strings (medium — ~2 sessions)
+### 4. `DRAW` vector strings — done (`mode3_draw_vectors.bas`)
 
-Classical turtle-style `DRAW "…"` (QBASIC/GW-BASIC subset). MODE 3 only; shares pen state with `LINE`/`PSET` where sensible.
-
-| Task | Notes | Done when |
-|------|-------|-----------|
-| 4.1 Command grammar | `DRAW "command string"` — document supported letters (`U D L R`, `E F G H`, `M`, `C`, `S`, `A`, `B`, `P`, `N`, etc.) | README table of supported ops |
-| 4.2 Parser + interpreter hook | New command in `handle_basic_command`; relative/absolute move | Invalid token → syntax error |
-| 4.3 Renderer | Update pen position, optional `DRAW` scale angle | Matches QBASIC subset on test vectors |
-| 4.4 Diagnostics | `diagnostics/mode3_draw_vectors.bas` — square, star, relative `M` | Visual + `POINT()` spot checks |
-| 4.5 README | Example + “under consideration” → implemented | Autotest if non-interactive |
-
-**Depends on:** MODE 3 drawing stable (already is)  
-**Blocks:** nothing
+QBASIC-style `DRAW "…"` on MODE 3; pen/scale/angle persist across calls within a run.
 
 ---
 

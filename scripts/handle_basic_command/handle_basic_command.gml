@@ -205,6 +205,7 @@ function handle_basic_command(cmd, arg) {
             case "CLSCHAR":   basic_cmd_clschar(_rest); break;
             case "PSET":      basic_cmd_pset(_rest); break;
             case "CIRCLE":    basic_cmd_circle(_rest); break;
+            case "DRAW":      basic_cmd_draw(_rest); break;
             case "PLOT":
                 if (global.current_mode == 3) basic_cmd_pset(_rest);
                 else basic_cmd_charat(_rest);

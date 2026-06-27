@@ -1013,6 +1013,31 @@ Color names are stored as integers in BGR (blue-green-red) byte order, which is 
 70 END
 ```
 
+### DRAW (MODE 3)
+`DRAW` executes a **vector command string** (QBASIC-style turtle graphics). Use `COLOR` before `DRAW` to set the pen color, or `C` inside the string. Default scale is `4` (`S4`), so `R10` moves 10 pixels. Pen position, scale, and angle persist across `DRAW` calls until the next `RUN`.
+
+| Code | Action |
+|------|--------|
+| `U` `D` `L` `R` [n] | Up / down / left / right (default n=1) |
+| `E` `F` `G` `H` [n] | Diagonal moves |
+| `M x,y` | Move absolute; `M+x,+y` is relative |
+| `B` | Prefix: move without drawing (e.g. `BM100,100`) |
+| `C` [color] | Set pen color (numeric or name like `CRED`) |
+| `S` n | Set scale (pixels per unit = n÷4) |
+| `A` n | Rotate move angles n degrees |
+| `P` | Prefix: flood-fill after move (like `PAINT`) |
+| `N` | End `P` / `B` prefix mode |
+
+```basic
+10 MODE 3
+20 CLS
+30 COLOR YELLOW
+40 DRAW "S4BM160,200R60D60L60U60"
+50 DRAW "BM200,120CREDR40D40L40U40"
+60 PAUSE
+70 END
+```
+
 ### CLS (MODE 3)
 `CLS` in MODE 3 clears the entire pixel surface to black.
 ```basic
@@ -1845,7 +1870,6 @@ The opening theme of Beethoven's Für Elise, arranged for `BEEP`. Demonstrates o
 These features are on the roadmap but not yet available:
 
 - Interactive tile editor UI, tile maps, window/clipping support
-- `DRAW` vector strings (classical BASIC DRAW command) — under consideration
 
 ---
 
