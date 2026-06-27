@@ -5,8 +5,11 @@ global.inkey_mode = false;
 // ─────────────────────────────
 global.basic_variables = undefined;
 if (ds_exists(global.program_lines, ds_type_map)) ds_map_destroy(global.program_lines);
-if (ds_exists(global.basic_program, ds_type_map)) ds_map_destroy(global.basic_program);
 if (ds_exists(global.program_map, ds_type_map)) ds_map_destroy(global.program_map);
+if (variable_global_exists("line_index_map") && ds_exists(global.line_index_map, ds_type_map)) {
+    ds_map_destroy(global.line_index_map);
+}
+if (ds_exists(global.basic_program, ds_type_map)) ds_map_destroy(global.basic_program);
 if (ds_exists(global.colors, ds_type_map)) ds_map_destroy(global.colors);
 if (ds_exists(global.if_block_map, ds_type_map)) {
     var _key = ds_map_find_first(global.if_block_map);
@@ -47,7 +50,7 @@ if (variable_global_exists("basic_array_dims") && ds_exists(global.basic_array_d
 // ─────────────────────────────
 if (ds_exists(global.line_list, ds_type_list)) ds_list_destroy(global.line_list);
 if (ds_exists(global.line_numbers, ds_type_list)) ds_list_destroy(global.line_numbers);
-if (ds_exists(global.basic_line_numbers, ds_type_list)) {
+if (variable_global_exists("basic_line_numbers") && ds_exists(global.basic_line_numbers, ds_type_list)) {
     ds_list_destroy(global.basic_line_numbers);
 }
 

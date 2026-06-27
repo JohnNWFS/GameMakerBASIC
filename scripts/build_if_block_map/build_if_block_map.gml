@@ -1,5 +1,5 @@
 /// @script build_if_block_map
-/// @description Scan basic_program for IF…ELSEIF…ELSE…ENDIF block structure,
+/// @description Scan program_map for IF…ELSEIF…ELSE…ENDIF block structure,
 ///              but skip inline IFs so they don’t trigger mismatches.
 
 function build_if_block_map() {
@@ -11,12 +11,12 @@ function build_if_block_map() {
 
     // 2) Temp stack for nested block IFs
     var openStack = ds_stack_create();
-    var total     = ds_list_size(global.basic_line_numbers);
+    var total     = ds_list_size(global.line_list);
 
     // 3) Walk every line
     for (var idx = 0; idx < total; idx++) {
-        var lineNum = global.basic_line_numbers[| idx];
-        var rawText = string_trim(global.basic_program[? lineNum]);
+        var lineNum = global.line_list[| idx];
+        var rawText = string_trim(global.program_map[? lineNum]);
         var text    = string_upper(rawText);
         var sp      = string_pos(" ", text);
         var kw      = (sp > 0) ? string_copy(text, 1, sp - 1) : text;
@@ -85,7 +85,7 @@ function build_if_block_map() {
     while (!ds_stack_empty(openStack)) {
         var orphan = ds_stack_pop(openStack);
         var startIdx  = orphan[? "startIndex"];
-        var startLine = global.basic_line_numbers[| startIdx];
+        var startLine = global.line_list[| startIdx];
         dbg_log(DBG_FLOW, "?MISMATCH ERROR: IF at line " + string(startLine) + " missing ENDIF");
         ds_map_destroy(orphan);
     }

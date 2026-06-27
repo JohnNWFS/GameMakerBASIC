@@ -8,9 +8,7 @@
 // Set the current draw color
 global.current_draw_color = global.basic_text_color;
 
-// Use the shared global data structures
-global.program_map  = global.basic_program; // optional if you're not modifying
-global.line_list    = global.basic_line_numbers;
+// program_map / line_list / line_index_map are set by run_program → basic_program_sync_runtime()
 
 // Interpreter control variables
 line_index = 0;                         // current line being executed

@@ -24,16 +24,8 @@ function basic_cmd_gosub(arg) {
     };
     ds_stack_push(global.gosub_stack, frame);
 
-    // Jump to target line
-    global.interpreter_next_line = -1;
-    var listSize = ds_list_size(global.line_list);
-    for (var i = 0; i < listSize; i++) {
-        if (ds_list_find_value(global.line_list, i) == target) {
-            global.interpreter_next_line = i;
-            break;
-        }
-    }
-    if (global.interpreter_next_line == -1) {
+    global.interpreter_next_line = basic_line_index_for(target);
+    if (global.interpreter_next_line < 0) {
         basic_syntax_error("GOSUB target line not found: " + string(target),
             global.current_line_number, global.interpreter_current_stmt_index, "GOSUB_TARGET");
         return;

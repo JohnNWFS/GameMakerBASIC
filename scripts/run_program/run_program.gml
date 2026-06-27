@@ -9,41 +9,8 @@ function run_program() {
         return;
     }
 
-    // ── Sync editor → runtime structures used by interpreter/validator ──
-    // program_map (lineNo -> code)
-    if (!ds_exists(global.program_map, ds_type_map)) {
-        global.program_map = ds_map_create();
-    } else {
-        ds_map_clear(global.program_map);
-    }
-    ds_map_copy(global.program_map, global.program_lines);
-
-    // line_list (sorted list of line numbers)
-    if (!ds_exists(global.line_list, ds_type_list)) {
-        global.line_list = ds_list_create();
-    } else {
-        ds_list_clear(global.line_list);
-    }
-    for (var _i = 0; _i < ds_list_size(global.line_numbers); _i++) {
-        ds_list_add(global.line_list, global.line_numbers[| _i]);
-    }
-    ds_list_sort(global.line_list, true);
-
-    // (Optional archival copies)
-    if (!ds_exists(global.basic_program, ds_type_map)) {
-        global.basic_program = ds_map_create();
-    } else {
-        ds_map_clear(global.basic_program);
-    }
-    ds_map_copy(global.basic_program, global.program_lines);
-
-    if (!variable_global_exists("basic_line_numbers") || !ds_exists(global.basic_line_numbers, ds_type_list)) {
-        global.basic_line_numbers = ds_list_create();
-    } else {
-        ds_list_clear(global.basic_line_numbers);
-    }
-    ds_list_copy(global.basic_line_numbers, global.line_numbers);
-	
+    // ── Sync editor → canonical runtime program view ────────────────────
+    basic_program_sync_runtime();
     // ── Make sure output buffers exist BEFORE validation (errors print into them) ──
     if (!is_real(global.output_lines) || !ds_exists(global.output_lines, ds_type_list)) {
         global.output_lines = ds_list_create();

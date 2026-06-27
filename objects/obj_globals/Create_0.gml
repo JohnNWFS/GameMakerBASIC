@@ -27,8 +27,8 @@ global.editor_spawned = false;
 
 // Program and source management
 global.program_lines = ds_map_create();
-global.basic_program = ds_map_create();
 global.program_map  = ds_map_create();
+global.line_index_map = ds_map_create();
 
 // Line tracking
 global.line_list    = ds_list_create();
@@ -184,8 +184,7 @@ global.inkey_target_var = "";
 global.inkey_release_guard = false;
 global.interpreter_current_line_index = 0; 
 
-// Archival copy of line numbers used by run_program
-global.basic_line_numbers = ds_list_create();
+
 global._syntax_error_just_emitted = false;
 
 // optional, if you use these

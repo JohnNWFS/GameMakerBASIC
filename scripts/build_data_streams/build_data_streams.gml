@@ -25,11 +25,10 @@ function build_data_streams() {
 
     var total_vals = 0, added_lines = 0;
 
-    // Iterate by physical line order using your runtime copies
-    // (run_program() already did ds_map_copy → basic_program and ds_list_copy → basic_line_numbers)
-    for (var i = 0; i < ds_list_size(global.basic_line_numbers); i++) {
-        var line_no = global.basic_line_numbers[| i];
-        var raw     = ds_map_find_value(global.basic_program, line_no);
+    // Iterate by sorted runtime line order (built in basic_program_sync_runtime)
+    for (var i = 0; i < ds_list_size(global.line_list); i++) {
+        var line_no = global.line_list[| i];
+        var raw     = ds_map_find_value(global.program_map, line_no);
         if (is_undefined(raw)) continue;
 
         var parts = split_on_unquoted_colons(string_trim(raw));

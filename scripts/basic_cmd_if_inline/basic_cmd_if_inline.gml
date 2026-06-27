@@ -242,7 +242,7 @@ function basic_cmd_if_inline(arg) {
             var line_arg = basic_eval_number_arg(arg2, "GOTO", "line");
             if (!line_arg.ok) return;
             var line_target = line_arg.value;
-            var idx = ds_list_find_index(global.line_list, line_target);
+            var idx = basic_line_index_for(line_target);
             if (idx >= 0) {
                 global.interpreter_next_line = idx;
             } else {
