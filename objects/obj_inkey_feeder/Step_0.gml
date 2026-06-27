@@ -8,7 +8,13 @@ var _is_editor_room =
  || (asset_get_index("rm_editor") != -1 && room == asset_get_index("rm_editor"))
  || instance_exists(obj_editor);
 
-if (_is_editor_room) { keyboard_string = ""; exit; }
+if (_is_editor_room) {
+    // Let tile editor (and screen editor) consume keyboard_string in their Step events.
+    if (variable_global_exists("tile_edit_mode") && global.tile_edit_mode) exit;
+    if (variable_global_exists("screen_edit_mode") && global.screen_edit_mode) exit;
+    keyboard_string = "";
+    exit;
+}
 if (variable_global_exists("interpreter_running") && !global.interpreter_running) { keyboard_string = ""; exit; }
 
 if (variable_global_exists("inkey_flush_frames") && global.inkey_flush_frames > 0) {

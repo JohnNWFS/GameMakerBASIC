@@ -12,20 +12,14 @@ if (ui_mode == "file_load" || ui_mode == "file_save") {
     }
 
     if (ui_mode == "file_save") {
-        if (keyboard_check_released(vk_backspace)) {
+        if (keyboard_check_pressed(vk_backspace)) {
             if (string_length(filename_input) > 0) {
                 filename_input = string_copy(filename_input, 1, string_length(filename_input) - 1);
             }
         }
 
-        var ks = keyboard_string;
-        if (ks != filename_kb_prev) {
-            var delta = string_copy(ks, string_length(filename_kb_prev) + 1,
-                string_length(ks) - string_length(filename_kb_prev));
-            var filtered = tile_editor_filter_filename_chars(delta);
-            if (filtered != "") filename_input += filtered;
-            filename_kb_prev = ks;
-        }
+        var typed = tile_editor_poll_filename_char();
+        if (typed != "") filename_input += typed;
     }
 
     var total = array_length(file_list);

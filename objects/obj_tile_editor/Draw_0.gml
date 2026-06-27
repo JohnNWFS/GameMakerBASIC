@@ -45,12 +45,14 @@ var ccy = gy0 + cursor_y * layout.zoom;
 draw_set_color(erase_mode ? c_red : c_lime);
 draw_rectangle(ccx, ccy, ccx + layout.zoom - 1, ccy + layout.zoom - 1, true);
 
-// Live preview (below header, not overlapping title)
+// Live preview — label on its own row, pixels below (no overlap)
 var pv = layout.preview_cell;
 var px0 = layout.preview_x;
-var py0 = layout.preview_y;
+var label_y = layout.preview_label_y;
+var row_h = string_height("PREVIEW");
+var py0 = label_y + row_h + 8;
 draw_set_color(c_white);
-draw_text(px0, py0 - 20, "PREVIEW");
+draw_text(px0, label_y, "PREVIEW");
 draw_set_color(bg_color);
 draw_rectangle(px0, py0, px0 + pv - 1, py0 + pv - 1, false);
 custom_tile_draw(tile_code, px0, py0, pv, pv, fg_color);

@@ -92,6 +92,26 @@ function tile_editor_apply_bits(_code, _w, _h, _bits) {
     return true;
 }
 
+/// Poll printable filename keys directly (keyboard_string is cleared in rm_editor).
+function tile_editor_poll_filename_char() {
+    var _chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-.";
+    for (var i = 1; i <= string_length(_chars); i++) {
+        var ch = string_char_at(_chars, i);
+        if (keyboard_check_pressed(ord(ch))) return ch;
+    }
+    if (keyboard_check_pressed(vk_numpad0)) return "0";
+    if (keyboard_check_pressed(vk_numpad1)) return "1";
+    if (keyboard_check_pressed(vk_numpad2)) return "2";
+    if (keyboard_check_pressed(vk_numpad3)) return "3";
+    if (keyboard_check_pressed(vk_numpad4)) return "4";
+    if (keyboard_check_pressed(vk_numpad5)) return "5";
+    if (keyboard_check_pressed(vk_numpad6)) return "6";
+    if (keyboard_check_pressed(vk_numpad7)) return "7";
+    if (keyboard_check_pressed(vk_numpad8)) return "8";
+    if (keyboard_check_pressed(vk_numpad9)) return "9";
+    return "";
+}
+
 function tile_editor_filter_filename_chars(_new_chars) {
     var filtered = "";
     for (var i = 1; i <= string_length(_new_chars); i++) {
@@ -127,7 +147,7 @@ function tile_editor_grid_layout(_tile_w, _tile_h, _margin) {
         grid_w: _tile_w * zoom,
         grid_h: _tile_h * zoom,
         preview_x: _margin + _tile_w * zoom + 32,
-        preview_y: grid_top,
+        preview_label_y: grid_top,
         preview_cell: max(16, min(64, zoom * 2))
     };
 }
