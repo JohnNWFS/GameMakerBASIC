@@ -171,9 +171,7 @@ function basic_parse_rgb_form(_spec) {
 /// 3) Hex: &HBBGGRR, 0xrrggbb, #rrggbb, $rrggbb
 /// 4) Decimal integer
 /// 5) fallback (default c_white; pass noone to signal unknown)
-function basic_parse_color(colstr, _fallback) {
-    if (argument_count < 2) _fallback = c_white;
-
+function basic_parse_color(colstr, _fallback = c_white) {
     var s = basic_color_normalize_spec(colstr);
     if (string_length(s) == 0) {
         if (_fallback == noone) return noone;
