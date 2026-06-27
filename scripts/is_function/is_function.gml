@@ -12,6 +12,8 @@ function is_function(t) {
          || fn == "MID$"
          || fn == "ABS"
          || fn == "INT"
+         || fn == "FIX"
+         || fn == "CINT"
          || fn == "EXP"
          || fn == "LOG"
          || fn == "LOG10"

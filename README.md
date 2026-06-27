@@ -1138,6 +1138,8 @@ NW-BASIC includes a standard set of math functions. Each can be used anywhere an
 |----------|---------|
 | `ABS(x)` | Absolute value |
 | `INT(x)` | Floor — rounds down toward negative infinity |
+| `FIX(x)` | Truncate toward zero (`FIX(-3.7)` → `-3`) |
+| `CINT(x)` | Round to nearest integer (half away from zero) |
 | `SGN(x)` | Sign: -1, 0, or 1 |
 | `SQR(x)` | Square root |
 | `EXP(x)` | e raised to the power x |
@@ -1153,6 +1155,8 @@ NW-BASIC includes a standard set of math functions. Each can be used anywhere an
 10 PRINT "Math function sampler:"
 20 PRINT "ABS(-7) ="; ABS(-7)
 30 PRINT "INT(3.9) ="; INT(3.9)
+35 PRINT "FIX(-3.7) ="; FIX(-3.7)
+36 PRINT "CINT(2.5) ="; CINT(2.5)
 40 PRINT "SGN(-5) ="; SGN(-5)
 50 PRINT "SQR(25) ="; SQR(25)
 60 PRINT "EXP(1) ="; EXP(1)
@@ -1773,7 +1777,6 @@ The opening theme of Beethoven's Für Elise, arranged for `BEEP`. Demonstrates o
 
 These features are on the roadmap but not yet available:
 
-- `FIX`, `CINT` — additional numeric rounding functions
 - 3-D arrays — planned (1-D and 2-D are implemented)
 - Interactive tile editor UI, tile maps, window/clipping support
 - `DRAW` vector strings (classical BASIC DRAW command) — under consideration

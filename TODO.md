@@ -6,18 +6,7 @@ Task breakdown for README “Planned / Not Yet Implemented” backlog. Order is 
 
 ---
 
-### 1. `FIX` and `CINT` (small — ~1 session)
-
-QBASIC-style rounding helpers; low risk, no parser changes beyond function dispatch.
-
-| Task | Notes | Done when |
-|------|-------|-----------|
-| 1.1 Implement `FIX(x)` in postfix evaluator | Truncate toward zero: `FIX(-3.7)` → `-3` | Autotest + README snippet |
-| 1.2 Implement `CINT(x)` in postfix evaluator | Round to nearest integer (half away from zero or banker's — pick one, document) | Same |
-| 1.3 README + diagnostics | Add to System Functions; one-line smoke in `diagnostics/` | README autotest harness picks it up |
-
-**Depends on:** nothing  
-**Blocks:** nothing
+### 1. `FIX` and `CINT` — done (`stress_fix_cint.bas`)
 
 ---
 

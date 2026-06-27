@@ -420,6 +420,18 @@ case "OR": {
                 }
 
                 case "INT": array_push(stack, floor(safe_real_pop(stack))); break;
+
+                case "FIX": {
+                    var _fv = safe_real_pop(stack);
+                    array_push(stack, (_fv >= 0) ? floor(_fv) : ceil(_fv));
+                    break;
+                }
+
+                case "CINT": {
+                    var _cv = safe_real_pop(stack);
+                    array_push(stack, (_cv >= 0) ? floor(_cv + 0.5) : ceil(_cv - 0.5));
+                    break;
+                }
                 case "SIN": array_push(stack, sin(safe_real_pop(stack)));   break;
                 case "COS": array_push(stack, cos(safe_real_pop(stack)));   break;
                 case "TAN": array_push(stack, tan(safe_real_pop(stack)));   break;
