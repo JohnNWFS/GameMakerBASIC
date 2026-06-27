@@ -229,6 +229,7 @@ function basic_memory_runtime_reset() {
     global.draw_scale     = 4;
     global.draw_angle     = 0;
     global.draw_color     = c_white;
+    mode1_view_reset();
     dbg_log(DBG_FLOW, "MEMORY: runtime reset (vars/arrays/stacks/files/while_meta)");
 }
 

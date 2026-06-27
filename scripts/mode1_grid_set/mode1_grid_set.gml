@@ -18,6 +18,7 @@ function mode1_grid_fill_all(_grid_obj, _char, _fg, _bg) {
     with (_grid_obj) {
         for (var row = 0; row < grid_rows; row++) {
             for (var col = 0; col < grid_cols; col++) {
+                if (!mode1_view_contains(col, row)) continue;
                 grid[col][row].char = _char;
                 grid[col][row].fg = _fg;
                 grid[col][row].bg = _bg;
@@ -34,6 +35,7 @@ function mode1_grid_set(_x, _y, _char, _fg, _bg) {
     var grid_obj = instance_find(obj_mode1_grid, 0);
     if (!instance_exists(grid_obj)) return;
     if (!mode1_grid_in_bounds(grid_obj, _x, _y)) return;
+    if (!mode1_view_contains(_x, _y)) return;
 
     var cell = grid_obj.grid[_x][_y];
     cell.char = mode1_ascii_fallback_code(_char);

@@ -227,6 +227,7 @@ function handle_basic_command(cmd, arg) {
             case "MAPSAVE":   basic_cmd_mapsave(_rest); break;
             case "MAPSET":    basic_cmd_mapset(_rest); break;
             case "MAPDRAW":   basic_cmd_mapdraw(_rest); break;
+            case "VIEW":      basic_cmd_view(_rest); break;
             case "CHARAT":    basic_cmd_charat(_rest); break;
             case "PRINTAT":   basic_cmd_printat(_rest); break;
             case "FONT":      basic_cmd_font(_rest); break;

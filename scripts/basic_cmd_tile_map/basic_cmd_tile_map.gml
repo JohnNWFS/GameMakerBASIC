@@ -84,6 +84,7 @@ function tile_map_blit_to_grid(_name, _dest_col, _dest_row) {
             for (var mx = 0; mx < map.w; mx++) {
                 var gx = _dest_col + mx;
                 if (gx < 0 || gx >= grid_cols) continue;
+                if (!mode1_view_contains(gx, gy)) continue;
                 var src = map.cells[mx][my];
                 grid[gx][gy] = { char: src.char, fg: src.fg, bg: src.bg };
             }

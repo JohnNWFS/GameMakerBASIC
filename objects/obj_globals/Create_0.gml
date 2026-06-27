@@ -109,6 +109,7 @@ global.font_sheets = ds_map_create();
 global.custom_tile_defs = ds_map_create();
 global.tile_maps = ds_map_create();
 global.active_tile_map_name = "";
+mode1_view_reset();
 
 // Base character sheet
 ds_map_add(global.font_sheets, "DEFAULT", spr_charactersheet);

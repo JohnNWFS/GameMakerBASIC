@@ -2,7 +2,7 @@
 
 ## Open
 
-**Only remaining README backlog:** MODE 2 tile platform (§3 below). All other planned items (FIX/CINT, 3-D arrays, RESUME, ERR/ERL, BSAVE/BLOAD, DRAW) are done.
+**MODE 2 tile platform (§3) is complete.** Remaining roadmap items are minor (`STOP` polish, MODE 3 drawing extras). All major planned items (FIX/CINT, 3-D arrays, RESUME, ERR/ERL, BSAVE/BLOAD, DRAW) are done.
 
 ---
 
@@ -38,13 +38,13 @@ Runtime tile *commands* exist (`TILEDEF`, `TILEPX`, `TILESAVE`/`TILELOAD`, etc. 
 | 3B.2 Map render pass | `tile_map_blit_to_grid` — one redraw per `MAPDRAW` | Done |
 | 3B.3 BASIC surface | `MAPNEW`, `MAPLOAD`, `MAPSAVE`, `MAPSET`, `MAPDRAW` | Done — README |
 
-#### 3C. Window / clipping
+#### 3C. Window / clipping — done (`mode2_view_clip_smoke.bas`)
 
 | Task | Notes | Done when |
 |------|-------|-----------|
-| 3C.1 Viewport state | Origin + width/height on tile grid (and MODE 3 analogue?) | Internal API stable |
-| 3C.2 Clip `PRINT`/`PRINTAT`/`TILE`/`SCROLL` | Drawing outside viewport is clipped or rejected per spec | Diagnostic with border frame |
-| 3C.3 BASIC commands (optional) | e.g. `VIEW x,y,w,h` / `VIEW OFF` | README + smoke if exposed |
+| 3C.1 Viewport state | `mode1_view` — origin + width/height on tile grid | Done |
+| 3C.2 Clip `PRINT`/`PRINTAT`/`TILE`/`SCROLL` | Central clip in `mode1_grid_set` + viewport scroll | Done — 6/6 PASS |
+| 3C.3 BASIC commands | `VIEW col,row,w,h` / `VIEW OFF` | Done — README |
 
 **Depends on:** 3A before 3B/3C is nice but not strict  
 **Blocks:** nothing else on roadmap

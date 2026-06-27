@@ -144,6 +144,10 @@ function basic_cmd_print_mode1(arg) {
     }
     var cols = (instance_exists(grid_inst)) ? grid_inst.grid_cols : 40;
     var rows = (instance_exists(grid_inst)) ? grid_inst.grid_rows : 25;
+    var plim = mode1_view_print_limits();
+    var wrap_right = plim.right;
+    var wrap_bottom = plim.bottom;
+    var wrap_left = plim.left;
     
     // Print each character at cursor position using mode1_grid_set
     for (var i = 0; i < string_length(output_text); i++) {
@@ -155,11 +159,11 @@ function basic_cmd_print_mode1(arg) {
         }
 
         if (ch == 10) {
-            for (var nx = global.mode1_cursor_x; nx < cols; nx++) {
+            for (var nx = global.mode1_cursor_x; nx <= wrap_right; nx++) {
                 mode1_grid_set(nx, global.mode1_cursor_y, 32, undefined, undefined);
             }
-            global.mode1_cursor_x = 0;
-            global.mode1_cursor_y = min(rows - 1, global.mode1_cursor_y + 1);
+            global.mode1_cursor_x = wrap_left;
+            global.mode1_cursor_y = min(wrap_bottom, global.mode1_cursor_y + 1);
             dbg_log(DBG_FLOW, "PRINT MODE1: CHR$(10) newline, cursor now at (" + string(global.mode1_cursor_x) + "," + string(global.mode1_cursor_y) + ")");
             continue;
         }
@@ -171,9 +175,9 @@ function basic_cmd_print_mode1(arg) {
         
         // Advance cursor
         global.mode1_cursor_x++;
-        if (global.mode1_cursor_x >= cols) {
-            global.mode1_cursor_x = 0;
-            global.mode1_cursor_y = min(rows - 1, global.mode1_cursor_y + 1);
+        if (global.mode1_cursor_x > wrap_right) {
+            global.mode1_cursor_x = wrap_left;
+            global.mode1_cursor_y = min(wrap_bottom, global.mode1_cursor_y + 1);
             dbg_log(DBG_FLOW, "PRINT MODE1: Wrapped to next line, cursor now at (" + string(global.mode1_cursor_x) + "," + string(global.mode1_cursor_y) + ")");
         }
     }
@@ -183,12 +187,12 @@ function basic_cmd_print_mode1(arg) {
         var cur_x = global.mode1_cursor_x;
         var cur_y = global.mode1_cursor_y;
         // Clear from current column to end-of-row (char -> 32), keep colors unchanged
-        for (var cx = cur_x; cx < cols; cx++) {
+        for (var cx = cur_x; cx <= wrap_right; cx++) {
             mode1_grid_set(cx, cur_y, 32, undefined, undefined);
         }
         // Move cursor to next line
-        global.mode1_cursor_x = 0;
-        global.mode1_cursor_y = min(rows - 1, cur_y + 1);
+        global.mode1_cursor_x = wrap_left;
+        global.mode1_cursor_y = min(wrap_bottom, cur_y + 1);
         dbg_log(DBG_FLOW, "PRINT MODE1: Newline, cursor now at (" + string(global.mode1_cursor_x) + "," + string(global.mode1_cursor_y) + ")");
     }
     

@@ -1018,6 +1018,31 @@ Example — draw a bordered room, save, reload:
 
 Verified by `diagnostics/mode2_tile_map_smoke.bas` (4/4 PASS).
 
+### Viewport clipping (`VIEW`)
+
+`VIEW` defines a rectangular **clip region** on the tile grid (column, row, width, height). While active, `PRINT`, `PRINTAT`, `TILE`, `BOX`, `FILL`, `HLINE`, `VLINE`, `SCROLL`, `CLSCHAR`, and `MAPDRAW` only affect cells inside the viewport; cells outside are left unchanged. `VIEW OFF` restores full-screen drawing.
+
+| Command | Syntax | Description |
+|---------|--------|-------------|
+| `VIEW` | `VIEW col, row, w, h` | Enable clipping to the given cell rectangle |
+| `VIEW OFF` | `VIEW OFF` | Disable clipping (full grid) |
+
+Draw a frame **before** `VIEW` to mark the window border; paint game content **after** `VIEW` so HUD text outside the playfield stays put.
+
+```basic
+10 MODE 2, 16
+20 CLSCHAR 32, WHITE, BLACK
+30 PRINTAT 0, 0, "STATUS BAR", YELLOW, BLACK
+40 VIEW 2, 2, 36, 20
+50 MAPDRAW 0, 0
+60 PRINTAT 4, 4, "PLAYFIELD", GREEN, BLACK
+70 END
+```
+
+Verified by `diagnostics/mode2_view_clip_smoke.bas` (6/6 PASS).
+
+**Tile size gallery:** `diagnostics/mode2_tile_size_gallery.bas` draws the same ship-in-context scene at `MODE 2, 8`, then `16`, then `32` (screenshot captures the final 32×32 frame). Add `PAUSE` lines between sections when stepping through manually.
+
 ---
 
 ## MODE 3 Commands (Pixel Graphics)
@@ -1970,7 +1995,7 @@ The opening theme of Beethoven's Für Elise, arranged for `BEEP`. Demonstrates o
 
 These features are on the roadmap but not yet available:
 
-- Window/clipping support for MODE 2 tile grid (tile editor and tile maps shipped)
+- MODE 3 drawing extras (ellipse/arc options, sprite overlays)
 
 ---
 
