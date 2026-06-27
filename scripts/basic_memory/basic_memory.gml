@@ -7,6 +7,13 @@ function basic_ds_release(_id) {
     else if (ds_exists(_id, ds_type_queue)) ds_queue_destroy(_id);
 }
 
+/// Release a named global ds_* if it was ever created (avoids unset-global reads).
+function basic_memory_release_global(_name) {
+    if (!variable_global_exists(_name)) return;
+    basic_ds_release(variable_global_get(_name));
+    variable_global_set(_name, undefined);
+}
+
 function basic_memory_ensure_map(_name) {
     if (!variable_global_exists(_name) || !ds_exists(variable_global_get(_name), ds_type_map)) {
         variable_global_set(_name, ds_map_create());
@@ -224,86 +231,45 @@ function basic_memory_shutdown() {
     global.basic_variables = undefined;
     global.colors = undefined;
 
-    basic_ds_release(global.program_map);
-    global.program_map = undefined;
-    if (variable_global_exists("program_lines")) {
-        basic_ds_release(global.program_lines);
-        global.program_lines = undefined;
-    }
-    if (variable_global_exists("line_index_map")) {
-        basic_ds_release(global.line_index_map);
-        global.line_index_map = undefined;
-    }
-    basic_ds_release(global.basic_program);
-    global.basic_program = undefined;
+    basic_memory_release_global("program_map");
+    basic_memory_release_global("program_lines");
+    basic_memory_release_global("line_index_map");
+    basic_memory_release_global("basic_program");
 
     basic_memory_release_if_block_map();
-    basic_ds_release(global.mode_rooms);
-    global.mode_rooms = undefined;
-    basic_ds_release(global.font_sheets);
-    global.font_sheets = undefined;
-    if (variable_global_exists("custom_tile_defs")) {
-        basic_ds_release(global.custom_tile_defs);
-        global.custom_tile_defs = undefined;
-    }
-    basic_ds_release(global.config);
-    global.config = undefined;
+    basic_memory_release_global("mode_rooms");
+    basic_memory_release_global("font_sheets");
+    basic_memory_release_global("custom_tile_defs");
+    basic_memory_release_global("config");
 
     basic_memory_release_data_streams();
     basic_memory_release_basic_arrays();
-    if (variable_global_exists("basic_array_dims")) {
-        basic_ds_release(global.basic_array_dims);
-        global.basic_array_dims = undefined;
-    }
+    basic_memory_release_global("basic_array_dims");
 
-    basic_ds_release(global.line_list);
-    global.line_list = undefined;
-    if (variable_global_exists("line_numbers")) {
-        basic_ds_release(global.line_numbers);
-        global.line_numbers = undefined;
-    }
-    if (variable_global_exists("basic_line_numbers")) {
-        basic_ds_release(global.basic_line_numbers);
-        global.basic_line_numbers = undefined;
-    }
+    basic_memory_release_global("line_list");
+    basic_memory_release_global("line_numbers");
+    basic_memory_release_global("basic_line_numbers");
 
     basic_memory_release_undo_stack();
-    basic_ds_release(global.output_lines);
-    global.output_lines = undefined;
-    basic_ds_release(global.output_colors);
-    global.output_colors = undefined;
-    basic_ds_release(global.input_history);
-    global.input_history = undefined;
+    basic_memory_release_global("output_lines");
+    basic_memory_release_global("output_colors");
+    basic_memory_release_global("input_history");
 
-    basic_ds_release(global.gosub_stack);
-    global.gosub_stack = undefined;
-    basic_ds_release(global.for_stack);
-    global.for_stack = undefined;
-    basic_ds_release(global.while_stack);
-    global.while_stack = undefined;
-    basic_ds_release(global.if_stack);
-    global.if_stack = undefined;
+    basic_memory_release_global("gosub_stack");
+    basic_memory_release_global("for_stack");
+    basic_memory_release_global("while_stack");
+    basic_memory_release_global("if_stack");
 
     basic_memory_close_file_channels(true);
-    if (variable_global_exists("gosub_targets")) {
-        basic_ds_release(global.gosub_targets);
-        global.gosub_targets = undefined;
-    }
+    basic_memory_release_global("gosub_targets");
     basic_memory_release_while_meta(true);
 
-    if (variable_global_exists("help_topics")) {
-        basic_ds_release(global.help_topics);
-        global.help_topics = undefined;
-    }
+    basic_memory_release_global("help_topics");
     basic_memory_release_help_snapshots();
     basic_memory_release_html_dir_files();
-    if (variable_global_exists("http_tags")) {
-        basic_ds_release(global.http_tags);
-        global.http_tags = undefined;
-    }
+    basic_memory_release_global("http_tags");
 
-    basic_ds_release(global.__inkey_queue);
-    global.__inkey_queue = undefined;
+    basic_memory_release_global("__inkey_queue");
     basic_memory_release_beep_audio();
 
     global.print_line_buffer = "";
