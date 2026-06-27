@@ -917,6 +917,37 @@ Custom tiles are editable bitmap masks assigned to specific tile codes. When a c
 | `TILELOAD` | `TILELOAD "filename"` | Load custom tiles from `filename.nwtile`. |
 | `TILEBIT` | `TILEBIT(code, x, y)` | Read a custom tile pixel: returns 1 (set) or 0 (clear). |
 
+### Tile Editor (`TILEEDIT`)
+
+From the program editor (not during `RUN`), type **`TILEEDIT`** or **`TE`** to open the visual tile painter. It edits the same in-memory tile definitions as `TILEDEF` / `TILEPX` — anything you paint is immediately available to `TILE`, `TILEBIT`, and `TILESAVE` in your next `RUN`.
+
+Default tile size is **16×16**; default starting code is **200**. Edits persist in memory until you quit NW-BASIC.
+
+| Key | Action |
+|-----|--------|
+| Arrows | Move cursor |
+| Space / Enter | Paint pixel (toggle on) |
+| `B` | Erase mode (paint off) |
+| `C` | Cycle pen color (preview tint) |
+| `N` / `P` | Next / previous tile code (0–255) |
+| `F` / `V` | Flip horizontal / vertical |
+| `X` | Clear all pixels in current tile |
+| `R` | Restore current code to font glyph |
+| `S` | Save all custom tiles to `.nwtile` |
+| `L` | Load `.nwtile` file |
+| Mouse | Click grid to paint |
+| ESC | Exit editor (tiles remain in memory) |
+
+Typical workflow:
+
+```basic
+' In editor: TILEEDIT — paint tile 200, save as "ships"
+10 MODE 2, 16
+20 TILELOAD "ships"
+30 TILE 10, 5, 200, YELLOW, BLACK
+40 END
+```
+
 ---
 
 ## MODE 3 Commands (Pixel Graphics)
@@ -1869,7 +1900,7 @@ The opening theme of Beethoven's Für Elise, arranged for `BEEP`. Demonstrates o
 
 These features are on the roadmap but not yet available:
 
-- Interactive tile editor UI, tile maps, window/clipping support
+- Tile maps and window/clipping support (tile editor UI shipped as `TILEEDIT`)
 
 ---
 

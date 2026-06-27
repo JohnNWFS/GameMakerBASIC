@@ -200,6 +200,11 @@ break;
             start_screen_editor();
             break;
 
+        case "TILEEDIT":
+        case "TE":
+            start_tile_editor();
+            break;
+
 
 			
     case "SPRITE":

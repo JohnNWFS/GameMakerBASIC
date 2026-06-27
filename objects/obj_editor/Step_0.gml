@@ -1,9 +1,8 @@
 /// @event obj_editor/Step
 // Only process input when in the editor room
 if (room != rm_editor) exit;
-// Pause regular editor when screen editor is active
-if (global.screen_edit_mode) {
-    //dbg_log(DBG_FLOW, "EDITOR: Screen edit mode active, pausing regular editor");
+// Pause regular editor when screen or tile editor is active
+if (global.screen_edit_mode || global.tile_edit_mode) {
     exit;
 }
 

@@ -20,15 +20,15 @@ Verified integers, ASC/CHR$ character codes, strings, variable indices, sum, ERA
 
 Runtime tile *commands* exist (`TILEDEF`, `TILEPX`, `TILESAVE`/`TILELOAD`, etc. — see `mode2_custom_tile_editor_smoke.bas`). Backlog is **authoring UI** and **map/window** semantics.
 
-#### 3A. Interactive tile editor UI
+#### 3A. Interactive tile editor UI — done (`TILEEDIT` / `TE`)
 
 | Task | Notes | Done when |
 |------|-------|-----------|
-| 3A.1 Design: entry point | From SE menu, MODE 2 program, or dedicated key — document choice | Short design note in `docs/` or TODO |
-| 3A.2 Pixel grid UI | 16×16 (or configurable) edit surface for one tile code | Mouse/keys paint bits; live preview on grid |
-| 3A.3 Bind to existing storage | Read/write same structures as `TILEPX` / `TILEBIT` | Edits visible to `TILE` / `TILEBIT` in BASIC |
-| 3A.4 Save/load hooks | Wire UI to `TILESAVE` / `TILELOAD` paths (or shared GML helpers) | Round-trip matches smoke test |
-| 3A.5 Diagnostics | `diagnostics/mode2_tile_editor_interactive.bas` + manual checklist | User-verified once |
+| 3A.1 Design: entry point | `TILEEDIT` / `TE` from editor room (README) | Done |
+| 3A.2 Pixel grid UI | 16×16 default; zoomed grid + live preview | Done — `obj_tile_editor` |
+| 3A.3 Bind to existing storage | `custom_tile_set_bit` / `custom_tile_defs` | Done |
+| 3A.4 Save/load hooks | `custom_tile_save_all` / `custom_tile_load_file` | Done |
+| 3A.5 Diagnostics | `diagnostics/mode2_tile_editor_interactive.bas` | Manual TILEEDIT + 3 autotest asserts |
 
 #### 3B. Tile maps
 

@@ -73,7 +73,7 @@ Completed on branch `refactor/ambitious-modernize-data-structures` (tag `post-mo
 Diagnostics: `diagnostics/stress_*.bas` per phase; broad regression `diagnostics/stress_modernize.bas`.
 
 ## Not Yet Implemented / Future Work
-- **MODE 2 tile platform (deferred — separate project chunk):** interactive tile editor UI, tile maps, window/clipping support, animation helpers, and examples. Runtime tile commands (`TILEDEF`, `TILEPX`, `TILESAVE`/`TILELOAD`, etc.) already exist; backlog is authoring UI and map/window semantics. See `TODO.md` §3.
+- **MODE 2 tile platform (partial):** interactive tile editor UI shipped as `TILEEDIT`/`TE` (`obj_tile_editor`). Remaining: tile maps (3B), window/clipping (3C). See `TODO.md` §3.
 - `STOP` as a true breakpoint (currently identical to `END`).
 - Further math/string extensions as needed.
 
@@ -94,7 +94,11 @@ Implemented accelerated commands:
 
 Future candidates: `CIRCLEF`, ellipse/arc options for `CIRCLE`, sprite/image overlay commands.
 
-## Recently Completed (2026-06-27 session)
+## Recently Completed (2026-06-27 session — tile editor)
+
+- **`TILEEDIT` / `TE` interactive tile editor:** Visual 16×16 pixel painter from `rm_editor`; reads/writes `custom_tile_defs` via shared `custom_tile_set_bit` / `custom_tile_save_all` / `custom_tile_load_file`. `diagnostics/mode2_tile_editor_interactive.bas` (manual checklist + programmatic baseline).
+
+## Recently Completed (2026-06-27 session — backlog)
 
 - **`DRAW` vector strings (MODE 3):** QBASIC-style `DRAW "…"` turtle graphics with persistent pen/scale/angle state. Commands: `U`/`D`/`L`/`R`, diagonals `E`/`F`/`G`/`H`, `M` (absolute/relative move), `B` (blank move), `C` (color), `S` (scale), `A` (angle), `P` (paint after move), `N` (end prefix). `diagnostics/mode3_draw_vectors.bas` — 4/4 PASS.
 - **`BSAVE` / `BLOAD`:** NWBMEM1 binary format for virtual PEEK/POKE memory map under `Documents/BasicInterpreter/`. `diagnostics/stress_peek_bsave.bas` — 5/5 PASS.

@@ -180,6 +180,7 @@ global._abort_after_validation   = false;
 global.editor_return_room = room; // whatever room the editor lives in at startup
 
 global.screen_edit_mode = false; //for scree editing
+global.tile_edit_mode = false;
 
 global.stop_breakpoint_active = false;
 global.stop_resume_line_index   = 0;

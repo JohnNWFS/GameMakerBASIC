@@ -10,6 +10,11 @@ function start_screen_editor() {
         basic_show_message("Screen editor already active");
         return;
     }
+
+    if (global.tile_edit_mode) {
+        basic_show_message("Exit tile editor first");
+        return;
+    }
     
    dbg_log(DBG_FLOW, "COMMAND: Setting screen_edit_mode = true and creating obj_screen_editor");
     global.screen_edit_mode = true;

@@ -1,8 +1,8 @@
 /// @event obj_editor/Draw
 // Only draw editor UI when in the editor room
 if (room != rm_editor) exit;
-// Pause regular editor drawing when screen editor is active
-if (global.screen_edit_mode) {
+// Pause regular editor drawing when screen or tile editor is active
+if (global.screen_edit_mode || global.tile_edit_mode) {
     exit;
 }
 
