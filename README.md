@@ -677,6 +677,8 @@ MODE 2 uses a grid of character-sized cells. Each cell has a character code, a f
 
 MODE 2 uses tile-font glyphs, so its built-in font is ASCII-oriented. Common pasted Unicode punctuation is converted to readable ASCII fallbacks before rendering: em/en dashes become `-`, smart quotes become straight quotes, ellipsis becomes `...`, bullets become `*`, and non-breaking spaces become normal spaces.
 
+**Cell size:** Most examples below use **`MODE 2, 16`** (16×16-pixel cells). You can substitute **`MODE 2, 8`** or **`MODE 2, 32`** anywhere you see `MODE 2, 16` — the commands are unchanged; only resolution and how many columns/rows fit on screen change. **`MODE 2, 32`** produces bold, readable tile art and makes tile maps especially striking. **`MODE 2, 8`** packs more cells for denser layouts. Custom tiles follow the active cell size (`TILEDEF` defaults to it), and **`TILEEDIT`** paints at the current resolution — there is no separate 32×32 editor; run at `MODE 2, 32` when you want chunky sprites.
+
 ### PRINT (MODE 2)
 In MODE 2, `PRINT` writes text to the tile grid at the current cursor position. Use `LOCATE` to position the cursor first.
 
@@ -921,7 +923,7 @@ Custom tiles are editable bitmap masks assigned to specific tile codes. When a c
 
 From the program editor (not during `RUN`), type **`TILEEDIT`** or **`TE`** to open the visual tile painter. It edits the same in-memory tile definitions as `TILEDEF` / `TILEPX` — anything you paint is immediately available to `TILE`, `TILEBIT`, and `TILESAVE` in your next `RUN`.
 
-Default tile size is **16×16**; default starting code is **200**. Edits persist in memory until you quit NW-BASIC.
+The editor opens at **16×16** pixels per tile by default; default starting code is **200**. Custom tiles scale with your program's `MODE 2` cell size at run time — paint in the editor, then use `MODE 2, 32` or `MODE 2, 8` in your program without repainting. Edits persist in memory until you quit NW-BASIC.
 
 | Key | Action |
 |-----|--------|
@@ -955,7 +957,7 @@ MODE 2 is a **tile framebuffer**: every cell is a character code plus foreground
 
 **Author once, run many times**
 
-1. In the **program editor** (not during `RUN`), type `MODE 2, 16` if you want 16×16 cells, then **`TILEEDIT`** (or **`TE`**).
+1. In the **program editor** (not during `RUN`), type **`TILEEDIT`** (or **`TE`**). Examples use `MODE 2, 16`; try `MODE 2, 32` in your run program for larger on-screen sprites.
 2. Paint sprites at dedicated codes — e.g. **200** = player ship, **201** = asteroid, **202** = power-up. Use **N** / **P** to change the active code.
 3. Press **S**, type a filename (e.g. `space_tiles`), press Enter. NW-BASIC writes `Documents/BasicInterpreter/space_tiles.nwtile`.
 4. Exit with **ESC**. Tiles stay in memory until you quit the app; the `.nwtile` file is what your programs load later.
@@ -975,7 +977,7 @@ MODE 2 is a **tile framebuffer**: every cell is a character code plus foreground
 
 - One tile code = one shape. To show two different ships at once, paint **two** codes (200 and 201), not two versions of 200.
 - **Color variation** without extra art: draw the same code with different `TILE` foreground colors (the bitmap is a mask).
-- **Screen size** at 16×16 cells is roughly 40×24; at 8×8 you get more columns for fine layouts (`MODE 2, 8`).
+- **Screen size** depends on cell size: roughly 40×24 at 16×16, fewer but bigger cells at 32×32 (`MODE 2, 32`), more cells at 8×8 (`MODE 2, 8`). Pick one style and use it consistently in a project.
 - **`TILEBIT(code, x, y)`** reads mask pixels for collision or animation logic.
 - Large levels: build a **tile map** (`MAPNEW` / `MAPSET` / `MAPDRAW`) whose cells use your custom codes, then `TILELOAD` before `MAPDRAW`.
 
