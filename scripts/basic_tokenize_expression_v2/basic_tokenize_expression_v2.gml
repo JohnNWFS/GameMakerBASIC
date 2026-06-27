@@ -1,4 +1,10 @@
-function basic_tokenize_expression_v2(expr) { 
+function basic_tokenize_finalize_word(_word) {
+    var _upper = string_upper(_word);
+    if (_upper == "MOD" || _upper == "AND" || _upper == "OR" || _upper == "NOT") return _upper;
+    return _word;
+}
+
+function basic_tokenize_expression_v2(expr) {
     dbg_log(DBG_PARSE, "TOKENIZER: Starting expression: '" + expr + "'");
 
     var tokens  = [];
@@ -37,7 +43,7 @@ function basic_tokenize_expression_v2(expr) {
         if (c == " ") {
             if (current != "") {
                 dbg_log(DBG_PARSE, "TOKENIZER: Finalizing token from space: '" + current + "'");
-                array_push(tokens, string_upper(current) == "MOD" ? "MOD" : current);
+                array_push(tokens, basic_tokenize_finalize_word(current));
                 dbg_log(DBG_PARSE, "TOKENIZER: Token added: " + current);
                 current = "";
             }
@@ -53,7 +59,7 @@ function basic_tokenize_expression_v2(expr) {
             // finalize any pending identifier/number before the operator
             if (current != "") {
                 dbg_log(DBG_PARSE, "TOKENIZER: Finalizing token before relation: '" + current + "'");
-                array_push(tokens, string_upper(current) == "MOD" ? "MOD" : current);
+                array_push(tokens, basic_tokenize_finalize_word(current));
                 dbg_log(DBG_PARSE, "TOKENIZER: Token added: " + current);
                 current = "";
             }
@@ -78,7 +84,7 @@ function basic_tokenize_expression_v2(expr) {
         if (c == "=") {
             if (current != "") {
                 dbg_log(DBG_PARSE, "TOKENIZER: Finalizing token before '=': '" + current + "'");
-                array_push(tokens, string_upper(current) == "MOD" ? "MOD" : current);
+                array_push(tokens, basic_tokenize_finalize_word(current));
                 dbg_log(DBG_PARSE, "TOKENIZER: Token added: " + current);
                 current = "";
             }
@@ -96,7 +102,7 @@ function basic_tokenize_expression_v2(expr) {
         if (c == "+" || c == "*" || c == "/" || c == "\\" || c == "(" || c == ")" || c == "%" || c == "^") {
             if (current != "") {
                 dbg_log(DBG_PARSE, "TOKENIZER: Finalizing token before operator: '" + current + "'");
-                array_push(tokens, string_upper(current) == "MOD" ? "MOD" : current);
+                array_push(tokens, basic_tokenize_finalize_word(current));
                 dbg_log(DBG_PARSE, "TOKENIZER: Token added: " + current);
                 current = "";
             }
@@ -116,7 +122,7 @@ function basic_tokenize_expression_v2(expr) {
         if (c == ",") {
             if (current != "") {
                 dbg_log(DBG_PARSE, "TOKENIZER: Finalizing token before comma: '" + current + "'");
-                array_push(tokens, string_upper(current) == "MOD" ? "MOD" : current);
+                array_push(tokens, basic_tokenize_finalize_word(current));
                 dbg_log(DBG_PARSE, "TOKENIZER: Token added: " + current);
                 current = "";
             }
@@ -135,7 +141,7 @@ function basic_tokenize_expression_v2(expr) {
             // finalize any pending token first
             if (current != "") {
                 dbg_log(DBG_PARSE, "TOKENIZER: Finalizing token before minus: '" + current + "'");
-                array_push(tokens, string_upper(current) == "MOD" ? "MOD" : current);
+                array_push(tokens, basic_tokenize_finalize_word(current));
                 dbg_log(DBG_PARSE, "TOKENIZER: Token added: " + current);
                 current = "";
             }
@@ -187,7 +193,7 @@ function basic_tokenize_expression_v2(expr) {
     // ------------------------------------------------------------------------
     if (current != "") {
         dbg_log(DBG_PARSE, "TOKENIZER: Finalizing last token: '" + current + "'");
-        array_push(tokens, string_upper(current) == "MOD" ? "MOD" : current);
+        array_push(tokens, basic_tokenize_finalize_word(current));
         dbg_log(DBG_PARSE, "TOKENIZER: Token added: " + current);
     }
 

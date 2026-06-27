@@ -60,9 +60,18 @@ See `objects/obj_basic_interpreter/Create_0.gml` lines 23–30.
 - Update the generated HELP BASIC program: it is currently a brittle/broken BASIC program and should avoid known-bad syntax until interpreter control-flow bugs are fixed.
 - Add dedicated manual/interactive inventory tests for `INPUT`, modal `INKEY$`, `PAUSE`, and editor commands (`LIST`, `RUN`, `NEW`, `SAVE`, `LOAD`, `DIR`, `HELP`, `:PASTE`, `:LOADURL`, `SCREENEDIT`, `QUIT`).
 
-## Not Yet Implemented / Future Work
+## Modernization Pass (2026-06-26)
 
-- `NOT` operator (logical unary prefix) — not yet implemented.
+Completed on branch `refactor/ambitious-modernize-data-structures` (tag `post-modernize-baseline`):
+
+- Native GML arrays, MODE 2 2D grid, sprite struct slots, `basic_variables` struct
+- Unified `basic_split_delimited`, per-RUN `basic_memory` lifecycle, program_map + line_list editor/runtime unification
+- `basic_parse_color` hex prefixes (`&H` BBGGRR, `$`, `#`, `0x`) and unified COLOR command paths
+- `global.colors` GML struct; expression + command color literals
+
+Diagnostics: `diagnostics/stress_*.bas` per phase; broad regression `diagnostics/stress_modernize.bas`.
+
+## Not Yet Implemented / Future Work
 - Additional functions: `FIX`, `CINT`, `PEEK`, `POKE`, and further math/string extensions as needed.
 - 3D+ arrays (2D done).
 - Original MODE 2 tile work: interactive tile editor UI, maps, windows/clipping, animation helpers, and examples.

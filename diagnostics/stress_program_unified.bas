@@ -2,7 +2,7 @@
 20 REM NW-BASIC UNIFIED PROGRAM TEST — Phase 10b
 30 REM Editor and runtime share program_map + line_list.
 40 REM RUN this after loading; also verify manually in editor:
-50 REM   NEW, type lines, LIST, RUN, UNDO, SAVE, LOAD
+50 REM   NEW, type lines, LIST, RUN, Ctrl+Z, SAVE, LOAD
 60 REM Output:  TEST: name = PASS  or  TEST: name = FAIL
 70 REM ============================================================
 80 CLS
@@ -24,7 +24,7 @@
 150 PRINT "Manual editor checks (same storage as RUN):"
 160 PRINT "  NEW clears program"
 170 PRINT "  LIST shows typed lines in order"
-180 PRINT "  UNDO restores after edit"
+180 PRINT "  Ctrl+Z restores after edit"
 190 PRINT "  RUN twice — all TEST lines stay PASS"
 200 END
 8000 SUBOK = 1

@@ -775,9 +775,14 @@ case "OR": {
 		    array_push(stack, vv);
 		    dbg_log(DBG_PARSE, "POSTFIX: Loaded/created ident " + key + " = " + string(vv));
 		} else {
-		    // true literal fallback
-		    array_push(stack, trimmed);
-		    dbg_log(DBG_PARSE, "POSTFIX: Pushed fallback string → " + trimmed);
+		    var _lit_col = basic_parse_color(trimmed, noone);
+		    if (_lit_col != noone) {
+		        array_push(stack, _lit_col);
+		        dbg_log(DBG_PARSE, "POSTFIX: Color literal '" + trimmed + "' = " + string(_lit_col));
+		    } else {
+		        array_push(stack, trimmed);
+		        dbg_log(DBG_PARSE, "POSTFIX: Pushed fallback string → " + trimmed);
+		    }
 		}
 
     }
