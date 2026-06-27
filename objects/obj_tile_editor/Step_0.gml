@@ -162,29 +162,29 @@ if (keyboard_check_pressed(ord("X"))) {
         undo_bits = snap.bits;
     }
     custom_tile_clear_bits(tile_code);
-    status_msg = "Tile cleared — press U to undo";
+    status_msg = "Tile cleared — press R or U to revert";
     status_timer = 180;
 }
 
-if (keyboard_check_pressed(ord("U"))) {
+if (keyboard_check_pressed(ord("R")) || keyboard_check_pressed(ord("U"))) {
     if (undo_has && undo_code == tile_code) {
         tile_editor_apply_bits(tile_code, undo_w, undo_h, undo_bits);
         tile_w = undo_w;
         tile_h = undo_h;
-        status_msg = "Restored tile before last clear";
+        status_msg = "Reverted — tile restored before clear";
         status_timer = 150;
     } else {
-        status_msg = "Nothing to undo";
+        status_msg = "Nothing to revert (press X to clear first)";
         status_timer = 90;
     }
 }
 
-if (keyboard_check_pressed(ord("R"))) {
+if (keyboard_check_pressed(ord("G"))) {
     custom_tile_restore_code(tile_code);
     tile_editor_prepare_code(tile_code, tile_w, tile_h);
     undo_has = false;
-    status_msg = "Restored to font glyph";
-    status_timer = 90;
+    status_msg = "Now using font glyph for this code (G)";
+    status_timer = 120;
 }
 
 if (keyboard_check_pressed(ord("S"))) {

@@ -21,8 +21,10 @@ if (erase_mode) {
     var def = custom_tile_get_def(tile_code);
     var size_txt = is_undefined(def) ? string(tile_w) + "x" + string(tile_h)
         : string(def.w) + "x" + string(def.h);
-    draw_text(16, 8, "TILE EDITOR  code " + string(tile_code) + "  (" + size_txt + ")  "
+    draw_text(16, 8, "TILE EDITOR  tile code " + string(tile_code) + "  (" + size_txt + ")  "
         + tile_editor_color_name_at(color_index) + "  [PAINT]");
+    draw_set_color(c_lime);
+    draw_text(16, 26, "N = next code   P = prev code   (each code is its own 16x16 drawing)");
 }
 
 // Zoomed edit grid
@@ -59,14 +61,14 @@ custom_tile_draw(tile_code, px0, py0, pv, pv, fg_color);
 
 if (undo_has && undo_code == tile_code) {
     draw_set_color(make_color_rgb(170, 170, 255));
-    draw_text(px0, py0 + pv + 8, "U = undo clear");
+    draw_text(px0, py0 + pv + 8, "R or U = revert last clear");
 }
 
 // Help line
 draw_set_color(c_lime);
 var help_y = room_height - 56;
-draw_text(16, help_y, "Arrows move  Space paint  B toggle erase/paint  C color  N/P code  F/V flip");
-draw_text(16, help_y + 20, "S save  L load  X clear  U undo clear  R restore font  ESC exit");
+draw_text(16, help_y, "Arrows move  Space paint  B erase/paint  C color (not clear)  N/P switch code  F/V flip");
+draw_text(16, help_y + 20, "X clear  R/U revert clear  G font glyph  S save  L load  ESC exit");
 
 if (status_timer > 0 && status_msg != "") {
     draw_set_color(c_white);

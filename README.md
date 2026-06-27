@@ -928,12 +928,12 @@ Default tile size is **16×16**; default starting code is **200**. Edits persist
 | Arrows | Move cursor |
 | Space / Enter | Paint pixel on (or off in erase mode) |
 | `B` | Toggle **PAINT** / **ERASE** (banner turns red in erase mode) |
-| `C` | Cycle pen color (preview tint) |
-| `N` / `P` | Next / previous tile code (0–255) |
+| `C` | Cycle pen color (preview tint) — not clear; use `X` to clear pixels |
+| `N` / `P` | Next / previous tile character code (200, 201, …) |
 | `F` / `V` | Flip horizontal / vertical |
-| `X` | Clear all pixels (one-level undo stored) |
-| `U` | Undo last clear (second clear overwrites undo snapshot) |
-| `R` | Restore current code to font glyph |
+| `X` | Clear all pixels (one-level revert snapshot stored) |
+| `R` / `U` | Revert last clear — restore tile as it was before `X` |
+| `G` | Use font glyph for this code (drops custom bitmap) |
 | `S` | Save — type a new filename or pick from list, then Enter |
 | `L` | Load `.nwtile` file |
 | Mouse | Click grid to paint |
