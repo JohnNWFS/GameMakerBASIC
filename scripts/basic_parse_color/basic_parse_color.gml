@@ -11,7 +11,7 @@ function basic_colors_init() {
         BLACK: c_black,
         GRAY: c_gray,
         ORANGE: make_color_rgb(255, 165, 0),
-        LIME: c_lime,
+        LIME: make_color_rgb(170, 255, 102), // distinct from GREEN (0,255,0); matches bas_palette(13)
         NAVY: make_color_rgb(0, 0, 128),
         DKGRAY: make_color_rgb(64, 64, 64),
     };
