@@ -98,6 +98,7 @@ for (var i = 0; i < ds_list_size(global.line_list); i++) {
     global.err_last_line          = 0;
     global.err_fault_line_index   = -1;
     global.err_fault_stmt_index   = -1;
+    global.err_last_code          = 0;
 
     // ── Clean start: clear output buffers for a fresh run ─────────────────
     if (!_resume_from_stop) {

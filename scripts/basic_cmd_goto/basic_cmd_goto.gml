@@ -30,6 +30,7 @@ function basic_cmd_on_error_goto(arg) {
         global.err_fault_line_index = -1;
         global.err_fault_stmt_index = -1;
         global.err_last_line        = 0;
+        global.err_last_code        = 0;
     }
     dbg_log(DBG_FLOW, "ON ERROR GOTO " + string(global.on_error_goto_line));
 }

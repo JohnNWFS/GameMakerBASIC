@@ -14,7 +14,7 @@ function infix_to_postfix(tokens) {
 
     var _is_zero_arg_fn = function(_name) {
         var n = string_upper(_name);
-        return (n == "TIMER" || n == "TIME$" || n == "DATE$" || n == "INKEY$");
+        return (n == "TIMER" || n == "TIME$" || n == "DATE$" || n == "INKEY$" || n == "ERR" || n == "ERL");
     };
 
     var _is_STRING_fn = function(_name) {

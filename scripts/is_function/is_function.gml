@@ -52,6 +52,8 @@ function is_function(t) {
          || fn == "SPRITEX"
          || fn == "SPRITEY"
          || fn == "SPRITEHIT"
-         || fn == "PEEK";
+         || fn == "PEEK"
+         || fn == "ERR"
+         || fn == "ERL";
 }
 // === END: is_function ===

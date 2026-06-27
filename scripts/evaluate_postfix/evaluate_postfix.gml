@@ -331,6 +331,22 @@ case "OR": {
                     dbg_log(DBG_PARSE, "FUNC: TIMER → " + string(secs));
                     break;
                 }
+
+                case "ERL": {
+                    var _erl = (variable_global_exists("err_fault_line_index") && global.err_fault_line_index >= 0)
+                        ? global.err_last_line : 0;
+                    array_push(stack, _erl);
+                    dbg_log(DBG_PARSE, "FUNC: ERL → " + string(_erl));
+                    break;
+                }
+
+                case "ERR": {
+                    var _err = (variable_global_exists("err_fault_line_index") && global.err_fault_line_index >= 0)
+                        ? global.err_last_code : 0;
+                    array_push(stack, _err);
+                    dbg_log(DBG_PARSE, "FUNC: ERR → " + string(_err));
+                    break;
+                }
 				
 				case "LEN": {
 				    var s = string(array_pop(stack));

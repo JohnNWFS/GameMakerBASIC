@@ -26,8 +26,10 @@ function basic_syntax_error(msg, line_no, stmt_idx, hint_key) {
     }
     global.current_draw_color = prev_col;
 
+    var _err_code = basic_err_code_from_hint(hint_key, msg);
     if (basic_error_trap_dispatch(line_no)) {
-        dbg_log(DBG_FLOW, "SYNTAX: trapped by ON ERROR GOTO");
+        global.err_last_code = _err_code;
+        dbg_log(DBG_FLOW, "SYNTAX: trapped by ON ERROR GOTO (ERR=" + string(_err_code) + ")");
         return;
     }
 

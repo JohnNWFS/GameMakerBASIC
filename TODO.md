@@ -74,16 +74,7 @@ Fault line index + stmt index saved on trap; `RESUME` / `RESUME NEXT` use statem
 
 ---
 
-### 6. Optional: `ERR` and `ERL` (small — ~½ session)
-
-| Task | Notes | Done when |
-|------|-------|-----------|
-| 6.1 `ERL` function | Return `global.err_last_line` (or 0 if no trap) | Handler prints line |
-| 6.2 `ERR` function | Map NW-BASIC error kinds to numeric codes (document table) | Division / syntax / out-of-data codes |
-| 6.3 README | Document code table + handler example | Listed under optional/planned until shipped |
-
-**Depends on:** error trap frame from §5 (can ship `ERL` earlier using existing `err_last_line`)  
-**Blocks:** nothing
+### 6. `ERR` and `ERL` — done (`stress_err_erl.bas`)
 
 ---
 

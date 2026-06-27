@@ -587,6 +587,26 @@ Install a line-number handler for errors that NW-BASIC traps (for example divisi
 9000 RESUME NEXT
 ```
 
+**Error details in a handler** — `ERL` returns the BASIC line number that trapped; `ERR` returns a numeric error code (QBASIC-style where applicable). Both return `0` when no error has been trapped since the last `RUN` or `ON ERROR GOTO 0`.
+
+| `ERR` | Typical cause |
+|-------|----------------|
+| 3 | `RETURN` without `GOSUB` |
+| 4 | `READ` past end of `DATA` |
+| 9 | Array index out of range |
+| 11 | Division by zero in `\` |
+| 13 | Type mismatch in numeric ops |
+| 20 | `RESUME` with no trapped error |
+| 2 | Other syntax/runtime errors (default) |
+
+```basic
+10 ON ERROR GOTO 9000
+20 X = 1 \ 0
+30 END
+9000 PRINT "Error"; ERR; "at line"; ERL
+9010 END
+```
+
 Not every failure is trapped (for example host/GameMaker fatal errors). For predictable program logic, prefer testing divisors and inputs before they fail.
 
 ### RANDOMIZE
@@ -1806,7 +1826,6 @@ These features are on the roadmap but not yet available:
 
 - Interactive tile editor UI, tile maps, window/clipping support
 - `DRAW` vector strings (classical BASIC DRAW command) — under consideration
-- Optional: `ERR` / `ERL` — error code and line number inside an error handler
 - Optional: `BSAVE` / `BLOAD` — save and load a byte range from the virtual PEEK/POKE map to disk
 
 ---
