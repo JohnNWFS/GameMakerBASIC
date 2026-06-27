@@ -7,13 +7,17 @@ param(
     [string]$Diagnostic,
     [string]$AutotestPath = "$env:USERPROFILE\Documents\BasicInterpreter\autotest.bas",
     [string]$TranscriptPath = "$env:USERPROFILE\Documents\BasicInterpreter\autotest_output.txt",
-    [string]$ProjectYyp = (Join-Path $PSScriptRoot "..\A_NEW_BASIC_3.yyp"),
+    [string]$ProjectYyp = "",
     [int]$WaitSeconds = 0,
     [switch]$CopyOnly
 )
 
 $ErrorActionPreference = "Stop"
-$repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
+$scriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
+$repoRoot = Resolve-Path (Join-Path $scriptDir "..")
+if (-not $ProjectYyp) {
+    $ProjectYyp = Join-Path $repoRoot "A_NEW_BASIC_3.yyp"
+}
 $diagPath = if ([System.IO.Path]::IsPathRooted($Diagnostic)) { $Diagnostic } else { Join-Path $repoRoot $Diagnostic }
 
 if (-not (Test-Path $diagPath)) {

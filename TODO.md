@@ -2,7 +2,7 @@
 
 ## Open
 
-Task breakdown for README “Planned / Not Yet Implemented” backlog. Order is a suggested sequence; tile work and DRAW are independent tracks.
+**Only remaining README backlog:** MODE 2 tile platform (§3 below). All other planned items (FIX/CINT, 3-D arrays, RESUME, ERR/ERL, BSAVE/BLOAD, DRAW) are done.
 
 ---
 

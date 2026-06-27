@@ -27,16 +27,16 @@ See `objects/obj_basic_interpreter/Create_0.gml` lines 23–30.
 - Core editor/immediate commands: `RUN`, `NEW`, `SAVE`, `LOAD`, `DIR`, `HELP`, `:PASTE`, `:LOADURL`, `QUIT`, `SCREENEDIT`/`SE`, `LIST`, `LIST range`, `GO`/`G`.
 - Core BASIC commands: `PRINT`, `LET`, implicit assignment, `GOTO`, `INPUT`, `COLOR`, `CLS`, `END`, `REM`, `PAUSE`, `TEMPO`, `BEEP`, `PLAY`.
 - `BEEP` and `PLAY` now use generated mono audio-buffer tones with A4 = 440 Hz equal-tempered targets instead of pitch-shifted C samples. `TEMPO` exposes music speed to BASIC programs; `PLAY` supports an initial MML subset for compact classic BASIC-style music.
-- Structured flow: inline `IF`, block `IF`, `ELSEIF`, `ELSE`, `ENDIF`, `FOR`, `NEXT`, `WHILE`, `WEND`, `GOSUB`, `RETURN`.
-- Data and arrays: `DATA`, `READ`, `RESTORE`, `DIM`, 1-D and multi-dimensional array assignment/access (`DIM A(M,N)`, `A(I,J) = V`, `V = A(I,J)`).
-- Mode and display commands: `MODE`, `BGCOLOR`, `CLSCHAR`, `PSET` (MODE 2 tile form and MODE 3 pixel form), `CHARAT`, `PRINTAT`, `PLOT`, `TILE`, `DRAWSTR`, `BOX`, `FILL`, `HLINE`, `VLINE`, `TILEDEF`, `TILEPX`, `TILECLEAR`, `TILERESTORE`, `TILESAVE`, `TILELOAD`, `FONT`, `FONTSET`, `LOCATE`, `SCROLL`.
-- File I/O: `OPEN`, `CLOSE`, `PRINT #n`, `INPUT #n`, `LINE INPUT #n`, `EOF(n)`.
+- Structured flow: inline `IF`, block `IF`, `ELSEIF`, `ELSE`, `ENDIF`, `FOR`, `NEXT`, `WHILE`, `WEND`, `GOSUB`, `RETURN`, `ON ERROR GOTO`, `RESUME`, `RESUME NEXT`.
+- Data and arrays: `DATA`, `READ`, `RESTORE`, `DIM`, `ERASE`, `REDIM`, 1-D through 3-D array assignment/access (`DIM A(M,N,P)`, `A(I,J,K) = V`, `V = A(I,J,K)`).
+- Mode and display commands: `MODE`, `BGCOLOR`, `CLSCHAR`, `PSET` (MODE 2 tile form and MODE 3 pixel form), `CHARAT`, `PRINTAT`, `PLOT`, `TILE`, `DRAWSTR`, `BOX`, `FILL`, `HLINE`, `VLINE`, `TILEDEF`, `TILEPX`, `TILECLEAR`, `TILERESTORE`, `TILESAVE`, `TILELOAD`, `FONT`, `FONTSET`, `LOCATE`, `SCROLL`, `DRAW` (MODE 3 vector strings), `PAINT` (MODE 3 flood fill).
+- File I/O: `OPEN`, `CLOSE`, `PRINT #n`, `INPUT #n`, `LINE INPUT #n`, `EOF(n)`, `BSAVE`, `BLOAD` (virtual PEEK/POKE memory map).
 - PRINT layout tokens handled by the command layer: `TAB`, `SPC`, comma zones, and trailing semicolon newline suppression.
 
 ## Completed Functions and Operators
 
 - Operators: `+`, `-`, `*`, `/`, `\`, `%`, `MOD`, `^`, `=`, `<>`, `<`, `>`, `<=`, `>=`, `AND`, `OR`.
-- Numeric functions: `RND`, `ABS`, `INT`, `EXP`, `LOG`, `LOG10`, `SGN`, `SIN`, `COS`, `TAN`, `SQR`, `ATN`.
+- Numeric functions: `RND`, `ABS`, `INT`, `FIX`, `CINT`, `EXP`, `LOG`, `LOG10`, `SGN`, `SIN`, `COS`, `TAN`, `SQR`, `ATN`, `PEEK`, `POKE`, `ERR`, `ERL`.
 - String/conversion functions: `STR$`, `CHR$`, `VAL`, `LEFT$`, `RIGHT$`, `MID$`, `REPEAT$`, `STRING$`, `SPACE$`, `LEN`, `ASC`, `UCASE$`, `LCASE$`, `LTRIM$`, `RTRIM$`, `INSTR`.
 - System/input functions: `TIMER`, `TIME$`, `DATE$`, `INKEY$`, `EOF`.
 - Mode helper functions: `GETMODE`, `SCREEN` (alias for GETMODE), `POINT` (MODE 3 pixel color readback), `TILECHAR`, `TILECOLOR`, `TILEBIT`, `TILENAME$`, `mode1_get_char`, `mode1_get_color`, `mode1_color_name`.
@@ -51,6 +51,7 @@ See `objects/obj_basic_interpreter/Create_0.gml` lines 23–30.
 - Broad MODE 2 tile command inventory smoke test lives at `diagnostics/mode2_tile_command_inventory.bas`; copy it to `autotest.bas` and run to audit core text/flow/data/array commands plus tile display commands.
 - Custom MODE 2 tile editor smoke test lives at `diagnostics/mode2_custom_tile_editor_smoke.bas`; it defines a tile mask, draws it, saves it, clears it, reloads it, and verifies bits with `TILEBIT`.
 - MODE 3 pixel visual inventory smoke test lives at `diagnostics/mode3_pixel_visual_inventory.bas`; it uses `AUTOTEST_SCREENSHOT`, draws visible `PSET` color markers, prints `POINT()` readbacks, and waits in MODE 3 for screenshot inspection.
+- MODE 3 `DRAW` vector string smoke test lives at `diagnostics/mode3_draw_vectors.bas`; it verifies square, scale, diagonal, and relative-move commands via `POINT()` readback (4/4 PASS, no screenshot required).
 
 ## Known Cleanup and Bug Backlog
 
@@ -72,13 +73,9 @@ Completed on branch `refactor/ambitious-modernize-data-structures` (tag `post-mo
 Diagnostics: `diagnostics/stress_*.bas` per phase; broad regression `diagnostics/stress_modernize.bas`.
 
 ## Not Yet Implemented / Future Work
-- Additional functions: `FIX`, `CINT`, `PEEK`, `POKE`, and further math/string extensions as needed.
-- 3D+ arrays (2D done).
-- Original MODE 2 tile work: interactive tile editor UI, maps, windows/clipping, animation helpers, and examples.
+- **MODE 2 tile platform (deferred — separate project chunk):** interactive tile editor UI, tile maps, window/clipping support, animation helpers, and examples. Runtime tile commands (`TILEDEF`, `TILEPX`, `TILESAVE`/`TILELOAD`, etc.) already exist; backlog is authoring UI and map/window semantics. See `TODO.md` §3.
 - `STOP` as a true breakpoint (currently identical to `END`).
-- `ON ERROR GOTO` — error trapping.
-- `PAINT x,y[,fillColor[,borderColor]]` — flood fill for MODE 3 if feasible and performant.
-- `DRAW` vector strings — under consideration.
+- Further math/string extensions as needed.
 
 ## MODE 3 Drawing Architecture
 
@@ -92,8 +89,19 @@ Implemented accelerated commands:
 - `LINE x1,y1,x2,y2[,color[,thickness]]` — fast line drawing.
 - `BOX x1,y1,x2,y2[,lineColor[,fillFlag[,fillColor[,thickness]]]]` — outline or filled rectangle.
 - `PLOT x,y[,color]` — point-drawing alias for `PSET`.
+- `PAINT x,y[,color]` — flood fill from seed pixel.
+- `DRAW "command string"` — QBASIC-style vector turtle graphics (`U`/`D`/`L`/`R`, diagonals, `M`, `B`, `C`, `S`, `A`, `P`, `N`). Verified by `diagnostics/mode3_draw_vectors.bas` (4/4 PASS).
 
 Future candidates: `CIRCLEF`, ellipse/arc options for `CIRCLE`, sprite/image overlay commands.
+
+## Recently Completed (2026-06-27 session)
+
+- **`DRAW` vector strings (MODE 3):** QBASIC-style `DRAW "…"` turtle graphics with persistent pen/scale/angle state. Commands: `U`/`D`/`L`/`R`, diagonals `E`/`F`/`G`/`H`, `M` (absolute/relative move), `B` (blank move), `C` (color), `S` (scale), `A` (angle), `P` (paint after move), `N` (end prefix). `diagnostics/mode3_draw_vectors.bas` — 4/4 PASS.
+- **`BSAVE` / `BLOAD`:** NWBMEM1 binary format for virtual PEEK/POKE memory map under `Documents/BasicInterpreter/`. `diagnostics/stress_peek_bsave.bas` — 5/5 PASS.
+- **`ERR` / `ERL`:** Zero-arg functions for `ON ERROR GOTO` handlers. `diagnostics/stress_err_erl.bas` — 3/3 PASS.
+- **`RESUME` / `RESUME NEXT`:** Statement-level resume after error trap. `diagnostics/stress_on_error_resume.bas` — 3/3 PASS.
+- **3-D arrays:** Verified integers, strings, ASC/CHR$, ERASE/REDIM. `diagnostics/stress_arrays_3d.bas` — 11/11 PASS.
+- **`FIX` / `CINT`:** `diagnostics/stress_fix_cint.bas` — 7/7 PASS.
 
 ## Recently Completed (2026-06-08 session)
 
