@@ -1279,6 +1279,7 @@ These functions convert between numbers and strings, and between characters and 
 - **Poll loops:** use `K$ = INKEY$ + ""` or `IF INKEY$ + "" <> "" THEN ...`. Bare `K$ = INKEY$` waits every time it runs.
 - Keys are read from a per-frame queue; `""` means no key was waiting.
 - Arrow keys and other extended keys arrive as two-character sequences (`CHR$(0)` + `CHR$(scan_code)`).
+- **Keyboard limitation:** `INKEY$` reports **physical key codes**, not shifted/layout characters. Unshifted letters, digits, and space work as expected. Shifted punctuation (e.g. Shift+8 for `*`) may return the base key (`8`). Numpad keys may not match their labels. Use **INPUT** when you need arbitrary typed text; use `INKEY$` for game controls and simple key waits.
 
 ### Mobile/Touch Support (Android)
 On Android, the screen is divided into touch regions that inject keystrokes as if the user pressed a key — so `INKEY$`-based programs work on touch devices without modification.
@@ -1777,6 +1778,8 @@ These features are on the roadmap but not yet available:
 - Interactive tile editor UI, tile maps, window/clipping support
 - `DRAW` vector strings (classical BASIC DRAW command) — under consideration
 - `RESUME` / `RESUME NEXT` — continue after `ON ERROR GOTO` (handler must END or GOTO today)
+- Optional: `ERR` / `ERL` — error code and line number inside an error handler
+- Optional: `BSAVE` / `BLOAD` — save and load a byte range from the virtual PEEK/POKE map to disk
 
 ---
 
