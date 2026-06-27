@@ -754,9 +754,10 @@ case "OR": {
 		    var key = string_upper(ident);
 		    if (!basic_var_exists(key)) {
 		        // Check color name constants before creating as 0
-		        if (variable_global_exists("colors") && ds_map_exists(global.colors, key)) {
-		            array_push(stack, global.colors[? key]);
-		            dbg_log(DBG_PARSE, "POSTFIX: Color constant '" + key + "' = " + string(global.colors[? key]));
+		        var _named_col = basic_color_named_get(key);
+		        if (!is_undefined(_named_col)) {
+		            array_push(stack, _named_col);
+		            dbg_log(DBG_PARSE, "POSTFIX: Color constant '" + key + "' = " + string(_named_col));
 		            continue;
 		        }
 		        basic_var_set(key, 0);

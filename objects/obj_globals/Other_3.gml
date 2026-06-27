@@ -12,7 +12,7 @@ if (variable_global_exists("line_index_map") && ds_exists(global.line_index_map,
     ds_map_destroy(global.line_index_map);
 }
 if (ds_exists(global.basic_program, ds_type_map)) ds_map_destroy(global.basic_program);
-if (ds_exists(global.colors, ds_type_map)) ds_map_destroy(global.colors);
+global.colors = undefined;
 if (ds_exists(global.if_block_map, ds_type_map)) {
     var _key = ds_map_find_first(global.if_block_map);
     while (!is_undefined(_key)) {

@@ -1,3 +1,46 @@
+/// Initialize the named BASIC color table (struct storage).
+function basic_colors_init() {
+    global.colors = {
+        RED: make_color_rgb(255, 0, 0),
+        GREEN: make_color_rgb(0, 255, 0),
+        BLUE: make_color_rgb(0, 0, 255),
+        CYAN: c_teal,
+        MAGENTA: c_fuchsia,
+        YELLOW: c_yellow,
+        WHITE: c_white,
+        BLACK: c_black,
+        GRAY: c_gray,
+        ORANGE: make_color_rgb(255, 165, 0),
+        LIME: c_lime,
+        NAVY: make_color_rgb(0, 0, 128),
+        DKGRAY: make_color_rgb(64, 64, 64),
+    };
+}
+
+function basic_colors_ensure() {
+    if (!variable_global_exists("colors") || !is_struct(global.colors)) {
+        basic_colors_init();
+    }
+}
+
+function basic_color_normalize_key(_key) {
+    var k = string_upper(string_trim(_key));
+    if (k == "GREY") return "GRAY";
+    if (k == "DARKGRAY" || k == "DARKGREY") return "DKGRAY";
+    return k;
+}
+
+/// Named color lookup; undefined when unknown (LIGHTGRAY alias handled here).
+function basic_color_named_get(_key) {
+    basic_colors_ensure();
+    var k = basic_color_normalize_key(_key);
+    if (k == "LIGHTGRAY" || k == "LIGHTGREY") {
+        return make_color_rgb(192, 192, 192);
+    }
+    if (!variable_struct_exists(global.colors, k)) return undefined;
+    return global.colors[$ k];
+}
+
 function basic_hex_nibble(_ch) {
     _ch = string_upper(_ch);
     if (_ch >= "0" && _ch <= "9") return ord(_ch) - ord("0");
@@ -137,21 +180,13 @@ function basic_parse_color(colstr, _fallback) {
         return _fallback;
     }
 
-    var key = string_upper(s);
-    if (key == "GREY") key = "GRAY";
-    if (key == "DARKGRAY" || key == "DARKGREY") key = "DKGRAY";
+    var key = basic_color_normalize_key(s);
 
     var rgb_form = basic_parse_rgb_form(key);
     if (!is_undefined(rgb_form)) return rgb_form;
 
-    if (variable_global_exists("colors")) {
-        if (key == "LIGHTGRAY" || key == "LIGHTGREY") {
-            return make_color_rgb(192, 192, 192);
-        }
-        if (ds_map_exists(global.colors, key)) {
-            return ds_map_find_value(global.colors, key);
-        }
-    }
+    var named = basic_color_named_get(key);
+    if (!is_undefined(named)) return named;
 
     var _hex = basic_color_extract_hex6(s);
     if (_hex.hex6 != "") {
