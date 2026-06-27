@@ -1,3 +1,15 @@
+/// Return inner expression after a leading NOT, or undefined when absent.
+function basic_condition_not_inner(_s) {
+    var t = string_trim(_s);
+    var u = string_upper(t);
+    if (string_length(u) < 3 || string_copy(u, 1, 3) != "NOT") return undefined;
+    if (string_length(u) == 3) return "";
+    var ch = string_char_at(u, 4);
+    if (ch != " " && ch != "(") return undefined;
+    var start = (ch == " ") ? 5 : 4;
+    return string_trim(string_copy(t, start, string_length(t) - start + 1));
+}
+
 function basic_evaluate_condition(expr) {
     var s = string_trim(expr);
     if (dbg_on(DBG_FLOW)) show_debug_message ("COND: Begin evaluate_condition → '" + s + "'");
@@ -74,6 +86,31 @@ function basic_evaluate_condition(expr) {
         }
     }
     // ===== END boolean handling =====
+
+    // --- Unary NOT (before relational splits so NOT (5 > 10) is not parsed as (NOT 5) > 10) ---
+    var _not_inner = basic_condition_not_inner(s);
+    if (!is_undefined(_not_inner)) {
+        var _neg = !basic_evaluate_condition(_not_inner);
+        dbg_log(DBG_FLOW, "COND: NOT '" + _not_inner + "' → " + string(_neg));
+        return _neg;
+    }
+
+    // --- Strip redundant outer parentheses: (5 > 10) ---
+    if (string_length(s) >= 2 && string_char_at(s, 1) == "(") {
+        var _pd = 0;
+        var _close = -1;
+        for (var _pi = 1; _pi <= string_length(s); _pi++) {
+            var _pc = string_char_at(s, _pi);
+            if (_pc == "(") _pd++;
+            else if (_pc == ")") {
+                _pd--;
+                if (_pd == 0) { _close = _pi; break; }
+            }
+        }
+        if (_close == string_length(s)) {
+            return basic_evaluate_condition(string_trim(string_copy(s, 2, string_length(s) - 2)));
+        }
+    }
 
     // --- Comparator search (unchanged) ---
     var ops = ["<>", "<=", ">=", "=", "<", ">"];
