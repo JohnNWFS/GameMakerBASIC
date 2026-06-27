@@ -68,20 +68,9 @@ Classical turtle-style `DRAW "…"` (QBASIC/GW-BASIC subset). MODE 3 only; share
 
 ---
 
-### 5. `RESUME` / `RESUME NEXT` after `ON ERROR GOTO` (medium — ~1–2 sessions)
+### 5. `RESUME` / `RESUME NEXT` — done (`stress_on_error_resume.bas`)
 
-`basic_error_trap_dispatch` already jumps to handler and sets `global.err_last_line`. Today handler must `END` or `GOTO`; no return to faulting line.
-
-| Task | Notes | Done when |
-|------|-------|-----------|
-| 5.1 Error stack frame | Store fault line index, stmt index, trap depth | Cleared on `ON ERROR GOTO 0` and `RUN`/`NEW` |
-| 5.2 `RESUME` | Re-execute statement that trapped | Division-by-zero demo recovers |
-| 5.3 `RESUME NEXT` | Continue at next statement | Same demo, skip bad stmt |
-| 5.4 Re-entrancy guard | Extend `error_trap_active` so nested errors don’t loop | Stress diagnostic |
-| 5.5 README + diagnostics | Update ON ERROR section; `diagnostics/stress_on_error_resume.bas` | Manual + autotest |
-
-**Depends on:** `ON ERROR GOTO` (done)  
-**Blocks:** `ERR`/`ERL` (helpful to ship together)
+Fault line index + stmt index saved on trap; `RESUME` / `RESUME NEXT` use statement-level jump.
 
 ---
 

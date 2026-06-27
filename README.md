@@ -563,6 +563,30 @@ Install a line-number handler for errors that NW-BASIC traps (for example divisi
 9010 END
 ```
 
+**Resume after a trap** — inside the handler you can return to the fault site:
+
+- `RESUME` — re-run the statement that trapped (fix variables first if needed)
+- `RESUME NEXT` — continue at the next statement (same line if more statements follow, otherwise the next program line)
+
+```basic
+10 ON ERROR GOTO 9000
+20 Y = 0
+30 X = 1 \ Y        ' traps while Y is 0
+40 PRINT "X ="; X
+50 END
+9000 Y = 1          ' repair state
+9010 RESUME         ' retry line 30
+```
+
+```basic
+10 ON ERROR GOTO 9000
+20 PRINT "Before"
+30 X = 1 \ 0        ' traps here
+40 PRINT "After"    ' RESUME NEXT lands here
+50 END
+9000 RESUME NEXT
+```
+
 Not every failure is trapped (for example host/GameMaker fatal errors). For predictable program logic, prefer testing divisors and inputs before they fail.
 
 ### RANDOMIZE
@@ -1782,7 +1806,6 @@ These features are on the roadmap but not yet available:
 
 - Interactive tile editor UI, tile maps, window/clipping support
 - `DRAW` vector strings (classical BASIC DRAW command) — under consideration
-- `RESUME` / `RESUME NEXT` — continue after `ON ERROR GOTO` (handler must END or GOTO today)
 - Optional: `ERR` / `ERL` — error code and line number inside an error handler
 - Optional: `BSAVE` / `BLOAD` — save and load a byte range from the virtual PEEK/POKE map to disk
 

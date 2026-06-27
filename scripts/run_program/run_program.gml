@@ -93,9 +93,11 @@ for (var i = 0; i < ds_list_size(global.line_list); i++) {
         basic_runtime_reset_for_run();
     }
 
-    global.on_error_goto_line = 0;
-    global.error_trap_active  = false;
-    global.err_last_line      = 0;
+    global.on_error_goto_line     = 0;
+    global.error_trap_active      = false;
+    global.err_last_line          = 0;
+    global.err_fault_line_index   = -1;
+    global.err_fault_stmt_index   = -1;
 
     // ── Clean start: clear output buffers for a fresh run ─────────────────
     if (!_resume_from_stop) {

@@ -186,6 +186,19 @@ function handle_basic_command(cmd, arg) {
             case "GOSUB":     basic_cmd_gosub(_rest); break;
             case "RETURN":    basic_cmd_return(); break;
 
+            case "RESUME": {
+                var _res = string_upper(string_trim(_rest));
+                if (_res == "NEXT") {
+                    basic_cmd_resume_next();
+                } else if (_res == "") {
+                    basic_cmd_resume();
+                } else {
+                    basic_syntax_error("RESUME expects NEXT or no argument",
+                        global.current_line_number, global.interpreter_current_stmt_index, "RESUME_SYNTAX");
+                }
+                break;
+            }
+
             case "BGCOLOR":   basic_cmd_bgcolor(_rest); break;
             case "PAUSE":     basic_cmd_pause(); break;
             case "MODE":      basic_cmd_mode(_rest); break;

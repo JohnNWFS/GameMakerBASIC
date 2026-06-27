@@ -187,6 +187,8 @@ global.stop_resume_stmt_index   = 0;
 global.on_error_goto_line       = 0;
 global.error_trap_active        = false;
 global.err_last_line            = 0;
+global.err_fault_line_index     = -1;
+global.err_fault_stmt_index     = -1;
 dbg_log(DBG_FLOW, "GLOBALS: screen_edit_mode initialized to false");
 
 
