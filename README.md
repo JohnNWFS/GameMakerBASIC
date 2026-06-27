@@ -1043,6 +1043,8 @@ Verified by `diagnostics/mode2_view_clip_smoke.bas` (6/6 PASS).
 
 **Tile size gallery:** `diagnostics/mode2_tile_size_gallery.bas` draws the same ship-in-context scene at `MODE 2, 8`, then `16`, then `32` (screenshot captures the final 32×32 frame). Add `PAUSE` lines between sections when stepping through manually.
 
+**Map scrolling:** `diagnostics/mode2_map_scroll_demo.bas` builds a 56×28 map, sets a `VIEW` playfield, and pans by changing the `MAPDRAW` column (`MAPDRAW 1, 3` → `MAPDRAW -14, 3` → `MAPDRAW -29, 3`). HUD text drawn before `VIEW` stays on screen. No engine changes — pure BASIC.
+
 ---
 
 ## MODE 3 Commands (Pixel Graphics)
