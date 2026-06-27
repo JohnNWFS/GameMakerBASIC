@@ -1,0 +1,33 @@
+10 REM ============================================================
+20 REM NW-BASIC STABILITY INTERACTIVE TEST
+30 REM INPUT, modal INKEY$, PAUSE — requires keyboard at prompts
+40 REM Run from autotest or editor; press keys when asked
+50 REM ============================================================
+60 CLS
+70 PRINT "NW-BASIC STABILITY INTERACTIVE TEST"
+80 PRINT "===================================="
+90 PRINT ""
+100 PRINT "SECTION 1: PAUSE (press ENTER at prompt)"
+110 PAUSE
+120 PRINT "TEST: PAUSE_RESUME = PASS"
+130 PRINT ""
+140 PRINT "SECTION 2: INPUT string (type HELLO then ENTER)"
+150 INPUT "Name: ", NAME$
+160 IF NAME$ = "HELLO" THEN PRINT "TEST: INPUT_STR = PASS" ELSE PRINT "TEST: INPUT_STR = FAIL ("; NAME$; ")"
+170 PRINT ""
+180 PRINT "SECTION 3: INPUT numeric (type 42 then ENTER)"
+190 INPUT "Num: ", NUM
+200 IF NUM = 42 THEN PRINT "TEST: INPUT_NUM = PASS" ELSE PRINT "TEST: INPUT_NUM = FAIL ("; NUM; ")"
+210 PRINT ""
+220 PRINT "SECTION 4: INKEY$ modal ENTER (press ENTER)"
+230 PRINT "Waiting for ENTER..."
+240 K$ = INKEY$
+250 IF ASC(K$) = 13 THEN PRINT "TEST: INKEY_ENTER = PASS" ELSE PRINT "TEST: INKEY_ENTER = FAIL (ASC="; ASC(K$); ")"
+260 PRINT ""
+270 PRINT "SECTION 5: INKEY$ modal key (press A)"
+280 PRINT "Waiting for A..."
+290 K$ = INKEY$
+300 IF K$ = "A" OR K$ = "a" THEN PRINT "TEST: INKEY_LETTER = PASS" ELSE PRINT "TEST: INKEY_LETTER = FAIL (K$=["; K$; "])"
+310 PRINT ""
+320 PRINT "INTERACTIVE STABILITY TEST COMPLETE"
+330 END

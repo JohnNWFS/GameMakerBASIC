@@ -58,11 +58,11 @@ See `objects/obj_basic_interpreter/Create_0.gml` lines 23–30.
 - Run GameMaker LTS 2026 Feather/build diagnostics and capture any remaining compiler or type warnings.
 - Continue HELP browser testing through subtopic selection and page navigation after topic/subtopic input was hardened.
 - Update the generated HELP BASIC program: it is currently a brittle/broken BASIC program and should avoid known-bad syntax until interpreter control-flow bugs are fixed.
-- Add dedicated manual/interactive inventory tests for `INPUT`, modal `INKEY$`, `PAUSE`, and editor commands (`LIST`, `RUN`, `NEW`, `SAVE`, `LOAD`, `DIR`, `HELP`, `:PASTE`, `:LOADURL`, `SCREENEDIT`, `QUIT`).
+- Stability diagnostics (2026-06-26): `diagnostics/stress_stability_runtime.bas` (automated), `stress_stability_interactive.bas` (INPUT/INKEY$/PAUSE), `stress_stability_editor.bas` (editor checklist). Older probes: `input_string_diagnostic.bas`, `inkey_enter_smoke.bas`.
 
-## Modernization Pass (2026-06-26)
+## Modernization Pass (2026-06-26) — merged to `main`
 
-Completed on branch `refactor/ambitious-modernize-data-structures` (tag `post-modernize-baseline`):
+Completed on branch `refactor/ambitious-modernize-data-structures` (tag `post-modernize-baseline`); fast-forward merged into `main`:
 
 - Native GML arrays, MODE 2 2D grid, sprite struct slots, `basic_variables` struct
 - Unified `basic_split_delimited`, per-RUN `basic_memory` lifecycle, program_map + line_list editor/runtime unification
