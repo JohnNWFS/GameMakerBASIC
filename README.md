@@ -949,6 +949,41 @@ Typical workflow:
 40 END
 ```
 
+### Tile Maps
+
+Tile maps are large off-screen layers (up to 256×256 cells) stored separately from the display grid. Paint cells with `MAPSET`, then blit the whole map to the screen with `MAPDRAW`. Maps persist in memory for the current `RUN`; use `MAPSAVE` / `MAPLOAD` to store them as `.nwmap` files under `Documents/BasicInterpreter/`.
+
+| Command | Syntax | Description |
+|---------|--------|-------------|
+| `MAPNEW` | `MAPNEW w, h [, name]` | Create a new map filled with spaces (char 32, white on black). Optional `name` defaults to `"map"`. |
+| `MAPSET` | `MAPSET x, y, code [, fg [, bg]]` | Set one cell on the active map. Colors default to the cell's existing fg/bg. |
+| `MAPDRAW` | `MAPDRAW [, col [, row [, name]]]` | Copy map cells onto the display grid at `(col, row)`. Defaults: `0, 0`, active map. |
+| `MAPSAVE` | `MAPSAVE "filename"` | Save the active map to `filename.nwmap`. |
+| `MAPLOAD` | `MAPLOAD "filename"` | Load a map from `filename.nwmap` and make it active. |
+
+**`.nwmap` format (NWMAP1):** text file with header lines `NAME`, `SIZE`, `DEF` (default char/fg/bg), one `ROW` line per row (`ROW,row,char,fg,bg,...`), and `END`. Paths omit the extension in BASIC — `.nwmap` is appended automatically.
+
+Example — draw a bordered room, save, reload:
+
+```basic
+10 MODE 2, 16
+20 MAPNEW 40, 24, "room"
+30 FOR X = 0 TO 39
+40   MAPSET X, 0, 35
+50   MAPSET X, 23, 35
+60 NEXT X
+70 FOR Y = 0 TO 23
+80   MAPSET 0, Y, 35
+90   MAPSET 39, Y, 35
+100 NEXT Y
+110 MAPSET 20, 12, 42, YELLOW, BLACK
+120 MAPDRAW 0, 0
+130 MAPSAVE "myroom"
+140 END
+```
+
+Verified by `diagnostics/mode2_tile_map_smoke.bas` (4/4 PASS).
+
 ---
 
 ## MODE 3 Commands (Pixel Graphics)
@@ -1901,7 +1936,7 @@ The opening theme of Beethoven's Für Elise, arranged for `BEEP`. Demonstrates o
 
 These features are on the roadmap but not yet available:
 
-- Tile maps and window/clipping support (tile editor UI shipped as `TILEEDIT`)
+- Window/clipping support for MODE 2 tile grid (tile editor and tile maps shipped)
 
 ---
 

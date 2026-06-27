@@ -107,6 +107,8 @@ if (os_type == os_gxgames || os_browser != browser_not_a_browser) {
 // FONT registry for MODE 1
 global.font_sheets = ds_map_create();
 global.custom_tile_defs = ds_map_create();
+global.tile_maps = ds_map_create();
+global.active_tile_map_name = "";
 
 // Base character sheet
 ds_map_add(global.font_sheets, "DEFAULT", spr_charactersheet);

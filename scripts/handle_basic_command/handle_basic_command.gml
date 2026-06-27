@@ -222,6 +222,11 @@ function handle_basic_command(cmd, arg) {
             case "TILERESTORE": basic_cmd_tilerestore(_rest); break;
             case "TILESAVE":  basic_cmd_tilesave(_rest); break;
             case "TILELOAD":  basic_cmd_tileload(_rest); break;
+            case "MAPNEW":    basic_cmd_mapnew(_rest); break;
+            case "MAPLOAD":   basic_cmd_mapload(_rest); break;
+            case "MAPSAVE":   basic_cmd_mapsave(_rest); break;
+            case "MAPSET":    basic_cmd_mapset(_rest); break;
+            case "MAPDRAW":   basic_cmd_mapdraw(_rest); break;
             case "CHARAT":    basic_cmd_charat(_rest); break;
             case "PRINTAT":   basic_cmd_printat(_rest); break;
             case "FONT":      basic_cmd_font(_rest); break;

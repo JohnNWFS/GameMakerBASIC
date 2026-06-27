@@ -30,13 +30,13 @@ Runtime tile *commands* exist (`TILEDEF`, `TILEPX`, `TILESAVE`/`TILELOAD`, etc. 
 | 3A.4 Save/load hooks | `custom_tile_save_all` / `custom_tile_load_file` | Done |
 | 3A.5 Diagnostics | `diagnostics/mode2_tile_editor_interactive.bas` | Manual TILEEDIT + 3 autotest asserts |
 
-#### 3B. Tile maps
+#### 3B. Tile maps — done (`mode2_tile_map_smoke.bas`)
 
 | Task | Notes | Done when |
 |------|-------|-----------|
-| 3B.1 Map data model | 2-D layer of tile codes + optional per-cell FG/BG | Defined in GML; not required in BASIC syntax v1 |
-| 3B.2 Map render pass | Blit map to MODE 2 grid faster than per-`TILE` loops | Demo scrolls 40×25+ map at usable frame rate |
-| 3B.3 BASIC surface (optional) | e.g. `MAPLOAD`, `MAPSET`, `MAPDRAW` — or defer | README documents what shipped |
+| 3B.1 Map data model | `global.tile_maps` — per-cell char/fg/bg | Done |
+| 3B.2 Map render pass | `tile_map_blit_to_grid` — one redraw per `MAPDRAW` | Done |
+| 3B.3 BASIC surface | `MAPNEW`, `MAPLOAD`, `MAPSAVE`, `MAPSET`, `MAPDRAW` | Done — README |
 
 #### 3C. Window / clipping
 

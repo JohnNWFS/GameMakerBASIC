@@ -73,7 +73,7 @@ Completed on branch `refactor/ambitious-modernize-data-structures` (tag `post-mo
 Diagnostics: `diagnostics/stress_*.bas` per phase; broad regression `diagnostics/stress_modernize.bas`.
 
 ## Not Yet Implemented / Future Work
-- **MODE 2 tile platform (partial):** interactive tile editor UI shipped as `TILEEDIT`/`TE` (`obj_tile_editor`). Remaining: tile maps (3B), window/clipping (3C). See `TODO.md` §3.
+- **MODE 2 tile platform (partial):** interactive tile editor (`TILEEDIT`/`TE`) and tile maps (`MAPNEW`/`MAPSET`/`MAPDRAW`/`MAPSAVE`/`MAPLOAD`) shipped. Remaining: window/clipping (3C). See `TODO.md` §3.
 - `STOP` as a true breakpoint (currently identical to `END`).
 - Further math/string extensions as needed.
 
@@ -93,6 +93,10 @@ Implemented accelerated commands:
 - `DRAW "command string"` — QBASIC-style vector turtle graphics (`U`/`D`/`L`/`R`, diagonals, `M`, `B`, `C`, `S`, `A`, `P`, `N`). Verified by `diagnostics/mode3_draw_vectors.bas` (4/4 PASS).
 
 Future candidates: `CIRCLEF`, ellipse/arc options for `CIRCLE`, sprite/image overlay commands.
+
+## Recently Completed (2026-06-27 session — tile maps)
+
+- **Tile maps (MODE 2):** Off-screen map layers (`global.tile_maps`) with `MAPNEW`, `MAPSET`, `MAPDRAW`, `MAPSAVE`, `MAPLOAD`. NWMAP1 `.nwmap` files under `Documents/BasicInterpreter/`. `diagnostics/mode2_tile_map_smoke.bas` — 4/4 PASS.
 
 ## Recently Completed (2026-06-27 session — tile editor)
 
