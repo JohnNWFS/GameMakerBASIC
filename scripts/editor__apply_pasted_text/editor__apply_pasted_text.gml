@@ -9,7 +9,7 @@ function editor__apply_pasted_text(text) {
 
     var applied = false;
     var lines = string_split(text, "\n");
-    if (function_exists(dbg_on) && dbg_on(DBG_FLOW)) {
+    if (dbg_on(DBG_FLOW)) {
        dbg_log(DBG_FLOW, "PASTE: received " + string(array_length(lines)) + " raw lines");
     }
 
@@ -34,7 +34,7 @@ function editor__apply_pasted_text(text) {
 
         basic_program_set_line(line_num, code_str, false);
 
-        if (function_exists(dbg_on) && dbg_on(DBG_FLOW)) {
+        if (dbg_on(DBG_FLOW)) {
            dbg_log(DBG_FLOW, "PASTE: set " + string(line_num) + " → '" + code_str + "'");
         }
 
