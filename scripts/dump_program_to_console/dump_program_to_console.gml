@@ -6,7 +6,7 @@ function dump_program_to_console() {
         return;
     }
     for (var i = 0; i < ds_list_size(lines); i++) {
-        var ln = ds_list_find_value(lines, i);
-        show_debug_message(string(ln) + " " + string(ds_map_find_value(prog, ln)));
+        var _line_no = ds_list_find_value(lines, i);
+        show_debug_message(string(_line_no) + " " + string(ds_map_find_value(prog, _line_no)));
     }
 }
