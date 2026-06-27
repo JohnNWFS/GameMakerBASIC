@@ -928,7 +928,7 @@ Default tile size is **16×16**; default starting code is **200**. Edits persist
 | Arrows | Move cursor |
 | Space / Enter | Paint pixel on (or off in erase mode) |
 | `B` | Toggle **PAINT** / **ERASE** (banner turns red in erase mode) |
-| `C` | Cycle pen color (preview tint) — not clear; use `X` to clear pixels |
+| `C` | Cycle pen color (preview tint) |
 | `N` / `P` | Next / previous tile character code (200, 201, …) |
 | `F` / `V` | Flip horizontal / vertical |
 | `X` | Clear all pixels (one-level revert snapshot stored) |
