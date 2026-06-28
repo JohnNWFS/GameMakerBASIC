@@ -23,8 +23,8 @@
     var isMobile = /iPad|iPhone|iPod|Android/i.test(navigator.userAgent) ||
                    ('ontouchstart' in window) ||
                    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    // On desktop the keyboard starts hidden; on mobile it starts visible.
-    var startVisible = isMobile;
+    // Hidden until user taps SHOW KB (matches obj_mobile_kb default).
+    var startVisible = false;
 
     // ── State ────────────────────────────────────────────────────────────────
     var capsLock  = false;   // true = force lowercase

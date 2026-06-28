@@ -4,6 +4,21 @@ function nwbasic_is_browser_runtime() {
     return (os_type == os_gxgames || os_browser != browser_not_a_browser);
 }
 
+function mobile_kb_set_visible(_visible) {
+    if (!instance_exists(obj_mobile_kb) || !obj_mobile_kb.kb_active) return;
+
+    obj_mobile_kb.kb_visible = _visible;
+    if (!_visible) {
+        obj_mobile_kb.KB_H = 0;
+        return;
+    }
+
+    var _gh = display_get_gui_height();
+    if (_gh < 100) _gh = room_height;
+    var _row_h = max(48, floor(_gh * 0.07));
+    obj_mobile_kb.KB_H = 6 * (_row_h + 2) + 6;
+}
+
 /// Reserved chrome: input strip always visible; keyboard optional below it.
 function nwbasic_browser_chrome_metrics(_font_h) {
     var _kb_h = 0;

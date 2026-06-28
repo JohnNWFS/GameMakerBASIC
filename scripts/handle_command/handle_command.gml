@@ -129,7 +129,7 @@ break;
 	    case ":KEYBOARD":
 	    {
 	        if (instance_exists(obj_mobile_kb)) {
-	            obj_mobile_kb.kb_visible = !obj_mobile_kb.kb_visible;
+	            mobile_kb_set_visible(!obj_mobile_kb.kb_visible);
 	        }
 	        break;
 	    }

@@ -159,6 +159,9 @@ for (var i = 0; i < ds_list_size(global.line_list); i++) {
     global.interpreter_target_stmt        = 0;
     global.error_trap_active = false;
 
+    // Browser: hide on-screen keyboard when a program starts (SHOW KB to reopen).
+    mobile_kb_set_visible(false);
+
     // Go to interpreter room (only if not already there)
     var _text_room = ds_map_find_value(global.mode_rooms, 0);
     if (room != _text_room) {

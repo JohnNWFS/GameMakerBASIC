@@ -31,8 +31,7 @@ var _row_h2 = max(48, floor(_gh * 0.07));
 var _kb_h2  = 6 * (_row_h2 + 2) + 6;
 var _tab_y2 = kb_visible ? (_gh - _kb_h2 - _tab_h) : (_gh - _tab_h);
 if (_tx >= _gw - _tab_w && _ty >= _tab_y2 && _ty <= _tab_y2 + _tab_h) {
-    kb_visible = !kb_visible;
-    KB_H = kb_visible ? _kb_h2 : 0;
+    mobile_kb_set_visible(!kb_visible);
     exit;
 }
 
