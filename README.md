@@ -40,6 +40,7 @@ A custom-built BASIC interpreter and code editor created using **GameMaker Studi
 - [Mode Control](#mode-control)
 - [MODE 2 Commands (Tile Graphics)](#mode-2-commands-tile-graphics)
 - [MODE 3 Commands (Pixel Graphics)](#mode-3-commands-pixel-graphics)
+- [MODE 3 Animation and Game Loops](#mode-3-animation-and-game-loops)
 - [Sprite System](#sprite-system)
 - [File I/O](#file-io)
 - [Math Functions](#math-functions)
@@ -1056,6 +1057,8 @@ MODE 3 renders to a full-screen pixel surface. Text overlay `PRINT` is available
 ### PSET (MODE 3)
 `PSET` draws a single pixel at the given x, y coordinate. Color defaults to white if omitted. `PLOT` is an alias for the same command. Syntax: `PSET x, y [, color]`
 
+On a 1280×800 canvas a single `PSET` dot is easy to miss, especially in the browser build. For moving game objects (missiles, enemies, bullets), prefer filled `CIRCLE` or `BOX` shapes — see [MODE 3 Animation and Game Loops](#mode-3-animation-and-game-loops).
+
 ```basic
 10 MODE 3
 20 PRINT "PSET draws individual pixels."
@@ -1198,6 +1201,72 @@ Color names are stored as integers in BGR (blue-green-red) byte order, which is 
 70 PAUSE
 80 END
 ```
+
+### MODE 3 Animation and Game Loops
+
+MODE 3 programs can animate graphics, but the interpreter runs **one line number per game frame** (~60 per second) — the same rule described for [sprites](#sprite-system). A `GOTO` loop that spans 30 lines only completes one full pass about twice per second, so motion inside that loop updates slowly unless you keep the loop body short.
+
+**Practical rules for moving graphics**
+
+| Topic | Guidance |
+|-------|----------|
+| Visible movers | Use filled `CIRCLE` or `BOX`, not `PSET`, on HD screens |
+| Animation | Erase the old position, then draw the new one (see example below) |
+| Game loop | `GOTO` back to a small block (spawn → move → collide → draw) |
+| HUD / score | Prefer `PRINTAT` in a fixed corner; scrolling `PRINT` overlays the pixel layer and can cover sky spawns at the top |
+| Sound | `BEEP` **pauses** the program until the note sequence finishes — use sparingly in real-time loops |
+| Coordinates | `X`, `Y`, `RAD` are normal expressions; color slots are [literals only](#color-literals-in-drawing-commands) |
+
+**Erase–redraw pattern**
+
+```basic
+' Erase old shape, update position, draw new shape
+CIRCLE EX, EY, 6, BLACK, 1, BLACK
+EY = EY + 3
+CIRCLE EX, EY, 6, RED, 1, RED
+```
+
+**Minimal falling-object loop** (visible red dot, short loop body):
+
+```basic
+10 MODE 3
+20 CLS
+30 RANDOMIZE
+40 EX = 640
+50 EY = 0
+60 ED = 4
+70 GOSUB 1000          ' draw ground once
+80 CIRCLE EX, EY, 6, RED, 1, RED
+
+100 REM === GAME LOOP (keep this block short) ===
+110 CIRCLE EX, EY, 6, BLACK, 1, BLACK
+120 EY = EY + ED
+130 CIRCLE EX, EY, 6, RED, 1, RED
+140 IF EY >= 680 THEN GOTO 200
+150 GOTO 100
+
+200 REM === hit ground ===
+210 CIRCLE EX, EY, 20, RED, 1, ORANGE
+220 PRINTAT 0, 0, "Hit!", WHITE, BLACK
+230 PAUSE
+240 END
+
+1000 REM === ground line ===
+1010 LINE 0, 680, 1280, 680, GREEN, 4
+1020 RETURN
+```
+
+**Common mistakes** (e.g. Missile Command–style programs)
+
+| Mistake | Result |
+|---------|--------|
+| `PSET EX, EY, RED` for enemies | Technically correct, practically invisible |
+| Long `GOTO` loop (25+ lines per pass) | Enemy crawls; looks frozen |
+| `PRINT` HUD every frame at top | Text overlays pixels; spawns at `Y=0` hide under the HUD |
+| `MY = BY` then `IF MY > BY - 5` fizzle test | Missile spawns at launcher height and fizzles immediately |
+| `COL = RGB(R,G,B)` then `CIRCLE ..., COL` | Color stays white — see [color literals](#color-literals-in-drawing-commands) |
+
+For smooth high-frame-rate motion without erase–redraw bookkeeping, consider the [Sprite System](#sprite-system) instead of pixel `PSET`/`CIRCLE` loops.
 
 ---
 
