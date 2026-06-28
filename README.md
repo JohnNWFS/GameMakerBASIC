@@ -1090,6 +1090,24 @@ MODE 3 renders to a full-screen pixel surface. Text overlay `PRINT` is available
 70 END
 ```
 
+Random filled circles with inline `RGB()` (see [Color Literals in Drawing Commands](#color-literals-in-drawing-commands)):
+```basic
+10 MODE 3
+20 RANDOMIZE
+30 CLS
+40 FOR I = 1 TO 100
+50   X = RND(1) * 1280
+60   Y = RND(1) * 800
+70   RAD = RND(1) * 50 + 5
+80   R = INT(RND(1) * 256)
+90   G = INT(RND(1) * 256)
+100  B = INT(RND(1) * 256)
+110  CIRCLE X, Y, RAD, RGB(R,G,B), 1, RGB(R,G,B)
+120 NEXT I
+130 PAUSE
+140 END
+```
+
 ### LINE (MODE 3 only)
 `LINE` draws a straight line between two pixel coordinates. Thickness defaults to 1 if omitted. Syntax: `LINE x1, y1, x2, y2 [, color [, thickness]]`
 ```basic
@@ -1703,6 +1721,31 @@ In addition to named colors and `RGB(r,g,b)`, NW-BASIC accepts several hex forms
 Named colors include `BLACK`, `WHITE`, `RED`, `GREEN`, `BLUE`, `CYAN`, `MAGENTA`, `YELLOW`, `GRAY`, `DKGRAY`, `ORANGE`, `LIME`, and `NAVY`.
 
 **Note:** `COLOR` and `BGCOLOR` apply to subsequent `PRINT` output. Individual tile commands (`PRINTAT`, `CHARAT`, `PSET`, etc.) take their own fg/bg color arguments and do not use these globals.
+
+### Color Literals in Drawing Commands
+
+Commands that take a color argument — `CIRCLE`, `LINE`, `BOX`, `PSET`, `PLOT`, `PAINT`, `PRINTAT`, `CHARAT`, tile fg/bg slots, and similar — parse that argument as a **color literal**, not as a general BASIC expression.
+
+**What works**
+
+| Form | Example | Notes |
+|------|---------|-------|
+| Named color | `CIRCLE 100,100,40,RED` | `WHITE`, `BLUE`, `YELLOW`, etc. |
+| Inline `RGB()` | `CIRCLE X,Y,R,RGB(R,G,B)` | `R`, `G`, `B` may be variables; evaluated inside the literal |
+| Hex | `PSET 10,10,$FF8800` | Also `#RRGGBB` and `&HBBGGRR` |
+| Numeric integer | `LINE 0,0,100,100,16711680` | Raw GML color value |
+
+**What does not work**
+
+| Mistake | Why it fails |
+|---------|--------------|
+| `COL = RGB(R,G,B)` then `CIRCLE X,Y,R,COL` | `RGB()` is not an expression function like `RND()` or `SIN()`; it cannot be assigned to a variable |
+| `CIRCLE X,Y,R,COL` when `COL` holds a number | The color slot sees the text `COL` as a color **name**, not the variable's value — unknown names default to white |
+| `CIRCLE X,Y,R,RGB` | `RGB` alone is not a color; you need the full `RGB(r,g,b)` form |
+
+**Rule of thumb:** put the color **directly in the command** — `RGB(R,G,B)`, `RED`, or `$00FF00`. Coordinates and sizes (`X`, `Y`, `RAD`) are normal expressions; color slots are literals.
+
+This differs from sprite commands, where arguments such as `SPRITE MOVE 1, X, Y` are fully expression-evaluated.
 
 ---
 
