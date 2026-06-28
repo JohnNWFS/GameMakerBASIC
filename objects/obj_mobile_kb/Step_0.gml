@@ -1,3 +1,16 @@
+/// Keep GUI layer synced to browser viewport (rotation / resize).
+if (kb_active) {
+    var _sw = display_get_width();
+    var _sh = display_get_height();
+    if (_sw >= 100 && _sh >= 100) {
+        display_set_gui_size(_sw, _sh);
+        if (kb_visible) {
+            var _row_h0 = max(48, floor(_sh * 0.07));
+            KB_H = 6 * (_row_h0 + 2) + 6;
+        }
+    }
+}
+
 /// Handle touch input: toggle tab + keyboard keys.
 if (!kb_active) exit;
 if (!device_mouse_check_button_pressed(0, mb_left)) exit;

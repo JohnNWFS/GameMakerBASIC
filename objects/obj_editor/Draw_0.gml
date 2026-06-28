@@ -167,21 +167,19 @@ if (showing_demos_overlay && variable_global_exists("demos_manifest")) {
     draw_set_color(make_color_rgb(100, 100, 100));
     draw_text(_x, _y, "ESC or Enter to close");
 
-    // prompt still visible at bottom (above keyboard if shown)
-    var _kb_h2 = (instance_exists(obj_mobile_kb) && obj_mobile_kb.kb_visible) ? obj_mobile_kb.KB_H : 0;
-    var _cb2 = room_height - _kb_h2;
-    draw_set_color(make_color_rgb(255, 191, 64));
-    draw_text(16, _cb2 - (actual_font_height * 2), "READY");
-    draw_text(16, _cb2 - actual_font_height, "> " + current_input);
-    var _cx = 16 + string_width("> " + string_copy(current_input, 1, cursor_pos));
-    if (current_time % 1000 < 500) draw_text(_cx, _cb2 - actual_font_height, "_");
+    // Browser: input strip drawn in Draw GUI (Draw_64).
+    if (!nwbasic_is_browser_runtime()) {
+        draw_set_color(make_color_rgb(255, 191, 64));
+        draw_text(16, room_height - (actual_font_height * 2), "READY");
+        draw_text(16, room_height - actual_font_height, "> " + current_input);
+        var _cx = 16 + string_width("> " + string_copy(current_input, 1, cursor_pos));
+        if (current_time % 1000 < 500) draw_text(_cx, room_height - actual_font_height, "_");
+    }
     return;
 }
 
-// KB_H is in screen/GUI pixels (display_set_gui_size was called by obj_mobile_kb).
-// On desktop kb_active=false so GUI = room_height and KB_H = 0, giving content_bottom = room_height.
-var _kb_h = (instance_exists(obj_mobile_kb) && obj_mobile_kb.kb_visible) ? obj_mobile_kb.KB_H : 0;
-var content_bottom = display_get_gui_height() - _kb_h;
+var _chrome = nwbasic_browser_chrome_metrics(actual_font_height);
+var content_bottom = _chrome.content_bottom_room;
 
 // Draw program lines with proper spacing
 var y_pos = 32;
@@ -222,19 +220,19 @@ if (total_lines == 0 && (os_type == os_gxgames || os_browser != browser_not_a_br
     draw_text(16, _y + _lh*9,  "Follow:   @JohnNWFS on X");
 }
 
-// Draw input prompt with proper spacing
-draw_text(16, content_bottom - (actual_font_height * 2), "READY");
-draw_text(16, content_bottom - actual_font_height, "> " + current_input);
+// Desktop: prompt in room space. Browser: Draw GUI (Draw_64).
+if (!nwbasic_is_browser_runtime()) {
+    draw_text(16, content_bottom - (actual_font_height * 2), "READY");
+    draw_text(16, content_bottom - actual_font_height, "> " + current_input);
 
-// Draw cursor
-var cursor_x = 16 + string_width("> " + string_copy(current_input, 1, cursor_pos));
-if (current_time % 1000 < 500) { // Blinking cursor
-    draw_text(cursor_x, content_bottom - actual_font_height, "_");
-}
+    var cursor_x = 16 + string_width("> " + string_copy(current_input, 1, cursor_pos));
+    if (current_time % 1000 < 500) {
+        draw_text(cursor_x, content_bottom - actual_font_height, "_");
+    }
 
-// Draw message with proper spacing
-if (message_text != "") {
-    draw_set_color(c_yellow);
-    draw_text(16, content_bottom - (actual_font_height * 3), message_text);
-    draw_set_color(make_color_rgb(255, 191, 64)); // Reset color
+    if (message_text != "") {
+        draw_set_color(c_yellow);
+        draw_text(16, content_bottom - (actual_font_height * 3), message_text);
+        draw_set_color(make_color_rgb(255, 191, 64));
+    }
 }

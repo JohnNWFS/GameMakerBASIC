@@ -237,6 +237,7 @@
     {"id":{"name":"navigate_history_up","path":"scripts/navigate_history_up/navigate_history_up.yy",},},
     {"id":{"name":"new_program_without_undo","path":"scripts/new_program_without_undo/new_program_without_undo.yy",},},
     {"id":{"name":"new_program","path":"scripts/new_program/new_program.yy",},},
+    {"id":{"name":"nwbasic_browser_layout","path":"scripts/nwbasic_browser_layout/nwbasic_browser_layout.yy",},},
     {"id":{"name":"nwbasic_handle_virtual_key","path":"scripts/nwbasic_handle_virtual_key/nwbasic_handle_virtual_key.yy",},},
     {"id":{"name":"parse_data_value","path":"scripts/parse_data_value/parse_data_value.yy",},},
     {"id":{"name":"paste_line","path":"scripts/paste_line/paste_line.yy",},},
